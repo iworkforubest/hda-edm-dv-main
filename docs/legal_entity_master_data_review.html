@@ -1,0 +1,318 @@
+<title>Legal Entity Master Data Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2F5D8C; --accent-soft:#E8EEF6;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#7FB0DD; --accent-soft:#1B2632;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#7FB0DD; --accent-soft:#1B2632;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style><div class="wrap">
+
+  <header>
+    <p class="eyebrow">Legal Entity Master Data &middot; Data &amp; AI</p>
+    <h1>Four things to settle, and rather more that is now settled</h1>
+    <p class="lede">
+      A review of Amy Keser&rsquo;s 8 September response to the business and legal decisions.
+      <strong>Six of the eight legal-entity questions are answered, and two separate asks
+      close outright</strong> &mdash; one of which was quietly capable of corrupting totals.
+      What is left is four points of clarification, three of which are places where the
+      written answer and the sample record say different things.
+    </p>
+    <p class="meta">
+      <span>Reviewed 23 September 2026</span>
+      <span>Source: <code>2026.09.08_Data Platform Q Replies.xlsx</code></span>
+      <span>Asks: <code>docs/legal_entity_questions.html</code></span>
+      <span>From <code>data_platform_operations</code></span>
+    </p>
+  </header>
+
+  <div class="note">
+    <h3>The headline: the governance model moves, the questions do not disappear</h3>
+    <p>
+      Amy&rsquo;s central point is that legal entities should be governed as <strong>master
+      data in the Global Data Catalogue</strong>, through the Trading Entity and Master Data
+      governance model, rather than being driven by the vault design. <strong>We accept that
+      without reservation</strong>, and it is the right correction: it moves <em>where</em>
+      each decision is taken. It does not remove the need to take it, and one consequence
+      lands on us directly &mdash; the vault&rsquo;s legal-entity business key becomes an
+      authored identifier owned by a register that does not exist yet.
+    </p>
+    <p>
+      <strong>That validates leaving our legal-entity bindings as <code>PLACEHOLDER</code>
+      rather than inventing a key.</strong> It is the outcome our own plan already forbade us
+      from working around, so nothing is wasted by having waited.
+    </p>
+  </div>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Settled &mdash; no further discussion needed</h2>
+      <span class="why">Recorded against each ask in its own document. Listed here so Monday is spent only on what is open.</span>
+    </div>
+
+    <article class="task">
+      <div class="task-top"><span class="id">WDJ-10</span><h3>Cost centres are global &mdash; and this one was load-bearing</h3><span class="pill">Closed</span></div>
+      <dl>
+        <dt>The answer</dt><dd>A cost centre is globally governed reference data with <strong>one consistent business meaning</strong>. Regional, legal-entity and management reporting go through <em>separate</em> dimensions &mdash; Legal Entity, Region, Company, Business Unit, Worktags &mdash; never by reusing a code with a second meaning. High confidence, designed alongside Alex in group finance.</dd>
+        <dt>Why this one mattered more than the others</dt><dd>It closes at exactly the condition we had written down: <em>a global dimension may be keyed on its code alone only once someone has confirmed the code means one thing group-wide.</em> <strong>Had the answer been the other way and we keyed on the code regardless, two regional cost centres would have collapsed into one hub row, every gate would have stayed green, and the only symptom would have been totals quietly wrong one level up.</strong> A silent defect is now retired rather than merely unobserved.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">BRZ-2</span><h3>No client reassignment in Bronze for the GP journal</h3><span class="pill">Closed, scoped</span></div>
+      <dl>
+        <dt>The answer</dt><dd>VMS data enters 1Staff/GP where client and finance customer relationships already exist; the journals pass through to Workday, so Bronze never assigns or reassigns a client.</dd>
+        <dt>Keep the scope attached to it</dt><dd>The reasoning leans on unification moving the group toward two trading brands &mdash; while Amy&rsquo;s own headline is that <strong>brand unification and legal entity unification are different things</strong>, with entities active and reportable until formally dissolved. Consistent, but only because this closure is about the GP journal. Detached from that scope it would read as a claim about how many legal entities exist.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">LEG-7</span><h3>CBO Office owns the register; CPTO implements</h3><span class="pill">Answered</span></div>
+      <dl>
+        <dt>Why this is the cleanest answer in the set</dt><dd>It names an owner, separates the decision from the implementation, and gives us a route for change requests that does not depend on knowing who to ask. Decisions may originate in SLT, Board, Finance or Legal; <strong>CBO governs the process and holds the evidence; CPTO implements and does not own the structure.</strong> All downstream systems, Workday included, consume the approved structure.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">LEG-8</span><h3>Effective From is the real-world legal date, and blank beats a default</h3><span class="pill">Answered</span></div>
+      <dl>
+        <dt>The answer, and why we like the second half</dt><dd>Incorporation, legal rename, ownership transfer, merger, dissolution &mdash; not the date a row was entered or loaded. Where unknown it <strong>stays blank or is flagged, never defaulted to a load date</strong>. That is the two-clock rule stated by the business in its own words, and it matches the vault: <code>applied_dts</code> is business-effective, <code>load_dts</code> is ours. <strong>A defaulted date is indistinguishable from a known one once stored</strong>, which is why the instruction not to default is the valuable half.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">LEG-5</span><h3>Ownership and contract are two different edges</h3><span class="pill">Answered</span></div>
+      <dl>
+        <dt>The answer</dt><dd>Impellam PLC may own Guidant Global, but <strong>Guidant Global is the trading entity and solely holds the contracts</strong> with clients, workers and suppliers. A global client may contract with different trading entities across jurisdictions, and each individual contract links to exactly one. Two relationships in the model, not one &mdash; which is the structure we would have wanted anyway.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">LEG-4</span> <span class="id">LEG-6</span><h3>The 24 are not assumed complete, and GP&rsquo;s customers are not the model</h3><span class="pill">Owned by Amy</span></div>
+      <dl>
+        <dt>Both answered by refusing the premise, correctly</dt><dd><span class="mono">LEG-4</span>: trading brand, operating brand, legal entity and finance reporting entity are not necessarily 1:1, and <code>Barpellam</code>, <code>Irish Recruitment</code> and <code>Staffing MS</code> each need that test. The entity count is an output of work not yet done. <span class="mono">LEG-6</span>: some clients are one GP customer record for operational convenience only, so the model needs <strong>one trading legal entity to many customer records</strong>. Amy and the North America finance team will design the future-state hierarchy for Workday migration.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>The proposed record, transcribed</h2>
+      <span class="why">The sample tab holds a pasted image, not cells. Transcribed here so it is searchable, quotable and reviewable.</span>
+    </div>
+
+    <div class="note">
+      <h3>Read this before opening the workbook</h3>
+      <p>
+        The <strong>Sample Legal Entity Master Data</strong> tab reports as empty to every
+        tool that reads cells &mdash; its used range is <code>A1:A1</code>. The structure is a
+        <strong>PNG pasted onto the sheet</strong> (<code>xl/media/image1.png</code>).
+        <strong>Anyone opening the workbook expecting a populated worksheet will conclude the
+        sample is missing.</strong> Worth a re-issue as cells if it is going to more people.
+      </p>
+      <div class="ev">LEGAL ENTITY                                   Impellam Group Limited | HF-UK-001
+
+CLASSIFICATION  [ TRADING ]  HOLDING  FUNDING   -- single select
+                "drives reporting, consolidation and novation treatment"
+
+ENTITY DETAILS                 PARENT / OWNERSHIP           BUSINESS ROLE
+  Legal Entity ID*  HF-UK-001    Parent Legal Entity*         Trading Entity    Yes
+  Legal Entity Name*              Impellam Holdings Ltd       Employing Entity  Yes
+  Registration No.* 03993317     Ultimate Parent              Billing Entity    Yes
+  Jurisdiction*     UK            HeadFirst Global Group      Payroll Entity    No
+  Status*           Active
+  Effective From*   01-Jan-2000  SYSTEM REFERENCES
+  Effective To      --             Workday Company Code  UK011
+                                  Legacy Finance Code   IMP_UK
+                                                        * mandatory</div>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Four to settle on Monday</h2>
+      <span class="why">Three are places where the written answer and the sample record disagree. That is worth saying plainly: the prose is right in each case.</span>
+    </div>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">LEG-1</span><h3>Is the <code>UK</code> in <code>HF-UK-001</code> permanent, or current?</h3><span class="pill b">Decide first</span></div>
+      <dl>
+        <dt>What was answered, and it is a good answer</dt><dd>The Global Data Catalogue owns the permanent identifier. The sample shows <code>HF-UK-001</code> &mdash; an <strong>HFIG-assigned code</strong>, with Workday&rsquo;s <code>UK011</code> kept beside it as a <em>system reference</em> rather than as the identity. <strong>That is better than the option we floated of adopting Workday&rsquo;s code outright</strong>, and it dissolves the objection we raised against it: Workday does not become the system of record for company identity, and we still get the crosswalk.</dd>
+        <dt>The question</dt><dd><strong>A permanent identifier must not be derived from an attribute that can change.</strong> If <code>UK</code> is the entity&rsquo;s <em>current</em> jurisdiction, then re-domiciliation forces a choice between changing a permanent ID and leaving it asserting something false &mdash; and the same answer requires the ID to survive the transition and &ldquo;retain historical reporting integrity&rdquo;. If <code>UK</code> is a <strong>minting namespace</strong>, fixed when the entity is first registered and never revisited, it is sound.</dd>
+        <dt>Why it cannot be left implicit</dt><dd><strong>The two readings look identical until the first entity moves jurisdiction</strong>, and by then the identifier is in every downstream system. We have just been through this exact argument on <span class="mono">WDJ-2</span>, where a Databricks hash was proposed as a permanent external journal ID: it was rejected because its value depends on inputs that can change. Same principle, different column.</dd>
+        <dt>What we need</dt><dd>One sentence in the BRD saying which it is.</dd>
+      </dl>
+    </article>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">LEG-3</span><h3>Ownership: the prose says separate and dated, the sample says two columns</h3><span class="pill b">Prose is right</span></div>
+      <dl>
+        <dt>The disagreement</dt><dd>The written answer holds ownership <strong>separately from the master record, effective dated</strong>, with parent, subsidiary, ownership percentage, dates and status. The sample puts <code>Parent Legal Entity</code> and <code>Ultimate Parent</code> on the entity record as plain attributes.</dd>
+        <dt>Why the difference matters</dt><dd>Attributes on the record <strong>cannot carry ownership history</strong> &mdash; and an ownership-transfer date appears in Amy&rsquo;s own <span class="mono">LEG-8</span> list of real-world effective dates, so history is explicitly in scope. Separately, <code>Ultimate Parent</code> is <strong>derivable from the parent chain</strong>; storing it as its own field invites the two to drift, and the stored value is the one people will report from.</dd>
+        <dt>What we need</dt><dd>Confirmation that the BRD carries the prose version. We read the mockup as a one-card simplification rather than a change of position.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">LEG-6</span><h3>Classification and Business Role overlap &mdash; which governs?</h3><span class="pill">Define</span></div>
+      <dl>
+        <dt>The overlap</dt><dd>Classification is <strong>single-select</strong> (Trading / Holding / Funding) and drives &ldquo;reporting, consolidation and novation treatment&rdquo;. Business Role is <strong>multi-valued</strong> (Trading, Employing, Billing, Payroll). The sample shows Classification <code>TRADING</code> <em>and</em> role <code>Trading Entity: Yes</code>.</dd>
+        <dt>The questions</dt><dd>What does Classification <code>Holding</code> with <code>Trading Entity: Yes</code> mean, and which field governs when they disagree? Our original question was whether a company plays more than one role; the flags answer it as <strong>yes</strong>, which makes the flags the operative answer and leaves Classification needing a tighter definition than the roles it appears to duplicate.</dd>
+        <dt>Why we care about the answer, not the aesthetics</dt><dd>If Classification drives consolidation treatment, it is a <strong>reporting control</strong>, not a label &mdash; and a control that can contradict a neighbouring field is one somebody will eventually resolve by guessing.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">LEG-2</span><h3><code>Legacy Finance Code</code> is singular, and we have evidence it cannot be</h3><span class="pill">Add a field</span></div>
+      <dl>
+        <dt>The evidence, from our own data and from Workday&rsquo;s</dt><dd><strong>Two legacy ledgers feed the vault today</strong> &mdash; Great Plains and UKG, with <code>BRPLM</code> our only UKG company. And Workday&rsquo;s own cost-centre data carries <strong>five retired source families</strong>, which is what prior migrations leave behind:
+          <div class="ev">zSAGE 207    zUKG 158    zEH 100    zAFAS 79    zCOST 58     (602 of 666 cost centres)</div>
+        </dd>
+        <dt>The consequence</dt><dd>A single <code>Legacy Finance Code</code> cannot hold codes from several legacy ledgers at once. Either it becomes a small repeating structure of <strong>(source system, code)</strong>, or the field silently means &ldquo;whichever legacy code someone entered first&rdquo; &mdash; and a crosswalk that is right for GP and wrong for UKG is worse than one that is absent, because it will be used.</dd>
+        <dt>Why this is worth the field</dt><dd>These two columns are <strong>the answer to a mapping we could not complete</strong>. We reconstructed the GP&ndash;Workday company crosswalk by name similarity: 11 of our organisations against 82 Workday companies, <strong>exact code overlap zero</strong>, five <code>*SPV</code> pairings we flagged openly as guesses, and <code>BARM</code> and <code>CSS</code> unknown. Populated properly, this block retires that guesswork entirely.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Two dates that have passed</h2>
+      <span class="why">Raised as a check, not a complaint &mdash; both may simply have landed without us hearing.</span>
+    </div>
+    <article class="task">
+      <div class="task-top"><h3>The BRD was due 18 September, and <span class="mono">LEG-1</span> is blocked on it</h3><span class="pill">Check</span></div>
+      <dl>
+        <dt>What was promised</dt><dd>&ldquo;Amy to create the BRD for the Global Data Catalogue by 18th Sept&rdquo;, with <span class="mono">LEG-1</span> carrying the status <strong>Decision required</strong> &mdash; confirm the catalogue as master source and agree the permanent ID standard.</dd>
+        <dt>Where that leaves us</dt><dd>Our legal-entity bindings stay <code>PLACEHOLDER</code> until the identifier standard exists. <strong>That is the correct state and not a problem</strong>; it only becomes one if the date has moved and nobody has said so.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <div class="note">
+    <h3>What none of this changes</h3>
+    <p>
+      <strong>No remodelling falls out of these answers.</strong> Ownership and contract as
+      two edges is the structure the vault would want regardless; one trading entity to many
+      customers is a cardinality we already support; the real-world effective date is the
+      clock the vault already keeps. The one genuine dependency is the identifier standard in
+      <span class="mono">LEG-1</span>, and the correct response to not having it is to keep
+      waiting rather than to invent one.
+    </p>
+  </div>
+
+</div>

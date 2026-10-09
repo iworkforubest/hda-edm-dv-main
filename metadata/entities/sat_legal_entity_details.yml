@@ -1,0 +1,89 @@
+# WHAT A LEGAL ENTITY IS, AS OPPOSED TO WHAT IT OWNS.
+#
+# hub_legal_entity carries the key and nothing else; hal_client_legal_entity_hierarchy carries who
+# owns whom. Neither has anywhere to put the entity's registered name, its company number,
+# or the jurisdiction it is registered in -- which are the three things a person filling in
+# `docs/legal_entity_roster_worksheet.csv` would most expect to be recording.
+#
+# MEASURED 5 Sep 2026: they had nowhere to go. The hub, the hierarchical link and the
+# hierarchy's effectivity satellite were built and this was not, so the roster's descriptive
+# columns would have been collected against a vault that could not receive them. That is an
+# omission rather than a decision, and this file closes it.
+#
+# WHY A SATELLITE RATHER THAN COLUMNS ON THE HUB. The same reason ownership is a link: a hub
+# is immutable and these attributes are not. A company renames, redomiciles, is struck off
+# and restored. On the hub each of those is an UPDATE in an insert-only vault, or a re-key;
+# here each is a new version, and "what was this company called in March" stays answerable.
+#
+# THE NAME IS PAYLOAD, NEVER KEY. This is the whole argument of the legal-entity design in
+# one line. `buyer` was unusable as an identifier precisely because it is a display name --
+# `commonspirit_health` still delivers "Dignity Health", and `delphi_tech` delivers both
+# "Guidant Global, Inc." and "BorgWarner". Putting a registered name in the key here would
+# rebuild that defect one layer up, where it would be harder to see.
+name: legal_entity_details
+kind: sat
+domain: reference
+parents: [legal_entity]
+sensitivity: internal
+
+# PAYLOAD ORDER IS A CONTRACT. New attributes are appended at the END only -- the hashdiff
+# is computed over this list, so reordering it rewrites every version of every row.
+payload:
+  # As registered, not as traded. "Lorien" is a brand; the entity behind it has a longer
+  # name and a number, and only the pair identifies it.
+  - registered_name
+  # Unique WITHIN a jurisdiction and not across one, which is why both are here and why
+  # neither alone was made the hub's business key. See the open question in
+  # docs/legal_entity_questions.html -- whether the key should become
+  # (jurisdiction, company_number) is a decision for business and legal, not for this file.
+  - company_number
+  # ISO 3166-1 alpha-2. The roster already carries GB, IE, US, AU, NL and BE.
+  - jurisdiction
+  # THE ATTRIBUTE MOST LIKELY TO MOVE, and the reason this is a satellite at all. A dormant
+  # or dissolved company still owns history and must still resolve, so it is recorded rather
+  # than filtered -- Gold decides what to show, the vault records what was true.
+  - registered_status
+
+descriptions:
+  registered_name: >-
+    The company's name as registered, not as traded. "Lorien" is a brand; the entity behind
+    it has a longer name. Recorded as an attribute so a rename is a new version rather than
+    a new company.
+  company_number: >-
+    The company's registration number in its jurisdiction. Unique within that jurisdiction
+    and not across one, which is why both are recorded.
+  jurisdiction: >-
+    Where the company is registered, ISO 3166-1 alpha-2. GB, IE, US, AU, NL and BE appear
+    in the roster today.
+  registered_status: >-
+    Active, dormant or dissolved. Recorded and never filtered: a dissolved company still
+    owns history and must still resolve. Gold decides what to show.
+
+sources:
+  # PLACEHOLDER, like the rest of this family, and for the same reason: the roster does not
+  # exist yet. All four entities land together or none of them do -- a satellite with no hub
+  # to hang from is not a partial delivery, it is a broken one.
+  #
+  # Repoint this AND add legal_entity_details/CLIENT_PORTAL to active_sources in the same
+  # change that repoints the hub.
+  - name: CLIENT_PORTAL
+    bronze_table: PLACEHOLDER.reference.legal_entity
+    # PARENT_KEYS, NOT key_columns, AND THE GATE INSISTED. The key_columns fallback scopes
+    # the parent FK by the SATELLITE's own key_style, which defaults to federated -- so the
+    # foreign key hashed under 'CLIENT_PORTAL' while hub_legal_entity, being authored,
+    # hashes its own key under nothing. A well-formed value that could never join, on every
+    # one of the seven targets. Declaring the parent explicitly takes the path that reads
+    # the PARENT's key_style, which is the only one that can be right.
+    parent_keys:
+      legal_entity: [legal_entity_code]
+    payload:
+      - registered_name
+      - company_number
+      - jurisdiction
+      - registered_status
+    # THE BUSINESS CLOCK, AND IT IS REQUIRED. Declaring nothing here makes applied_dts NULL
+    # and the `_v1` view reports every version as current -- measured on Fieldglass four days
+    # ago, where all four candidate source clocks were disqualified and the answer became a
+    # request to Bronze rather than a guess. A mastered roster has no such excuse: whoever
+    # maintains it knows when a change took effect, so it is asked for up front.
+    applied_dts_column: effective_from

@@ -1,0 +1,415 @@
+bronze_tables:
+  01_usnc_bronze_dev.bullhorn_native_raw.joborders:
+    declared_not_required:
+      dedup_order:
+      - input_file_name
+      - timestamp
+    read_by:
+    - job_request/BULLHORN_EU
+    - job_request_details/BULLHORN_EU
+    requires:
+      applied_dts:
+      - datelastmodified
+      business_keys:
+      - joborderid
+      cdc_op: []
+      dedup_by:
+      - joborderid
+      manifest: []
+      parent_keys:
+      - joborderid
+      payload:
+      - city
+      - countrycode
+      - dateclosed
+      - employmenttype
+      - numopenings
+      - status
+      - title
+      required_casts: {}
+      transaction_key: []
+  01_usnc_bronze_dev.great_plains_raw.gl00100:
+    declared_not_required:
+      dedup_order:
+      - dex_row_ts
+      - input_file_name
+    read_by:
+    - ledger_account/GP_US
+    requires:
+      applied_dts:
+      - dex_row_ts
+      business_keys:
+      - actindx
+      - input_db
+      cdc_op: []
+      dedup_by:
+      - actindx
+      - input_db
+      manifest: []
+      parent_keys: []
+      payload: []
+      required_casts: {}
+      transaction_key: []
+  01_usnc_bronze_dev.great_plains_raw.gl20000:
+    declared_not_required:
+      dedup_order:
+      - dex_row_ts
+      - input_file_name
+    read_by:
+    - accounting_journal/GP_US
+    - general_journal_line/GP_US
+    - operating_company/GP_US
+    requires:
+      applied_dts:
+      - dex_row_ts
+      business_keys:
+      - input_db
+      - jrnentry
+      - openyear
+      cdc_op: []
+      dedup_by:
+      - input_db
+      - jrnentry
+      - openyear
+      - seqnumbr
+      manifest: []
+      parent_keys:
+      - actindx
+      - input_db
+      - jrnentry
+      - openyear
+      payload:
+      - back_out_je
+      - correcting_je
+      - crdtamnt
+      - curncyid
+      - debitamt
+      - denxrate
+      - openyear
+      - orcrdamt
+      - ordbtamt
+      - original_je
+      - periodid
+      - seqnumbr
+      - trxsorce
+      - voided
+      - xchgrate
+      required_casts:
+        crdtamnt:
+        - DECIMAL(18,2)
+        debitamt:
+        - DECIMAL(18,2)
+        orcrdamt:
+        - DOUBLE
+        ordbtamt:
+        - DOUBLE
+      transaction_key:
+      - seqnumbr
+  01_usnc_bronze_dev.great_plains_raw.gl30000:
+    declared_not_required:
+      dedup_order:
+      - dex_row_ts
+      - input_file_name
+    read_by:
+    - accounting_journal/GP_US_HIST
+    - general_journal_line_closed_year/GP_US_HIST
+    - operating_company/GP_US_HIST
+    requires:
+      applied_dts:
+      - dex_row_ts
+      business_keys:
+      - hstyear
+      - input_db
+      - jrnentry
+      cdc_op: []
+      dedup_by:
+      - hstyear
+      - input_db
+      - jrnentry
+      - seqnumbr
+      manifest: []
+      parent_keys:
+      - actindx
+      - hstyear
+      - input_db
+      - jrnentry
+      payload:
+      - back_out_je
+      - correcting_je
+      - crdtamnt
+      - curncyid
+      - debitamt
+      - denxrate
+      - hstyear
+      - orcrdamt
+      - ordbtamt
+      - original_je
+      - periodid
+      - seqnumbr
+      - trxsorce
+      - voided
+      - xchgrate
+      required_casts:
+        crdtamnt:
+        - DECIMAL(18,2)
+        debitamt:
+        - DECIMAL(18,2)
+        orcrdamt:
+        - DOUBLE
+        ordbtamt:
+        - DOUBLE
+      transaction_key:
+      - seqnumbr
+  01_usnc_bronze_dev.great_plains_raw.pm00200:
+    declared_not_required:
+      dedup_order:
+      - dex_row_ts
+      - input_file_name
+    read_by:
+    - supplier/GP_VENDOR
+    - supplier_details/GP_VENDOR
+    requires:
+      applied_dts:
+      - dex_row_ts
+      business_keys:
+      - input_db
+      - vendorid
+      cdc_op: []
+      dedup_by:
+      - input_db
+      - vendorid
+      manifest: []
+      parent_keys:
+      - input_db
+      - vendorid
+      payload:
+      - curncyid
+      - pymtrmid
+      - venddba
+      - vendname
+      - vendshnm
+      - vendstts
+      required_casts: {}
+      transaction_key: []
+  01_usnc_bronze_dev.great_plains_raw.rm00101:
+    declared_not_required:
+      dedup_order:
+      - dex_row_ts
+      - input_file_name
+    read_by:
+    - client/GP_CUSTOMER
+    - client_details/GP_CUSTOMER
+    requires:
+      applied_dts:
+      - dex_row_ts
+      business_keys:
+      - custnmbr
+      cdc_op: []
+      dedup_by:
+      - custnmbr
+      manifest: []
+      parent_keys:
+      - custnmbr
+      payload:
+      - curncyid
+      - custclas
+      - custname
+      - inactive
+      - pymtrmid
+      required_casts: {}
+      transaction_key: []
+  01_usnc_bronze_dev.great_plains_raw.rm00102:
+    declared_not_required:
+      dedup_order: []
+    read_by:
+    - client_address/GP_CUSTOMER
+    requires:
+      applied_dts:
+      - dex_row_ts
+      business_keys: []
+      cdc_op: []
+      dedup_by: []
+      manifest: []
+      parent_keys:
+      - custnmbr
+      payload:
+      - address1
+      - address2
+      - adrscode
+      - city
+      - cntcprsn
+      - country
+      - phone1
+      required_casts: {}
+      transaction_key: []
+  01_usnc_bronze_dev.hubspot_raw.companies:
+    declared_not_required:
+      dedup_order:
+      - hs_lastmodifieddate
+    read_by:
+    - client_legal_entity_hierarchy/HUBSPOT
+    - client_legal_entity_hierarchy_effectivity/HUBSPOT
+    - legal_entity/HUBSPOT
+    - legal_entity_profile/HUBSPOT
+    requires:
+      applied_dts:
+      - hs_lastmodifieddate
+      business_keys:
+      - hs_object_id
+      cdc_op: []
+      dedup_by:
+      - hs_object_id
+      manifest: []
+      parent_keys:
+      - hs_object_id
+      payload:
+      - annualrevenue
+      - city
+      - company_industry
+      - country
+      - domain
+      - hs_industry_group
+      - lifecyclestage
+      - name
+      - numberofemployees
+      - regional_group
+      - regional_group_global
+      - state
+      required_casts: {}
+      transaction_key: []
+  01_usnc_bronze_dev.sap_fieldglass_raw.invoices:
+    declared_not_required:
+      dedup_order:
+      - invoice_submit_date
+    read_by:
+    - client/FIELDGLASS_US
+    - invoice/FIELDGLASS_US
+    - invoice_header/FIELDGLASS_US
+    - invoice_line/FIELDGLASS_US
+    - invoice_line_details/FIELDGLASS_US
+    - supplier/FIELDGLASS_US
+    - worker/FIELDGLASS_US
+    requires:
+      applied_dts:
+      - invoice_submit_date
+      business_keys:
+      - invoice_id
+      - supplier_code
+      - worker_id
+      cdc_op: []
+      dedup_by:
+      - invoice_id
+      - supplier_code
+      - worker_id
+      manifest: []
+      parent_keys:
+      - invoice_id
+      - supplier_code
+      - worker_id
+      payload:
+      - currency
+      - gross_invoice_amount
+      - hours
+      - invoice_line_item_amount_supplier
+      - invoice_line_item_ref
+      - invoice_line_item_type
+      - invoice_submit_date
+      - invoice_type
+      - msp_line_amount
+      - net_invoice_amount
+      - original_invoice_id
+      - project_code
+      - rate_category
+      - task_code
+      - tax_amount
+      - weekending_date
+      - worker_first_name
+      - worker_last_name
+      required_casts:
+        gross_invoice_amount:
+        - DECIMAL(18,2)
+        invoice_line_item_amount_supplier:
+        - DECIMAL(18,2)
+        msp_line_amount:
+        - DECIMAL(18,2)
+        net_invoice_amount:
+        - DECIMAL(18,2)
+        tax_amount:
+        - DECIMAL(18,2)
+      transaction_key: []
+  01_usnc_bronze_dev.ukg_raw.gl:
+    declared_not_required:
+      dedup_order:
+      - input_file_name
+      - timestamp
+    read_by:
+    - accounting_journal/UKG_US
+    - journal_line/UKG_US
+    - ledger_account/UKG_US
+    - operating_company/UKG_US
+    - pay_period/UKG_US
+    requires:
+      applied_dts:
+      - paycheckdate
+      business_keys:
+      - account
+      - batchid
+      - company
+      - payperiodenddate
+      - payperiodstartdate
+      cdc_op: []
+      dedup_by:
+      - account
+      - batchid
+      - company
+      - payperiodenddate
+      - payperiodstartdate
+      - userdefined1
+      manifest: []
+      parent_keys:
+      - account
+      - batchid
+      - company
+      - payperiodenddate
+      - payperiodstartdate
+      payload:
+      - credit
+      - currencyid
+      - debit
+      - paycheckdate
+      - reference
+      - sourcedocument
+      - transactiontype
+      - userdefined1
+      required_casts:
+        credit:
+        - DECIMAL(18,2)
+        debit:
+        - DECIMAL(18,2)
+      transaction_key:
+      - userdefined1
+generated_from: metadata/entities/*.yml
+limits:
+  declared_not_required: Each table's declared_not_required (a sibling of requires,
+    not a member of it) lists columns the model records against a binding on that
+    table without asking Bronze to guarantee them -- today only dedup_order, which
+    is declared per binding but not applied by the streaming path, and may include
+    Spark's own file-metadata column rather than anything Bronze holds.
+  expectation_columns_not_listed: This lists the columns the MODEL reads, plus the
+    two compiled-in key-safety rules. Governed data-quality rules live in control.ref_dq_expectation
+    and their SQL is read at pipeline runtime, where it may name ANY source column.
+    So a change to a column only a governed rule references can break a load this
+    document never mentioned. Reading those rules here would make a committed, offline-reproducible
+    artefact depend on workspace state, so the gap belongs to a live check instead.
+  types_are_requirements: Every type here is a type Silver REQUIRES, never an observation
+    about what Bronze holds. Bronze's own column types are not modelled in this repository,
+    so this document cannot and does not describe them.
+merge_note: Where several read_by bindings on one table disagree about applied_dts,
+  cdc_op or manifest, every distinct value required is listed here, but NOT attributed
+  to which binding needs which -- the merge unions VALUES, not bindings. As generated,
+  no two active bindings on the same table disagree on any of these three roles (every
+  populated list below has exactly one entry); if that ever changes, cross-reference
+  read_by against metadata/entities/*.yml to find which binding wants which value.
+standing: This is Silver's stated dependency on Bronze, generated from metadata/entities/*.yml.
+  It is NOT an agreement Bronze has countersigned.
+target: dev

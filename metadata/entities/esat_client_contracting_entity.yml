@@ -1,0 +1,36 @@
+# WHEN EACH CONTRACTING RELATIONSHIP HELD, driven on the CLIENT.
+#
+# This is where Amy's "only 1 contracting entity per client" becomes enforceable: for any
+# client, at most one contracting relationship is open at a time. Driving on the client is
+# what makes that expressible; driving on our entity would say "one client per contracting
+# company", which is false -- Guidant Global Inc contracts with many clients.
+#
+# IT MUST BE DATED BECAUSE SHE SAYS IT MOVES. The legal entity unification changes which of
+# our companies contracts with a client. Closing and reopening as inserts is what keeps
+# "who did we contract through last year" answerable after it has moved.
+name: client_contracting_entity_effectivity
+kind: esat
+domain: reference
+sensitivity: internal
+
+parents: [client_contracting_entity]
+payload: [relationship_status]
+driving_key: engaging_legal_entity_hk
+
+notes: >
+  Effectivity of each client/contracting-entity relationship, driven on the client. At most
+  one open per client at a time.
+
+descriptions:
+  relationship_status: >-
+    Whether this contracting relationship is in force. A relationship that ends is
+    delivered as a new row saying so, never an update.
+
+sources:
+  - name: CLIENT_PORTAL
+    bronze_table: PLACEHOLDER.reference.client_contracting_entity
+    parent_keys:
+      engaging: [client_legal_entity_code]
+      contracting: [contracting_legal_entity_code]
+    payload: [relationship_status]
+    applied_dts_column: effective_from

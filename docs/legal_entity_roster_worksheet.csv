@@ -1,0 +1,25 @@
+brand,jurisdiction,jurisdiction_source,country_domains,brand_domains,likely_group__CHECK,in_vault_as_source,kind__CHECK,legal_entity_name__FILL,company_number__FILL,parent_legal_entity__FILL,legal_entity_code__FILL,roles__FILL,notes__FILL,on_official_group_page,operating_footprint_stated
+barpellam,GB,CONFIRMED 5 Sep,,barpellam.com,impellam [CONFIRMED 5 Sep],,brand,,,,,,,no,
+bartech,US,CONFIRMED 5 Sep,,bartechgroup.com bartechstaffing.com,impellam,,brand,,,,,,,yes,North America; engineering
+between,NL,CONFIRMED 5 Sep,,between.com,headfirst,,brand,,,,,,,no,
+carbon60,GB,CONFIRMED 5 Sep,,carbon60global.com,impellam,,brand,,,,,,,yes,UK & Europe; project engineering
+comensura,AU,CONFIRMED 5 Sep,comensura.com.au,,impellam,,brand,,,,,,"COMPANY in UK and Australia [CONFIRMED 5 Sep] — two jurisdictions, so probably two registered entities; confirm whether this domain is its own or a shared brand site",yes,no country stated; VMS platform (c.net)
+comensura,GB,CONFIRMED 5 Sep,comensura.co.uk,,impellam,,brand,,,,,,"COMPANY in UK and Australia [CONFIRMED 5 Sep] — two jurisdictions, so probably two registered entities; confirm whether this domain is its own or a shared brand site",yes,no country stated; VMS platform (c.net)
+fastflex,NL,ccTLD,fastflex.nl,,headfirst,,brand,,,,,,,no,
+guidant_global,GB,CONFIRMED 5 Sep,,guidantglobal.com,impellam [CONFIRMED 5 Sep],,brand,,,,,,confirm whether the UK entity holds any VMS account directly,yes,"80+ countries, 200,000+ engagements; MSP/RPO/SOW"
+guidant_global,US,CONFIRMED 5 Sep,,guidantglobal.com,impellam [CONFIRMED 5 Sep],,brand,,,,,,"appears as `buyer` on delphi_tech's Fieldglass feed as ""Guidant Global, Inc."" — Inc. is a US corporate form, so THIS is probably the entity holding that account; confirm before the same-as link resolves it",yes,"80+ countries, 200,000+ engagements; MSP/RPO/SOW"
+headfirst,NL,ccTLD,headfirst.nl,headfirst.global headfirst.group,headfirst,,brand,,,,,,,no,
+impellam,GB,CONFIRMED 5 Sep,,impellam.com,impellam,,group_parent,,,,,,,no,
+irishrecruitment,GB,CONFIRMED 5 Sep,,,impellam [CONFIRMED 5 Sep],,brand,,,,,,,no,
+irishrecruitment,IE,CONFIRMED 5 Sep,irishrecruitment.ie,,impellam [CONFIRMED 5 Sep],,brand,,,,,,,no,
+lorien,GB,CONFIRMED 5 Sep,lorien.co.uk,lorienglobal.com,impellam,,brand,,,,,,,yes,"UK, Europe and North America; technology and digital talent"
+lorien,IE,CONFIRMED 5 Sep,,lorienglobal.com,impellam,,brand,,,,,,,yes,"UK, Europe and North America; technology and digital talent"
+myler,NL,ccTLD,myler.nl,,headfirst,,brand,,,,,,,no,
+prounity,BE,CONFIRMED 5 Sep,,ext.pro-unity.com pro-unity.com,headfirst,PROUNITY_EU,platform,,,,,,SUBDOMAIN not a brand domain — ext. is a platform hostname,no,
+srg,GB,CONFIRMED 5 Sep,,srgsynergy.com srgtalent.com,impellam,,brand,,,,,,,yes,"UK, Europe and North America; life sciences, clinical, engineering"
+srg,IE,CONFIRMED 5 Sep,srgtalent.ie,srgsynergy.com srgtalent.com,impellam,,brand,,,,,,,yes,"UK, Europe and North America; life sciences, clinical, engineering"
+stackops,NL,ccTLD,stackops.nl,,headfirst,,brand,,,,,,,no,
+staffingms,US,CONFIRMED 5 Sep,,staffingms.com,impellam [CONFIRMED 5 Sep],,brand,,,,,,,no,
+starapple,NL,ccTLD,starapple.nl,,headfirst,,brand,,,,,,,no,
+sterksen,NL,ccTLD,sterksen.nl,sterksen.com,headfirst,,brand,,,,,,,no,
+striive,NL,CONFIRMED 5 Sep,,striive.com,headfirst [CONFIRMED 5 Sep],STRIIVE_EU,platform,,,,,,"PLATFORM — a HeadFirst platform, and an ACTIVE source system in this vault. Which legal entity OPERATES it is the roster question, not what it is called",no,

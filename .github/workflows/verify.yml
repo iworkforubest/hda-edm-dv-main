@@ -1,0 +1,143 @@
+# Offline gates for the HFIG Data Vault Accelerator.
+#
+# WHY THIS EXISTS: verify_repo.py was dead on main for days (DEF-57). It exits at the
+# first uncaught error, so a single stale assertion stopped every check below it from
+# running, and the drift underneath went unseen until someone happened to run it by
+# hand. It was run by a human following DEPLOY.md and by nothing else. A gate nobody
+# runs rots.
+#
+# THIS JOB IS DELIBERATELY OFFLINE. It touches no Databricks workspace, needs no
+# profile, and takes no secrets. Every gate that reads a live lake -- hash parity,
+# append-only, mask survival, loop-1 reconciliation -- runs in the vault_load job
+# against a named target, because those need a workspace and this must never pick one.
+# Do NOT add credentials here: the repo's standing rule is that a profile is passed
+# explicitly and never auto-selected, and CI cannot satisfy that.
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Added 23 Sep 2026 with the move to hfg.ghe.com/data-engineering. The first push
+  # to a brand-new repository creates the default branch without firing `push`, so the
+  # gates registered as active and had never once run -- a green history that meant
+  # nothing because nothing had executed. A manual trigger makes "has this actually
+  # run here?" answerable without inventing a commit to answer it.
+  workflow_dispatch:
+
+# A superseded push has nothing to tell us; let the newest commit answer.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  offline-gates:
+    name: offline gates (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # Both versions report. fail-fast would hide a floor-only break behind a
+      # failure on the newer interpreter, which is the more likely one to be noticed.
+      fail-fast: false
+      matrix:
+        # 3.11 is pyproject's declared floor -- running it is what keeps
+        # requires-python honest rather than aspirational. 3.13 is the modern rung.
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      # Pinned to exact releases, not floating majors. A floating tag lets an external
+      # repository change what this job runs without a commit here saying so -- the same
+      # pattern DEF-47 refused for the isolation ALTER. Bump deliberately.
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          # Both matrix legs run in parallel and would otherwise race to save the SAME
+          # cache key, so every run carried a "another job may be creating this cache"
+          # annotation. A build that always warns teaches its readers to skip warnings,
+          # which is how a real one gets missed.
+          cache-suffix: py${{ matrix.python-version }}
+          # The Astral mirror 404'd on 4/4 legs across two runs, then fell back to
+          # GitHub Releases -- so it is a standing failure, not a hiccup, and left an
+          # annotation on every run. Go straight to the source it was falling back to
+          # anyway; github-token defaults to ${{ github.token }}, so it is authenticated.
+          download-from-astral-mirror: false
+
+      # --frozen resolves from uv.lock without updating it, so CI runs the dependency
+      # set that was reviewed, and a lockfile that has drifted out of sync with
+      # pyproject.toml fails here rather than silently resolving to something else.
+      # These are the same two commands README.md tells a developer to run.
+      - name: Structural correctness (tests/test_accelerator.py)
+        run: uv run --frozen --python ${{ matrix.python-version }} python tests/test_accelerator.py
+
+      # Runs LAST because it is the superset: it re-runs the suite above as a
+      # subprocess, and adds bundle wiring, target/host drift, the governance render,
+      # and the conflict-marker sweep. Running the suite on its own first means a
+      # structural break reports as itself instead of as one line inside 597 checks.
+      - name: Repo integrity (verify_repo.py)
+        run: uv run --frozen --python ${{ matrix.python-version }} python verify_repo.py
+
+  # A SEPARATE JOB, NOT A MATRIX STEP. This one needs pyspark and a JVM, takes minutes
+  # rather than seconds, and starts a local Spark session -- none of which the offline
+  # gates should have to carry. Running it twice across the interpreter matrix would
+  # double the slowest thing in CI to re-prove the same digests.
+  #
+  # WHY IT IS HERE AT ALL. src/accelerator/factory.py cannot be imported without pyspark,
+  # so the offline suite stubs pyspark and factory.py was executed by no test in this
+  # repo -- its key-derivation branches were verified by reading them. This job runs
+  # factory._stage_full for all 36 bindings and compares every digest Spark produces
+  # against the pure-Python reference.
+  #
+  # IT IS NOT A SUBSTITUTE FOR GATE ZERO. checks/hash_parity_check.py runs in the
+  # workspace, on the real runtime, and it is the authority on what this lake's digests
+  # are. Local OSS Spark agreeing is necessary, not sufficient.
+  spark-derivation:
+    name: key derivation in real Spark
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          cache-suffix: spark
+          download-from-astral-mirror: false
+
+      # pyspark needs a JVM and pip cannot supply one. Pinned to a major, like every
+      # other action here: a floating JDK would let an upstream change what this runs.
+      - uses: actions/setup-java@v5.0.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # 3.11 is the floor, and the floor is the interesting rung for a suite that runs
+      # once: if the derivation works there it works on 3.13.
+      - name: Key derivation in Spark (tests/test_spark_derivation.py)
+        run: >-
+          uv run --frozen --python 3.11 --extra spark
+          python tests/test_spark_derivation.py
+
+      # DEF-58: THE AME RULES HAVE TWO IMPLEMENTATIONS, AND THIS IS WHAT MAKES THAT SAFE.
+      # metadata/source_unions.yml's fieldglass_us_invoice_gie profile is a SQL port of
+      # src/accelerator/invoice_rules.py, permitted only because the two are measured
+      # against tests/golden_ame_vectors.json. The offline suite proves the Python side
+      # and proves the profile's SQL is character-for-character the gate's own templates.
+      # Only real Spark can prove what those templates EVALUATE to.
+      #
+      # IT RUNS HERE RATHER THAN NOWHERE. checks/hash_parity_check.py's workspace task is
+      # the authority for hashing and vault_job.yml runs it on every load; this satellite
+      # is not active in any lake yet, so a gate wired only into that job would not run
+      # until it is. A gate that runs nowhere is the unfailable shape this repo keeps
+      # meeting. Local OSS Spark agreeing is necessary, not sufficient -- when the
+      # satellite is switched on, this belongs in vault_job.yml too.
+      - name: AME rule parity, SQL against Python (checks/ame_parity_check.py)
+        run: >-
+          uv run --frozen --python 3.11 --extra spark
+          python checks/ame_parity_check.py

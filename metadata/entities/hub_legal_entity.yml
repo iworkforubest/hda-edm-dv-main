@@ -1,0 +1,101 @@
+# THE HUB THAT MAKES `buyer` ANSWERABLE.
+#
+# Every VMS feed carries an account-holder name in a column called `buyer`, and that
+# column is three different things depending on the tenant:
+#
+#   * the end client, spelled as they spell it        -- "Albertsons Companies, Inc"
+#   * the end client, spelled as they USED to         -- "Dignity Health", pre-merger
+#   * one of OUR OWN operating companies              -- "Guidant Global, Inc."
+#
+# The third is not an anomaly. Where an Impellam or HeadFirst company runs a client's
+# contingent workforce programme, that company holds the VMS account, so the account
+# holder is us. Guidant Global appears as the `buyer` on Delphi Technologies' job
+# postings because Guidant runs Delphi's programme.
+#
+# NONE OF THIS IS FIXED AT LOAD TIME, and that is deliberate. The raw vault records what
+# the source sent -- a feed that says "Guidant Global, Inc." is a feed that said that,
+# and rewriting it on the way in would destroy the evidence and put a business rule
+# inside a storage layer. Resolution belongs above: this hub is the conformed roster,
+# hal_client_legal_entity_hierarchy carries who owns whom on the CLIENT side, the
+# consolidation family carries the group's own structure, and Gold projects whichever view a
+# use case needs. See docs/legal_entity_design.md.
+#
+# WHY AUTHORED. key_style: authored means the key is (legal_entity_code) with no source
+# prefix, so the same company is one row no matter which feed observed it. That is the
+# entire point -- a federated key would give us one Guidant per VMS. HFIG assigns the
+# code; no third party can, because a group's legal structure is our own fact.
+#
+# THE ROSTER DOES NOT EXIST YET, so the binding below is a PLACEHOLDER and this entity is
+# not in active_sources. It needs one row per company across Impellam Group and HeadFirst
+# Group, plus the client legal entities the feeds name. That list is a business input, not
+# a query. Until it arrives this file is a declared shape and loads nothing -- which is
+# the honest state, and the same one sat_job_request_details/FIELDGLASS_US is in.
+name: legal_entity
+kind: hub
+domain: reference
+sensitivity: internal
+
+# ONE CODE, NO SOURCE SCOPE. Deliberately not (source, code): the whole purpose is that
+# Fieldglass's "Guidant Global, Inc." and GP's customer record resolve to ONE row.
+key_style: authored
+business_keys: [legal_entity_code]
+
+notes: >
+  Conformed roster of legal entities: every company in Impellam Group and HeadFirst Group,
+  and every client legal entity a VMS feed names. Authored keys, so one company is one row
+  across every source. Ownership and brand relationships are NOT held here -- they change,
+  and they live on hal_client_legal_entity_hierarchy (clients) or the consolidation
+  family (our own group), each with an effectivity satellite. Resolution
+  from an observed `buyer` string to a code happens in the business vault, never at load.
+
+descriptions:
+  legal_entity_code: >-
+    The identifier HFIG assigns to a legal entity, stable across every rename and rebrand.
+    Authored rather than federated, so one company is one row whatever feed observed it.
+    Whether this stays an HFIG-assigned code or becomes (jurisdiction, company_number) is
+    LEG-1 in docs/legal_entity_questions.html and is not yet decided.
+
+sources:
+
+  # THE REAL SOURCE, declared 25 September 2026. Hubspot is the master for client and
+  # prospect companies (Eva's team owns it), and it is the only reference-shaped feed that
+  # exists in this lake -- 01_usnc_bronze_dev holds no Workday, portal or reference schema
+  # at all, which is why every binding in this family was a placeholder.
+  #
+  # `hs_object_id` IS TAKEN AS THE LEGAL ENTITY CODE, and that is the assumption to
+  # challenge first if anything here looks wrong. hub_legal_entity is key_style: authored,
+  # so the key carries no source scope -- two sources naming the same code produce the same
+  # hash, deliberately. Today Hubspot is the only source, so the identifier space is
+  # unambiguous. IF A SECOND SOURCE OF LEGAL ENTITIES EVER LANDS with its own codes, this
+  # hub needs a reference_type business-key position first -- exactly what hub_organisation
+  # carries for the same reason across its six sources -- or the same company will hold two
+  # keys. Not added now because there is one source and speculative key positions are how a
+  # model becomes unreadable.
+  #
+  # PENDING EVA'S CONFIRMATION that hs_object_id is durable and never reissued. Recorded as
+  # a risk in the design spec rather than assumed away: keying the vault on a reissued
+  # surrogate means re-keying every row that references it.
+  - name: HUBSPOT
+    bronze_table: 01_usnc_bronze_dev.hubspot_raw.companies
+    key_columns: [hs_object_id]
+    # A FULL SNAPSHOT FEED, SO DEDUP IS REQUIRED, not defensive. Measured: 7,328 rows carry
+    # 2,457 distinct companies -- three deliveries each carrying every company, 2,444 ids
+    # appearing more than once. Without this the hub would stage the same company three
+    # times on every load.
+    #
+    # Ordered by the SOURCE's own modification clock rather than the ingest timestamp, so
+    # the winner is the latest thing Hubspot said about the company, not the copy that
+    # happened to land last. 444 ids differ by that clock across the three snapshots, so it
+    # is a real discriminator and not a constant.
+    dedup_by: [hs_object_id]
+    dedup_order: [hs_lastmodifieddate]
+    # THE BUSINESS CLOCK. ISO-8601 with Z, and all 7,328 rows parse as TIMESTAMP with zero
+    # failures -- checked before declaring it, because an applied_dts that silently casts to
+    # NULL makes the _v1 view report every version as current.
+    applied_dts_column: hs_lastmodifieddate
+    # DECLARED AS THE REAL SLA, AND IT WILL REPORT A BREACH TODAY. The feed delivered three
+    # times -- 4, 11 and 18 December 2025 -- and nothing in the 281 days since. Daily is what
+    # a CRM extract is meant to be; declaring that makes the silence visible, where an
+    # exemption would hide it behind a decision that looks deliberate. Same call already
+    # taken for the Fieldglass invoice feed.
+    freshness_sla_hours: 24

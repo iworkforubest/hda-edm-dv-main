@@ -1,0 +1,35 @@
+# ONE HUB FOR EVERY WORKDAY REFERENCE VALUE, QUALIFIED BY ITS TYPE.
+#
+# The customer-invoice DCDD alone names hundreds of reference-ID types across its 108
+# CHECKREFERENCES fields. A hub each would mean hundreds of hubs, hundreds of pipeline
+# branches and hundreds of tables carrying one column of interest.
+#
+# FOLDING UNDER A TYPE QUALIFIER IS ALREADY AN ACCEPTED CALL HERE. metadata/volumes.yml
+# records it: "hub_company and hub_client folded into ONE hub_organisation: legal
+# entities (11 input_db codes) plus clients, qualified by reference_type."
+#
+# THE GRAIN IS HONEST. A Tax_Code_ID and a Currency_Reference_ID are not the same
+# business object, but they are the same KIND of object: an identifier Workday issues,
+# and may later withdraw. The natural key genuinely is the pair.
+#
+# TYPES THIS VAULT ALREADY MODELS ARE NOT LANDED HERE -- see
+# metadata/workday/reference_exclusions.yml and the three checks that hold it to the
+# inventory.
+name: wd_reference
+kind: hub
+domain: reference
+key_style: authored
+business_keys: [reference_id_type, reference_id]
+sensitivity: internal
+
+sources:
+  - name: WORKDAY
+    # INTERIM LANDING. Bronze has no workday schema yet; when it does this binding moves
+    # to 01_usnc_bronze_dev.workday_raw.reference_values and workday_landing is dropped.
+    # NOT stg_: that prefix means the SDP pipeline's append log for a staged entity, and
+    # DEF-42 rests on it.
+    bronze_table: 02_usnc_silver_edm_dev.workday_landing.wd_reference_snapshot
+    key_columns: [reference_id_type, reference_id]
+    applied_dts_column: snapshot_dts
+    dedup_by: [reference_id_type, reference_id]
+    dedup_order: [snapshot_dts]

@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HFIG Data Vault — party",
+    "subtitle": "Generated from metadata/entities/. Never hand-authored.",
+    "viewBox": [
+      2100,
+      1312
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [
+      770,
+      108
+    ],
+    "cols": 2,
+    "gapX": 96,
+    "gapY": 28,
+    "cellW": 232,
+    "cellH": 68
+  },
+  "components": [
+    {
+      "id": "hub_client",
+      "type": "database",
+      "label": "client",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 0,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_operating_company",
+      "type": "database",
+      "label": "operating_company",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 1,
+      "size": [
+        133,
+        68
+      ]
+    },
+    {
+      "id": "hub_supplier",
+      "type": "database",
+      "label": "supplier",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 2,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_worker",
+      "type": "database",
+      "label": "worker",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 3,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "lnk_client_job_request",
+      "type": "external",
+      "label": "client_job_request",
+      "sublabel": "link",
+      "tag": "internal",
+      "col": 1,
+      "row": 0,
+      "size": [
+        139,
+        68
+      ]
+    },
+    {
+      "id": "msat_client_address_gp_customer",
+      "type": "database",
+      "label": "client_address",
+      "sublabel": "msat · gp_customer",
+      "tag": "internal",
+      "col": 1,
+      "row": 1,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "sat_client_details_gp_customer",
+      "type": "database",
+      "label": "client_details",
+      "sublabel": "sat · gp_customer",
+      "tag": "internal",
+      "col": 1,
+      "row": 2,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_general_journal_line",
+      "type": "external",
+      "label": "general_journal_line",
+      "sublabel": "nhl",
+      "tag": "financial",
+      "col": 1,
+      "row": 3,
+      "size": [
+        152,
+        68
+      ]
+    },
+    {
+      "id": "nhl_general_journal_line_closed_year",
+      "type": "external",
+      "label": "general_journal_line_closed_year",
+      "sublabel": "nhl",
+      "tag": "financial",
+      "col": 1,
+      "row": 4,
+      "size": [
+        232,
+        68
+      ]
+    },
+    {
+      "id": "nhl_journal_line",
+      "type": "external",
+      "label": "journal_line",
+      "sublabel": "nhl",
+      "tag": "financial",
+      "col": 1,
+      "row": 5,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_timesheet_line",
+      "type": "external",
+      "label": "timesheet_line",
+      "sublabel": "nhl",
+      "tag": "financial",
+      "col": 1,
+      "row": 6,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_invoice_line",
+      "type": "external",
+      "label": "invoice_line",
+      "sublabel": "nhl",
+      "tag": "internal",
+      "col": 1,
+      "row": 7,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_payroll_detail",
+      "type": "external",
+      "label": "payroll_detail",
+      "sublabel": "nhl",
+      "tag": "restricted",
+      "col": 1,
+      "row": 8,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "sat_supplier_details_gp_vendor",
+      "type": "database",
+      "label": "supplier_details",
+      "sublabel": "sat · gp_vendor",
+      "tag": "internal",
+      "col": 1,
+      "row": 9,
+      "size": [
+        126,
+        68
+      ]
+    },
+    {
+      "id": "msat_worker_skills_hr_eu",
+      "type": "database",
+      "label": "worker_skills",
+      "sublabel": "msat · hr_eu",
+      "tag": "internal",
+      "col": 1,
+      "row": 10,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "msat_worker_skills_striive_eu",
+      "type": "database",
+      "label": "worker_skills",
+      "sublabel": "msat · striive_eu",
+      "tag": "internal",
+      "col": 1,
+      "row": 11,
+      "size": [
+        120,
+        68
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "hub_client",
+      "to": "msat_client_address_gp_customer"
+    },
+    {
+      "from": "hub_client",
+      "to": "sat_client_details_gp_customer"
+    },
+    {
+      "from": "hub_client",
+      "to": "lnk_client_job_request"
+    },
+    {
+      "from": "hub_operating_company",
+      "to": "nhl_general_journal_line"
+    },
+    {
+      "from": "hub_operating_company",
+      "to": "nhl_general_journal_line_closed_year"
+    },
+    {
+      "from": "hub_client",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "hub_supplier",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "hub_worker",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "hub_operating_company",
+      "to": "nhl_journal_line"
+    },
+    {
+      "from": "hub_operating_company",
+      "to": "nhl_payroll_detail"
+    },
+    {
+      "from": "hub_worker",
+      "to": "nhl_payroll_detail"
+    },
+    {
+      "from": "hub_supplier",
+      "to": "sat_supplier_details_gp_vendor"
+    },
+    {
+      "from": "hub_client",
+      "to": "nhl_timesheet_line"
+    },
+    {
+      "from": "hub_worker",
+      "to": "nhl_timesheet_line"
+    },
+    {
+      "from": "hub_worker",
+      "to": "msat_worker_skills_striive_eu"
+    },
+    {
+      "from": "hub_worker",
+      "to": "msat_worker_skills_hr_eu"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+# THE GOLD LAYER'S OWN JOB. Manually triggered, not scheduled.
+#
+# NOT A TASK IN vault_load. Adrian, 26 September: "we have a job with almost 30 task,
+# this is not ok". Gold is a different layer on a different cadence, and the domain-split
+# spec already rules that layered jobs are the direction. This is where subsystem C's
+# export tasks will land, and where invoice_export moves when it is implemented.
+#
+# IT CREATES SCHEMAS AND NOTHING ELSE. No tables -- gold table generation is subsystem C.
+# No grants -- the access model is subsystem B, and the TDS convenience grant lives in
+# grant_vault_access so it can be read and removed as one thing.
+#
+# SAFE TO RE-RUN. Every statement is CREATE SCHEMA IF NOT EXISTS, so a second run changes
+# nothing. That matters because a schema is a securable: replacing one would discard every
+# grant held against it (DEF-61).
+resources:
+  jobs:
+    gold_build:
+      name: "[${bundle.target}] hfig gold build"
+      max_concurrent_runs: 1
+      email_notifications:
+        on_failure: ["${var.notification_email}"]
+      tasks:
+        - task_key: create_gold_schemas
+          spark_python_task:
+            python_file: ../checks/apply_gold_schemas.py
+            parameters:
+              - "--gold-catalog"
+              - "${var.gold_catalog}"
+          environment_key: checks
+      environments:
+        - environment_key: checks
+          spec:
+            client: "3"
+            dependencies: ["pyyaml"]

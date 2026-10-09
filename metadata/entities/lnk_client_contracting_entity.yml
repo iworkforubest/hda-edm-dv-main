@@ -1,0 +1,103 @@
+# WHICH OF OUR LEGAL ENTITIES CONTRACTS WITH WHICH CLIENT.
+#
+# Amy Keser, 24 September 2026: "We should have only 1 contracting entity on the Vertage
+# side per client -- this may change as we go through the legal entity unification only
+# where we have a mix of services and one is professional services (SOW)."
+#
+# BOTH LEGS ARE hub_legal_entity, because the roster is one roster: our companies and our
+# clients' companies live in it together, which is the whole reason its key is authored.
+# So this is a self-relationship and roles are mandatory -- without them both legs write
+# to one legal_entity_hk and the link keys the client twice.
+#
+# `kind: link`, NOT `hal`, AND THE DIFFERENCE IS A CLAIM ABOUT THE WORLD. A hierarchical
+# link says one node OWNS another. Guidant Global Inc contracts with Ameren; it does not
+# own Ameren. Roles are permitted on any link kind whose parents are not distinct, not
+# only on hierarchical ones, so nothing is lost by being accurate here.
+#
+# "ONLY 1" IS ENFORCED BY THE EFFECTIVITY SATELLITE, not by this table. A link records
+# that a relationship has existed; at most one open at a time is a statement about when,
+# and it lives in esat_client_contracting_entity driven on the client.
+#
+# THE ROLE IS `engaging`, NOT `client`, SINCE 29 September 2026 -- and the rename is
+# hygiene taken while it is free, not a defect fix. `parent_keys` is ONE mapping over TWO
+# namespaces: spec.parent_key_columns reads `wanted = role or parent`, so a role and a
+# parent entity name are looked up out of the same dict. hub_organisation split into
+# hub_client and hub_operating_company on the same day, which made `client` an entity name
+# as well as the role it had been here since 24 September. Nothing was ambiguous -- the
+# columns do not collide either (this leg is `client_legal_entity_hk`, the hub is
+# `client_hk`), and no entity declares both a `client` parent and a `client` role -- but
+# the two namespaces now overlapped on a live word, and an entity that ever declared both
+# would silently get whichever parent_keys entry came first, hashing one leg's columns
+# into the other's position.
+#
+# WHY NOW, AND WHY IT IS FREE. Renaming the role renames the generated column,
+# `client_legal_entity_hk` -> `engaging_legal_entity_hk`, which is a shape change -- and a
+# shape change on a loaded table is a migration. This one is not loaded: its only binding
+# is CLIENT_PORTAL, its bronze_table is the fake `PLACEHOLDER.reference.*` catalog, and
+# `client_contracting_entity/CLIENT_PORTAL` appears in NO target's active_sources in
+# databricks.yml. The table is declared, created empty and never written. So the rename
+# costs a diff today and a migration the moment a real feed lands behind it. The SOURCE
+# column
+# `client_legal_entity_code` is Bronze's and does NOT change: the role names the leg, not
+# the column it reads, which is why no hash-key EXPRESSION moves -- verified against
+# tests/golden_key_expressions.json, which this change does not touch.
+name: client_contracting_entity
+kind: link
+domain: reference
+# VERSION 2, AND ONE BUMP SERVES BOTH REASONS. That is the whole benefit of combining
+# the keyed-kind staging migration with the hub split instead of running them in
+# sequence: separately, the eleven keyed non-hub entities would each have been versioned
+# twice -- twenty version operations rather than thirteen, and two cutovers per entity
+# on a stable view whose grants are dropped by every one of them (runbook §2.1).
+#
+#   1. KEYED-KIND STAGING. This entity is no longer written directly by the SDP
+#      pipeline. It is a batch-loaded table that checks/load_hubs.py builds from the
+#      staging log `stg_lnk_client_contracting_entity_rev2` by anti-join, and a job task
+#      cannot INSERT into a streaming table -- so the loader needs a NEW physical table,
+#      not an altered one.
+#   2. THE HUB SPLIT. `client_legal_entity_hk` is now `engaging_legal_entity_hk` here. A
+#      column rename is a schema migration and `delta.appendOnly=true` forbids one in
+#      place.
+#
+# NOT ONE HASH-KEY EXPRESSION MOVED, only the column NAME -- asserted byte for byte
+# against tests/golden_key_expressions.json, which was rendered before the split. A
+# rename is recoverable; a digest change is not, and the two are distinguished by
+# comparing the expression under the renamed identity rather than the identity itself.
+#
+# naming.physical("lnk_client_contracting_entity", 2) ->
+# lnk_client_contracting_entity_rev2, and the stable view
+# `lnk_client_contracting_entity` keeps pointing at lnk_client_contracting_entity_rev1
+# until checks/cutover_vault_version.py deliberately moves it -- a separate, gated
+# decision that is NOT part of declaring this version. The operator sequence is
+# docs/superpowers/plans/2026-09-29-keyed-kind-staging-runbook.md; its §7 carries the
+# version table this number is asserted against, so bumping it here without amending
+# that table reds tests/test_accelerator.py.
+version: 2
+# AUTHORED, WHERE hal_client_legal_entity_hierarchy IS FEDERATED, and the difference is
+# stated because silence about it is what review flagged. Both are legal_entity ->
+# legal_entity over the authored roster with one CLIENT_PORTAL binding, so the divergence is
+# inert today -- the parent foreign keys are scoped by the hub either way, and this affects
+# only each link's own hash key. It matters the day a SECOND source delivers either
+# relationship: a federated link key carries the source name, so the same edge from two
+# feeds yields two rows, while an authored one yields one. Which company contracts with a
+# client is OUR fact and has one answer whoever reports it, so authored is right here.
+key_style: authored
+parents: [legal_entity, legal_entity]
+parent_roles: [engaging, contracting]
+sensitivity: internal
+
+notes: >
+  The Vertage-side legal entity that contracts with each client. One open relationship per
+  client at a time, enforced through esat_client_contracting_entity. Expected to move
+  during the legal entity unification where a client takes a mix of services and one is
+  professional services (SOW).
+
+sources:
+  # PLACEHOLDER. This is a business input like the roster itself -- no feed states which of
+  # our companies contracts with a client. Ameren's is Guidant Global Inc (Workday US100),
+  # confirmed by Amy on 24 September, which is one row of it and not the list.
+  - name: CLIENT_PORTAL
+    bronze_table: PLACEHOLDER.reference.client_contracting_entity
+    parent_keys:
+      engaging: [client_legal_entity_code]
+      contracting: [contracting_legal_entity_code]

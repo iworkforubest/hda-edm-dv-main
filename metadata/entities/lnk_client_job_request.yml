@@ -1,0 +1,45 @@
+# PLACEHOLDER BRONZE TABLES: every bronze_table below is a placeholder.
+# Replace with the real fully-qualified table in db-weu-datalakehouse-tds
+# before deploying -- the pipeline fails at definition time otherwise.
+# See DEPLOY.md Phase 0a.
+name: client_job_request
+kind: link
+domain: job
+# VERSION 2, AND ONE BUMP SERVES BOTH REASONS. That is the whole benefit of combining
+# the keyed-kind staging migration with the hub split instead of running them in
+# sequence: separately, the eleven keyed non-hub entities would each have been versioned
+# twice -- twenty version operations rather than thirteen, and two cutovers per entity
+# on a stable view whose grants are dropped by every one of them (runbook §2.1).
+#
+#   1. KEYED-KIND STAGING. This entity is no longer written directly by the SDP
+#      pipeline. It is a batch-loaded table that checks/load_hubs.py builds from the
+#      staging log `stg_lnk_client_job_request_rev2` by anti-join, and a job task cannot
+#      INSERT into a streaming table -- so the loader needs a NEW physical table, not an
+#      altered one.
+#   2. THE HUB SPLIT. `organisation_hk` is now `client_hk` here. A column rename is a
+#      schema migration and `delta.appendOnly=true` forbids one in place.
+#
+# NOT ONE HASH-KEY EXPRESSION MOVED, only the column NAME -- asserted byte for byte
+# against tests/golden_key_expressions.json, which was rendered before the split. A
+# rename is recoverable; a digest change is not, and the two are distinguished by
+# comparing the expression under the renamed identity rather than the identity itself.
+#
+# naming.physical("lnk_client_job_request", 2) -> lnk_client_job_request_rev2, and the
+# stable view `lnk_client_job_request` keeps pointing at lnk_client_job_request_rev1
+# until checks/cutover_vault_version.py deliberately moves it -- a separate, gated
+# decision that is NOT part of declaring this version. The operator sequence is
+# docs/superpowers/plans/2026-09-29-keyed-kind-staging-runbook.md; its §7 carries the
+# version table this number is asserted against, so bumping it here without amending
+# that table reds tests/test_accelerator.py.
+version: 2
+key_style: federated
+parents: [client, job_request]
+sensitivity: internal
+sources:
+  - name: STRIIVE_EU
+    bronze_table: hfig_eu.bronze.striive_job_request
+    # one entry per parent: which source columns carry that hub's business key
+    parent_keys:
+      client: [client_code]
+      job_request: [reference_code]
+    cdc_op_column: _cdc_op

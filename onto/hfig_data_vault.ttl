@@ -1,0 +1,2496 @@
+# GENERATED from metadata/entities/ by tools/emit_ontology.py.
+# Do not hand-edit: verify_repo.py fails the build if regenerating this differs.
+#
+# The HFIG Data Vault as an OWL ontology. Hubs are business concepts; links and
+# non-historised links are reified n-ary relationships between them; satellite
+# payload becomes datatype properties on the concept each satellite describes.
+#
+# 23 classes, 30 object properties, 256 datatype properties.
+
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix dv:   <https://hfig.group/ontology/data-vault#> .
+
+<https://hfig.group/ontology/data-vault> rdf:type owl:Ontology ;
+    rdfs:label "HFIG Data Vault" ;
+    rdfs:comment "Generated from the declarative model in metadata/entities/. Hubs are concepts, links are reified relationships, satellite payload becomes datatype properties on the concept described." .
+
+# Annotation properties. These carry the facts a plain RDFS class hierarchy loses:
+# which physical table an attribute came from, whether it is masked, and how it is
+# classified.
+dv:sourceTable    rdf:type owl:AnnotationProperty ; rdfs:label "source table" .
+dv:sqlType        rdf:type owl:AnnotationProperty ; rdfs:label "SQL type" .
+dv:classification rdf:type owl:AnnotationProperty ; rdfs:label "classification" .
+dv:maskFunction   rdf:type owl:AnnotationProperty ; rdfs:label "mask function" .
+dv:vaultKind      rdf:type owl:AnnotationProperty ; rdfs:label "vault kind" .
+dv:businessDomain rdf:type owl:AnnotationProperty ; rdfs:label "business domain" .
+dv:typeUndeclared rdf:type owl:AnnotationProperty ; rdfs:label "type undeclared" .
+
+# ---------------------------------------------------------------- concepts
+dv:AccountingJournal rdf:type owl:Class ;
+    rdfs:label "accounting journal" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "finance" .
+
+dv:Client rdf:type owl:Class ;
+    rdfs:label "client" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "party" .
+
+dv:ClientContractingEntity rdf:type owl:Class ;
+    rdfs:label "client contracting entity" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "link" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:ClientJobRequest rdf:type owl:Class ;
+    rdfs:label "client job request" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "link" ;
+    dv:classification "internal" ;
+    dv:businessDomain "job" .
+
+dv:ClientLegalEntityHierarchy rdf:type owl:Class ;
+    rdfs:label "client legal entity hierarchy" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "hal" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:ConsolidationGroup rdf:type owl:Class ;
+    rdfs:label "consolidation group" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:ConsolidationHierarchy rdf:type owl:Class ;
+    rdfs:label "consolidation hierarchy" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "hal" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:GeneralJournalLine rdf:type owl:Class ;
+    rdfs:label "general journal line" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "nhl" ;
+    dv:classification "financial" ;
+    dv:businessDomain "finance" .
+
+dv:GeneralJournalLineClosedYear rdf:type owl:Class ;
+    rdfs:label "general journal line closed year" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "nhl" ;
+    dv:classification "financial" ;
+    dv:businessDomain "finance" .
+
+dv:Invoice rdf:type owl:Class ;
+    rdfs:label "invoice" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "pay_bill" .
+
+dv:InvoiceLine rdf:type owl:Class ;
+    rdfs:label "invoice line" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "nhl" ;
+    dv:classification "internal" ;
+    dv:businessDomain "pay_bill" .
+
+dv:JobRequest rdf:type owl:Class ;
+    rdfs:label "job request" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "job" .
+
+dv:JournalLine rdf:type owl:Class ;
+    rdfs:label "journal line" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "nhl" ;
+    dv:classification "financial" ;
+    dv:businessDomain "finance" .
+
+dv:LedgerAccount rdf:type owl:Class ;
+    rdfs:label "ledger account" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "finance" .
+
+dv:LegalEntity rdf:type owl:Class ;
+    rdfs:label "legal entity" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:LegalEntityConsolidation rdf:type owl:Class ;
+    rdfs:label "legal entity consolidation" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "link" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:OperatingCompany rdf:type owl:Class ;
+    rdfs:label "operating company" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "party" .
+
+dv:PayPeriod rdf:type owl:Class ;
+    rdfs:label "pay period" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "payroll" .
+
+dv:PayrollDetail rdf:type owl:Class ;
+    rdfs:label "payroll detail" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "nhl" ;
+    dv:classification "restricted" ;
+    dv:businessDomain "payroll" .
+
+dv:Supplier rdf:type owl:Class ;
+    rdfs:label "supplier" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "party" .
+
+dv:TimesheetLine rdf:type owl:Class ;
+    rdfs:label "timesheet line" ;
+    rdfs:comment "a reified relationship between concepts; it carries its own key" ;
+    dv:vaultKind "nhl" ;
+    dv:classification "financial" ;
+    dv:businessDomain "pay_bill" .
+
+dv:WdReference rdf:type owl:Class ;
+    rdfs:label "wd reference" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "reference" .
+
+dv:Worker rdf:type owl:Class ;
+    rdfs:label "worker" ;
+    rdfs:comment "a conformed business concept" ;
+    dv:vaultKind "hub" ;
+    dv:classification "internal" ;
+    dv:businessDomain "party" .
+
+# ------------------------------------------------------- relationships
+# One object property per declared parent. A link with four parents becomes four
+# properties on one class, which is how OWL expresses an n-ary relation.
+dv:clientContractingEntity_hasContractingLegalEntity rdf:type owl:ObjectProperty ;
+    rdfs:label "has legal entity" ;
+    rdfs:domain dv:ClientContractingEntity ;
+    rdfs:range dv:LegalEntity .
+
+dv:clientContractingEntity_hasEngagingLegalEntity rdf:type owl:ObjectProperty ;
+    rdfs:label "has legal entity" ;
+    rdfs:domain dv:ClientContractingEntity ;
+    rdfs:range dv:LegalEntity .
+
+dv:clientJobRequest_hasClient rdf:type owl:ObjectProperty ;
+    rdfs:label "has client" ;
+    rdfs:domain dv:ClientJobRequest ;
+    rdfs:range dv:Client .
+
+dv:clientJobRequest_hasJobRequest rdf:type owl:ObjectProperty ;
+    rdfs:label "has job request" ;
+    rdfs:domain dv:ClientJobRequest ;
+    rdfs:range dv:JobRequest .
+
+dv:clientLegalEntityHierarchy_hasChildLegalEntity rdf:type owl:ObjectProperty ;
+    rdfs:label "has legal entity" ;
+    rdfs:domain dv:ClientLegalEntityHierarchy ;
+    rdfs:range dv:LegalEntity .
+
+dv:clientLegalEntityHierarchy_hasParentLegalEntity rdf:type owl:ObjectProperty ;
+    rdfs:label "has legal entity" ;
+    rdfs:domain dv:ClientLegalEntityHierarchy ;
+    rdfs:range dv:LegalEntity .
+
+dv:consolidationHierarchy_hasChildConsolidationGroup rdf:type owl:ObjectProperty ;
+    rdfs:label "has consolidation group" ;
+    rdfs:domain dv:ConsolidationHierarchy ;
+    rdfs:range dv:ConsolidationGroup .
+
+dv:consolidationHierarchy_hasParentConsolidationGroup rdf:type owl:ObjectProperty ;
+    rdfs:label "has consolidation group" ;
+    rdfs:domain dv:ConsolidationHierarchy ;
+    rdfs:range dv:ConsolidationGroup .
+
+dv:generalJournalLine_hasAccountingJournal rdf:type owl:ObjectProperty ;
+    rdfs:label "has accounting journal" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range dv:AccountingJournal .
+
+dv:generalJournalLine_hasLedgerAccount rdf:type owl:ObjectProperty ;
+    rdfs:label "has ledger account" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range dv:LedgerAccount .
+
+dv:generalJournalLine_hasOperatingCompany rdf:type owl:ObjectProperty ;
+    rdfs:label "has operating company" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range dv:OperatingCompany .
+
+dv:generalJournalLineClosedYear_hasAccountingJournal rdf:type owl:ObjectProperty ;
+    rdfs:label "has accounting journal" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range dv:AccountingJournal .
+
+dv:generalJournalLineClosedYear_hasLedgerAccount rdf:type owl:ObjectProperty ;
+    rdfs:label "has ledger account" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range dv:LedgerAccount .
+
+dv:generalJournalLineClosedYear_hasOperatingCompany rdf:type owl:ObjectProperty ;
+    rdfs:label "has operating company" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range dv:OperatingCompany .
+
+dv:invoiceLine_hasClient rdf:type owl:ObjectProperty ;
+    rdfs:label "has client" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range dv:Client .
+
+dv:invoiceLine_hasInvoice rdf:type owl:ObjectProperty ;
+    rdfs:label "has invoice" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range dv:Invoice .
+
+dv:invoiceLine_hasSupplier rdf:type owl:ObjectProperty ;
+    rdfs:label "has supplier" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range dv:Supplier .
+
+dv:invoiceLine_hasWorker rdf:type owl:ObjectProperty ;
+    rdfs:label "has worker" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range dv:Worker .
+
+dv:journalLine_hasAccountingJournal rdf:type owl:ObjectProperty ;
+    rdfs:label "has accounting journal" ;
+    rdfs:domain dv:JournalLine ;
+    rdfs:range dv:AccountingJournal .
+
+dv:journalLine_hasLedgerAccount rdf:type owl:ObjectProperty ;
+    rdfs:label "has ledger account" ;
+    rdfs:domain dv:JournalLine ;
+    rdfs:range dv:LedgerAccount .
+
+dv:journalLine_hasOperatingCompany rdf:type owl:ObjectProperty ;
+    rdfs:label "has operating company" ;
+    rdfs:domain dv:JournalLine ;
+    rdfs:range dv:OperatingCompany .
+
+dv:journalLine_hasPayPeriod rdf:type owl:ObjectProperty ;
+    rdfs:label "has pay period" ;
+    rdfs:domain dv:JournalLine ;
+    rdfs:range dv:PayPeriod .
+
+dv:legalEntityConsolidation_hasConsolidationGroup rdf:type owl:ObjectProperty ;
+    rdfs:label "has consolidation group" ;
+    rdfs:domain dv:LegalEntityConsolidation ;
+    rdfs:range dv:ConsolidationGroup .
+
+dv:legalEntityConsolidation_hasLegalEntity rdf:type owl:ObjectProperty ;
+    rdfs:label "has legal entity" ;
+    rdfs:domain dv:LegalEntityConsolidation ;
+    rdfs:range dv:LegalEntity .
+
+dv:payrollDetail_hasOperatingCompany rdf:type owl:ObjectProperty ;
+    rdfs:label "has operating company" ;
+    rdfs:domain dv:PayrollDetail ;
+    rdfs:range dv:OperatingCompany .
+
+dv:payrollDetail_hasPayPeriod rdf:type owl:ObjectProperty ;
+    rdfs:label "has pay period" ;
+    rdfs:domain dv:PayrollDetail ;
+    rdfs:range dv:PayPeriod .
+
+dv:payrollDetail_hasWorker rdf:type owl:ObjectProperty ;
+    rdfs:label "has worker" ;
+    rdfs:domain dv:PayrollDetail ;
+    rdfs:range dv:Worker .
+
+dv:timesheetLine_hasClient rdf:type owl:ObjectProperty ;
+    rdfs:label "has client" ;
+    rdfs:domain dv:TimesheetLine ;
+    rdfs:range dv:Client .
+
+dv:timesheetLine_hasJobRequest rdf:type owl:ObjectProperty ;
+    rdfs:label "has job request" ;
+    rdfs:domain dv:TimesheetLine ;
+    rdfs:range dv:JobRequest .
+
+dv:timesheetLine_hasWorker rdf:type owl:ObjectProperty ;
+    rdfs:label "has worker" ;
+    rdfs:domain dv:TimesheetLine ;
+    rdfs:range dv:Worker .
+
+# ---------------------------------------------------------- attributes
+# Satellite payload, expressed on the concept it describes. dv:sourceTable is
+# the historised table it actually lives in.
+dv:accountingJournal_accountingDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "accounting date" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_accountingJournalBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "accounting journal bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- accounting_journal_hk is the join." ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_accounting_journal_rev1" .
+
+dv:accountingJournal_adjustmentJournal rdf:type owl:DatatypeProperty ;
+    rdfs:label "adjustment journal" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_bookCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "book code" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_companyReferenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "company reference id" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_controlTotalAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "control total amount" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_createReversal rdf:type owl:DatatypeProperty ;
+    rdfs:label "create reversal" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_currency rdf:type owl:DatatypeProperty ;
+    rdfs:label "currency" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_fiscalYear rdf:type owl:DatatypeProperty ;
+    rdfs:label "fiscal year" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_accounting_journal_rev1" .
+
+dv:accountingJournal_journalEntryMemo rdf:type owl:DatatypeProperty ;
+    rdfs:label "journal entry memo" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_journalNumber rdf:type owl:DatatypeProperty ;
+    rdfs:label "journal number" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_journalSource rdf:type owl:DatatypeProperty ;
+    rdfs:label "journal source" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_ledgerType rdf:type owl:DatatypeProperty ;
+    rdfs:label "ledger type" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:accountingJournal_organisationReferenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "organisation reference id" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_accounting_journal_rev1" .
+
+dv:accountingJournal_referenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference id" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_accounting_journal_rev1" .
+
+dv:accountingJournal_referenceType rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference type" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_accounting_journal_rev1" .
+
+dv:accountingJournal_reversalDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "reversal date" ;
+    rdfs:domain dv:AccountingJournal ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_accounting_journal_header_ukg_us_rev1" .
+
+dv:client_address1 rdf:type owl:DatatypeProperty ;
+    rdfs:label "address1" ;
+    rdfs:comment "First line of the address as GP holds it. Unparsed." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_address2 rdf:type owl:DatatypeProperty ;
+    rdfs:label "address2" ;
+    rdfs:comment "Second line of the address as GP holds it. Unparsed, and frequently empty." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_adrscode rdf:type owl:DatatypeProperty ;
+    rdfs:label "adrscode" ;
+    rdfs:comment "GP's address code -- BILL TO, SHIP TO, PRIMARY and the like. The multi-active sub-key: a customer holds several of these at once and none of them supersedes the others." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_city rdf:type owl:DatatypeProperty ;
+    rdfs:label "city" ;
+    rdfs:comment "The city as GP holds it. Not reconciled against any reference list." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_clientBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "client bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- client_hk is the join." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_client_rev1" .
+
+dv:client_cntcprsn rdf:type owl:DatatypeProperty ;
+    rdfs:label "cntcprsn" ;
+    rdfs:comment "The named contact person at the customer for this address slot. A person's name at a company, recorded because the receivables process uses it; if the customer roster ever carries private individuals, this column is the reason to revisit the entity's sensitivity." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_country rdf:type owl:DatatypeProperty ;
+    rdfs:label "country" ;
+    rdfs:comment "The country as GP holds it -- a free-text name, not an ISO code. Unlike sat_legal_entity_details.jurisdiction, nothing normalises this, so it is carried verbatim and any consumer wanting ISO must map it." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_curncyid rdf:type owl:DatatypeProperty ;
+    rdfs:label "curncyid" ;
+    rdfs:comment "The customer's default currency code. An identifier, not an amount." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_client_details_gp_customer_rev1" .
+
+dv:client_custclas rdf:type owl:DatatypeProperty ;
+    rdfs:label "custclas" ;
+    rdfs:comment "GP's customer class -- VMS, GROUP FILL, TPV and others. Carried verbatim. Nothing in the raw vault decides what a class means; that reading belongs downstream where it can be changed without re-keying." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_client_details_gp_customer_rev1" .
+
+dv:client_custname rdf:type owl:DatatypeProperty ;
+    rdfs:label "custname" ;
+    rdfs:comment "The customer's name as Great Plains holds it. Spelling is not normalised and is not reliable as a key -- KCCA is \"KIMBERLY CLARK CANADA\" in one company database and \"Kimberly Clark Canada\" in another. The customer NUMBER is the identity." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_client_details_gp_customer_rev1" .
+
+dv:client_inactive rdf:type owl:DatatypeProperty ;
+    rdfs:label "inactive" ;
+    rdfs:comment "GP's inactive flag, set on real records in this extract. Recorded and never filtered: an inactive customer still owns receivables history and must still resolve." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_client_details_gp_customer_rev1" .
+
+dv:client_masKey rdf:type owl:DatatypeProperty ;
+    rdfs:label "mas key" ;
+    rdfs:comment "The sub-key that makes a multi-active satellite's rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_phone1 rdf:type owl:DatatypeProperty ;
+    rdfs:label "phone1" ;
+    rdfs:comment "The first of GP's phone numbers for this address slot." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_client_address_gp_customer_rev1" .
+
+dv:client_pymtrmid rdf:type owl:DatatypeProperty ;
+    rdfs:label "pymtrmid" ;
+    rdfs:comment "The customer's default payment terms code. An identifier, not an amount." ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_client_details_gp_customer_rev1" .
+
+dv:client_referenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference id" ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_client_rev1" .
+
+dv:client_referenceType rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference type" ;
+    rdfs:domain dv:Client ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_client_rev1" .
+
+dv:clientContractingEntity_relationshipStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "relationship status" ;
+    rdfs:comment "Whether this contracting relationship is in force. A relationship that ends is delivered as a new row saying so, never an update." ;
+    rdfs:domain dv:ClientContractingEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "esat_client_contracting_entity_effectivity_client_portal_rev1" .
+
+dv:clientLegalEntityHierarchy_relationshipStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "relationship status" ;
+    rdfs:comment "Whether this parent/child ownership edge is in force. An edge that ends is delivered as a new row saying so, never an update, which is what keeps \"who owned this in March\" answerable." ;
+    rdfs:domain dv:ClientLegalEntityHierarchy ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "esat_client_legal_entity_hierarchy_effectivity_hubspot_rev1" .
+
+dv:consolidationGroup_consolidationGroupBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "consolidation group bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- consolidation_group_hk is the join." ;
+    rdfs:domain dv:ConsolidationGroup ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_consolidation_group_rev1" .
+
+dv:consolidationGroup_consolidationGroupReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "consolidation group reference" ;
+    rdfs:comment "Workday's Organization_Reference_ID for a Company_Hierarchy organisation, such as Impellam_UK_Limited_Consolidated. Federated on the source because Workday assigns it." ;
+    rdfs:domain dv:ConsolidationGroup ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_consolidation_group_rev1" .
+
+dv:consolidationHierarchy_relationshipStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "relationship status" ;
+    rdfs:comment "Whether this containment edge is in force. An edge that ends is delivered as a new row saying so, never an update." ;
+    rdfs:domain dv:ConsolidationHierarchy ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "esat_consolidation_hierarchy_effectivity_workday_rev1" .
+
+dv:generalJournalLine_backOutJe rdf:type owl:DatatypeProperty ;
+    rdfs:label "back out je" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_correctingJe rdf:type owl:DatatypeProperty ;
+    rdfs:label "correcting je" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_crdtamnt rdf:type owl:DatatypeProperty ;
+    rdfs:label "crdtamnt" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_curncyid rdf:type owl:DatatypeProperty ;
+    rdfs:label "curncyid" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_debitamt rdf:type owl:DatatypeProperty ;
+    rdfs:label "debitamt" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_denxrate rdf:type owl:DatatypeProperty ;
+    rdfs:label "denxrate" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_openyear rdf:type owl:DatatypeProperty ;
+    rdfs:label "openyear" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_orcrdamt rdf:type owl:DatatypeProperty ;
+    rdfs:label "orcrdamt" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range xsd:double ;
+    dv:sqlType "DOUBLE" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money_double" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_ordbtamt rdf:type owl:DatatypeProperty ;
+    rdfs:label "ordbtamt" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    rdfs:range xsd:double ;
+    dv:sqlType "DOUBLE" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money_double" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_originalJe rdf:type owl:DatatypeProperty ;
+    rdfs:label "original je" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_periodid rdf:type owl:DatatypeProperty ;
+    rdfs:label "periodid" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_seqnumbr rdf:type owl:DatatypeProperty ;
+    rdfs:label "seqnumbr" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_trxsorce rdf:type owl:DatatypeProperty ;
+    rdfs:label "trxsorce" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_voided rdf:type owl:DatatypeProperty ;
+    rdfs:label "voided" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLine_xchgrate rdf:type owl:DatatypeProperty ;
+    rdfs:label "xchgrate" ;
+    rdfs:domain dv:GeneralJournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_rev2" .
+
+dv:generalJournalLineClosedYear_backOutJe rdf:type owl:DatatypeProperty ;
+    rdfs:label "back out je" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_correctingJe rdf:type owl:DatatypeProperty ;
+    rdfs:label "correcting je" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_crdtamnt rdf:type owl:DatatypeProperty ;
+    rdfs:label "crdtamnt" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_curncyid rdf:type owl:DatatypeProperty ;
+    rdfs:label "curncyid" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_debitamt rdf:type owl:DatatypeProperty ;
+    rdfs:label "debitamt" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_denxrate rdf:type owl:DatatypeProperty ;
+    rdfs:label "denxrate" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_hstyear rdf:type owl:DatatypeProperty ;
+    rdfs:label "hstyear" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_orcrdamt rdf:type owl:DatatypeProperty ;
+    rdfs:label "orcrdamt" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range xsd:double ;
+    dv:sqlType "DOUBLE" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money_double" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_ordbtamt rdf:type owl:DatatypeProperty ;
+    rdfs:label "ordbtamt" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    rdfs:range xsd:double ;
+    dv:sqlType "DOUBLE" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money_double" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_originalJe rdf:type owl:DatatypeProperty ;
+    rdfs:label "original je" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_periodid rdf:type owl:DatatypeProperty ;
+    rdfs:label "periodid" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_seqnumbr rdf:type owl:DatatypeProperty ;
+    rdfs:label "seqnumbr" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_trxsorce rdf:type owl:DatatypeProperty ;
+    rdfs:label "trxsorce" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_voided rdf:type owl:DatatypeProperty ;
+    rdfs:label "voided" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:generalJournalLineClosedYear_xchgrate rdf:type owl:DatatypeProperty ;
+    rdfs:label "xchgrate" ;
+    rdfs:domain dv:GeneralJournalLineClosedYear ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_general_journal_line_closed_year_rev2" .
+
+dv:invoice_currency rdf:type owl:DatatypeProperty ;
+    rdfs:label "currency" ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_header_fieldglass_us_rev1" .
+
+dv:invoice_grossInvoiceAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "gross invoice amount" ;
+    rdfs:comment "The invoice total CHARGED TO THE CLIENT, inclusive of MSP margin and before tax. AME003 repeats this on every line and AME008 asserts the lines sum to it -- so this column is the reconciliation target, not a convenience copy. Settled 24 September 2026: the client total is what Ameren is invoiced, and the supplier total (gross_supplier_invoice_amount) is the underlying cost. The two differ by the MSP margin, measured at 24,054.04 across 380 of 419 invoices. Masked by governance.mask_money." ;
+    rdfs:domain dv:Invoice ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_header_fieldglass_us_rev1" .
+
+dv:invoice_invoiceBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- invoice_hk is the join." ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_invoice_rev1" .
+
+dv:invoice_invoiceReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice reference" ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_invoice_rev1" .
+
+dv:invoice_invoiceSubmitDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice submit date" ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_header_fieldglass_us_rev1" .
+
+dv:invoice_invoiceTenant rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice tenant" ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_invoice_rev1" .
+
+dv:invoice_invoiceType rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice type" ;
+    rdfs:comment "Fieldglass invoice type, IN in the sample. Retained because a credit note is a different document and must not be released as an invoice." ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_header_fieldglass_us_rev1" .
+
+dv:invoice_netInvoiceAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "net invoice amount" ;
+    rdfs:comment "THE SOURCE'S NAMES ARE INVERTED AND THIS IS THE LARGER FIGURE. Despite being called \"net\", this is the invoice total INCLUDING tax: measured across all 419 real invoices, net_invoice_amount = gross_invoice_amount + invoice_adjustment_amount, without exception. Independently confirmed by Amy Keser's `Ameren Invoice Value Analysis` of 24 September, which reaches the same reading from the client's own figures. The columns keep the source's spelling because the raw vault records what the source sent; this description is where the trap is named, because only 2 of the 419 invoices carry any tax, so on the other 417 the two columns are equal and the inversion is invisible. Masked by governance.mask_money." ;
+    rdfs:domain dv:Invoice ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_header_fieldglass_us_rev1" .
+
+dv:invoice_originalInvoiceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "original invoice id" ;
+    rdfs:comment "Present when this invoice supersedes another. Carried so a reissue can be distinguished from a first issue, which the issuance ledger in Task 6 needs." ;
+    rdfs:domain dv:Invoice ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_header_fieldglass_us_rev1" .
+
+dv:invoiceLine_accountingDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "accounting date" ;
+    rdfs:comment "AME009 -- from the week-ending date. See the open question on its format." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_amount rdf:type owl:DatatypeProperty ;
+    rdfs:label "amount" ;
+    rdfs:comment "AME008 -- the line amount for an ITEM line, being the CLIENT amount: invoice_line_item_amount_client from the raw vault, which is the supplier cost plus that line's MSP margin. Not the supplier figure. Tax is aggregated onto the final TAX line and all lines sum to the invoice gross. Named `amount` because Ameren's template names the column `Amount`; the thirteen gold field names are the customer's contract and are not ours to rename. Masked by governance.mask_money." ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_currency rdf:type owl:DatatypeProperty ;
+    rdfs:label "currency" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_description rdf:type owl:DatatypeProperty ;
+    rdfs:label "description" ;
+    rdfs:comment "AME004 -- invoice id, worker as Last First, week-ending and line ref, pipe delimited." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_expenditureOrganization rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure organization" ;
+    rdfs:comment "AME013 -- the expenditure organization belonging to the line's module." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_expenditureOrganizationEs rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure organization es" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_expenditureOrganizationMi rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure organization mi" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_expenditureOrganizationTs rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure organization ts" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_expenditureType rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure type" ;
+    rdfs:comment "AME012 -- the expenditure type belonging to the line's module." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_expenditureTypeEs rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure type es" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_expenditureTypeMi rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure type mi" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_expenditureTypeTs rdf:type owl:DatatypeProperty ;
+    rdfs:label "expenditure type ts" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_hours rdf:type owl:DatatypeProperty ;
+    rdfs:label "hours" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_invoiceAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice amount" ;
+    rdfs:comment "AME003 -- the invoice gross, repeated on every line of the invoice, from sat_invoice_header.gross_invoice_amount. The reconciliation target. A DIFFERENT GRAIN FROM `amount` AND FROM THE RAW VAULT'S LINE COLUMN: this is the whole invoice's value on every line, which is what Ameren's template asks for and what AME008 checks the lines against. The raw vault's per-line client amount is called invoice_line_item_amount_client precisely so that these two cannot be confused by a projection -- Spark resolves identifiers case-insensitively, so one name for two grains is either an AMBIGUOUS_REFERENCE or, worse, a silent pick. Masked by governance.mask_money." ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_invoiceLineItemAmountClient rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice line item amount client" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_invoiceLineItemAmountSupplier rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice line item amount supplier" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_invoiceLineItemRef rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice line item ref" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_invoiceLineItemType rdf:type owl:DatatypeProperty ;
+    rdfs:label "invoice line item type" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_lineDescription rdf:type owl:DatatypeProperty ;
+    rdfs:label "line description" ;
+    rdfs:comment "AME005 -- the same without the invoice id." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_lineReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "line reference" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_lineType rdf:type owl:DatatypeProperty ;
+    rdfs:label "line type" ;
+    rdfs:comment "AME007 -- TAX where the source type is Tax, otherwise ITEM." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_mspLineAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "msp line amount" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_projectCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "project code" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_projectNumber rdf:type owl:DatatypeProperty ;
+    rdfs:label "project number" ;
+    rdfs:comment "AME010 -- the source project code, unchanged." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_rate rdf:type owl:DatatypeProperty ;
+    rdfs:label "rate" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_rateCategory rdf:type owl:DatatypeProperty ;
+    rdfs:label "rate category" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_ruleVersion rdf:type owl:DatatypeProperty ;
+    rdfs:label "rule version" ;
+    rdfs:comment "The version of src/accelerator/invoice_rules.py that produced this row. Present so a rule change is visible in the data rather than only in git history." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_taskCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "task code" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_taskCodeEs rdf:type owl:DatatypeProperty ;
+    rdfs:label "task code es" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_taskCodeMi rdf:type owl:DatatypeProperty ;
+    rdfs:label "task code mi" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_taskCodeTs rdf:type owl:DatatypeProperty ;
+    rdfs:label "task code ts" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_taskNumber rdf:type owl:DatatypeProperty ;
+    rdfs:label "task number" ;
+    rdfs:comment "AME011 -- the value after the pipe in the module's task code, trailing parenthesis removed. A code with no pipe yields the whole code rather than a blank." ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_invoice_line_gie_rev1" .
+
+dv:invoiceLine_taxAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "tax amount" ;
+    rdfs:domain dv:InvoiceLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_weekendingDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "weekending date" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_invoice_line_rev4" .
+
+dv:invoiceLine_workerFirstName rdf:type owl:DatatypeProperty ;
+    rdfs:label "worker first name" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:invoiceLine_workerLastName rdf:type owl:DatatypeProperty ;
+    rdfs:label "worker last name" ;
+    rdfs:domain dv:InvoiceLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_invoice_line_details_fieldglass_us_rev1" .
+
+dv:jobRequest_applicationCloseDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "application close date" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:jobRequest_approverEmailDomain rdf:type owl:DatatypeProperty ;
+    rdfs:label "approver email domain" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_chargeBasis rdf:type owl:DatatypeProperty ;
+    rdfs:label "charge basis" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_commercials_striive_eu_rev1" .
+
+dv:jobRequest_city rdf:type owl:DatatypeProperty ;
+    rdfs:label "city" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_clientCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "client code" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_closingDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "closing date" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_contractType rdf:type owl:DatatypeProperty ;
+    rdfs:label "contract type" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_costCentreCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "cost centre code" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_country rdf:type owl:DatatypeProperty ;
+    rdfs:label "country" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_countrycode rdf:type owl:DatatypeProperty ;
+    rdfs:label "countrycode" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_bullhorn_eu_rev1" .
+
+dv:jobRequest_currency rdf:type owl:DatatypeProperty ;
+    rdfs:label "currency" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_commercials_striive_eu_rev1" .
+
+dv:jobRequest_customFieldLabel rdf:type owl:DatatypeProperty ;
+    rdfs:label "custom field label" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_job_request_custom_field_fieldglass_us_rev1" .
+
+dv:jobRequest_customFieldName rdf:type owl:DatatypeProperty ;
+    rdfs:label "custom field name" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_job_request_custom_field_fieldglass_us_rev1" .
+
+dv:jobRequest_customFieldValue rdf:type owl:DatatypeProperty ;
+    rdfs:label "custom field value" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_job_request_custom_field_fieldglass_us_rev1" .
+
+dv:jobRequest_dateclosed rdf:type owl:DatatypeProperty ;
+    rdfs:label "dateclosed" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_bullhorn_eu_rev1" .
+
+dv:jobRequest_declaredDataType rdf:type owl:DatatypeProperty ;
+    rdfs:label "declared data type" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_job_request_custom_field_fieldglass_us_rev1" .
+
+dv:jobRequest_employmenttype rdf:type owl:DatatypeProperty ;
+    rdfs:label "employmenttype" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_bullhorn_eu_rev1" .
+
+dv:jobRequest_engagementType rdf:type owl:DatatypeProperty ;
+    rdfs:label "engagement type" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_headcount rdf:type owl:DatatypeProperty ;
+    rdfs:label "headcount" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_jobRequestBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "job request bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- job_request_hk is the join." ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_job_request_rev1" .
+
+dv:jobRequest_jobRequestReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "job request reference" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_job_request_rev1" .
+
+dv:jobRequest_jobRequestTenant rdf:type owl:DatatypeProperty ;
+    rdfs:label "job request tenant" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_job_request_rev1" .
+
+dv:jobRequest_jobTitle rdf:type owl:DatatypeProperty ;
+    rdfs:label "job title" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_locationCity rdf:type owl:DatatypeProperty ;
+    rdfs:label "location city" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_locationCountry rdf:type owl:DatatypeProperty ;
+    rdfs:label "location country" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_masKey rdf:type owl:DatatypeProperty ;
+    rdfs:label "mas key" ;
+    rdfs:comment "The sub-key that makes a multi-active satellite's rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence." ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_job_request_custom_field_fieldglass_us_rev1" .
+
+dv:jobRequest_numopenings rdf:type owl:DatatypeProperty ;
+    rdfs:label "numopenings" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_bullhorn_eu_rev1" .
+
+dv:jobRequest_payMax rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay max" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_job_request_commercials_striive_eu_rev1" .
+
+dv:jobRequest_payMin rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay min" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "sat_job_request_commercials_striive_eu_rev1" .
+
+dv:jobRequest_positions rdf:type owl:DatatypeProperty ;
+    rdfs:label "positions" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_postingStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "posting status" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:jobRequest_postingTitle rdf:type owl:DatatypeProperty ;
+    rdfs:label "posting title" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:jobRequest_projectReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "project reference" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_promotedFieldCount rdf:type owl:DatatypeProperty ;
+    rdfs:label "promoted field count" ;
+    rdfs:comment "How many custom fields the registry had promoted when this row was built. A count of the shape, not of anything in the business." ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_purchaseOrderReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "purchase order reference" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_quantity rdf:type owl:DatatypeProperty ;
+    rdfs:label "quantity" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:jobRequest_registryVersion rdf:type owl:DatatypeProperty ;
+    rdfs:label "registry version" ;
+    rdfs:comment "The version of ref_fieldglass_custom_field this pivot was built from." ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_requestState rdf:type owl:DatatypeProperty ;
+    rdfs:label "request state" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_requestTitle rdf:type owl:DatatypeProperty ;
+    rdfs:label "request title" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_ruleVersion rdf:type owl:DatatypeProperty ;
+    rdfs:label "rule version" ;
+    rdfs:comment "The registry version the promotion ran under, which is what lets HFIG answer \"which fields were promoted when we reported that figure\"." ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_job_request_custom_promoted_rev1" .
+
+dv:jobRequest_status rdf:type owl:DatatypeProperty ;
+    rdfs:label "status" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_striive_eu_rev1" .
+
+dv:jobRequest_title rdf:type owl:DatatypeProperty ;
+    rdfs:label "title" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_bullhorn_eu_rev1" .
+
+dv:jobRequest_validUntil rdf:type owl:DatatypeProperty ;
+    rdfs:label "valid until" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_prounity_eu_rev1" .
+
+dv:jobRequest_workLocationCity rdf:type owl:DatatypeProperty ;
+    rdfs:label "work location city" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:jobRequest_workLocationCountry rdf:type owl:DatatypeProperty ;
+    rdfs:label "work location country" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:jobRequest_workerType rdf:type owl:DatatypeProperty ;
+    rdfs:label "worker type" ;
+    rdfs:domain dv:JobRequest ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_job_request_details_fieldglass_us_rev1" .
+
+dv:journalLine_codeName rdf:type owl:DatatypeProperty ;
+    rdfs:label "code name" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_journal_line_external_code_ukg_us_rev1" .
+
+dv:journalLine_codeValue rdf:type owl:DatatypeProperty ;
+    rdfs:label "code value" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_journal_line_external_code_ukg_us_rev1" .
+
+dv:journalLine_credit rdf:type owl:DatatypeProperty ;
+    rdfs:label "credit" ;
+    rdfs:domain dv:JournalLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_currencyid rdf:type owl:DatatypeProperty ;
+    rdfs:label "currencyid" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_debit rdf:type owl:DatatypeProperty ;
+    rdfs:label "debit" ;
+    rdfs:domain dv:JournalLine ;
+    rdfs:range xsd:decimal ;
+    dv:sqlType "DECIMAL(18,2)" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_isBalancingWorktag rdf:type owl:DatatypeProperty ;
+    rdfs:label "is balancing worktag" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_journal_line_worktag_ukg_us_rev1" .
+
+dv:journalLine_masKey rdf:type owl:DatatypeProperty ;
+    rdfs:label "mas key" ;
+    rdfs:comment "The sub-key that makes a multi-active satellite's rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence." ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_journal_line_external_code_ukg_us_rev1" .
+
+dv:journalLine_paycheckdate rdf:type owl:DatatypeProperty ;
+    rdfs:label "paycheckdate" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_reference rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_sourcedocument rdf:type owl:DatatypeProperty ;
+    rdfs:label "sourcedocument" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_transactiontype rdf:type owl:DatatypeProperty ;
+    rdfs:label "transactiontype" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_userdefined1 rdf:type owl:DatatypeProperty ;
+    rdfs:label "userdefined1" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_journal_line_rev2" .
+
+dv:journalLine_worktagType rdf:type owl:DatatypeProperty ;
+    rdfs:label "worktag type" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_journal_line_worktag_ukg_us_rev1" .
+
+dv:journalLine_worktagValue rdf:type owl:DatatypeProperty ;
+    rdfs:label "worktag value" ;
+    rdfs:domain dv:JournalLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_journal_line_worktag_ukg_us_rev1" .
+
+dv:ledgerAccount_ledgerAccountBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "ledger account bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- ledger_account_hk is the join." ;
+    rdfs:domain dv:LedgerAccount ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_ledger_account_rev1" .
+
+dv:ledgerAccount_ledgerAccountReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "ledger account reference" ;
+    rdfs:domain dv:LedgerAccount ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_ledger_account_rev1" .
+
+dv:ledgerAccount_organisationReferenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "organisation reference id" ;
+    rdfs:domain dv:LedgerAccount ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_ledger_account_rev1" .
+
+dv:legalEntity_annualrevenue rdf:type owl:DatatypeProperty ;
+    rdfs:label "annualrevenue" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_city rdf:type owl:DatatypeProperty ;
+    rdfs:label "city" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_companyIndustry rdf:type owl:DatatypeProperty ;
+    rdfs:label "company industry" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_companyNumber rdf:type owl:DatatypeProperty ;
+    rdfs:label "company number" ;
+    rdfs:comment "The company's registration number in its jurisdiction. Unique within that jurisdiction and not across one, which is why both are recorded." ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_details_client_portal_rev1" .
+
+dv:legalEntity_country rdf:type owl:DatatypeProperty ;
+    rdfs:label "country" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_domain rdf:type owl:DatatypeProperty ;
+    rdfs:label "domain" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_hsIndustryGroup rdf:type owl:DatatypeProperty ;
+    rdfs:label "hs industry group" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_jurisdiction rdf:type owl:DatatypeProperty ;
+    rdfs:label "jurisdiction" ;
+    rdfs:comment "Where the company is registered, ISO 3166-1 alpha-2. GB, IE, US, AU, NL and BE appear in the roster today." ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_details_client_portal_rev1" .
+
+dv:legalEntity_legalEntityBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "legal entity bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- legal_entity_hk is the join." ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_legal_entity_rev1" .
+
+dv:legalEntity_legalEntityCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "legal entity code" ;
+    rdfs:comment "The identifier HFIG assigns to a legal entity, stable across every rename and rebrand. Authored rather than federated, so one company is one row whatever feed observed it. Whether this stays an HFIG-assigned code or becomes (jurisdiction, company_number) is LEG-1 in docs/legal_entity_questions.html and is not yet decided." ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_legal_entity_rev1" .
+
+dv:legalEntity_lifecyclestage rdf:type owl:DatatypeProperty ;
+    rdfs:label "lifecyclestage" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_name rdf:type owl:DatatypeProperty ;
+    rdfs:label "name" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_numberofemployees rdf:type owl:DatatypeProperty ;
+    rdfs:label "numberofemployees" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_regionalGroup rdf:type owl:DatatypeProperty ;
+    rdfs:label "regional group" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_regionalGroupGlobal rdf:type owl:DatatypeProperty ;
+    rdfs:label "regional group global" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntity_registeredName rdf:type owl:DatatypeProperty ;
+    rdfs:label "registered name" ;
+    rdfs:comment "The company's name as registered, not as traded. \"Lorien\" is a brand; the entity behind it has a longer name. Recorded as an attribute so a rename is a new version rather than a new company." ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_details_client_portal_rev1" .
+
+dv:legalEntity_registeredStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "registered status" ;
+    rdfs:comment "Active, dormant or dissolved. Recorded and never filtered: a dissolved company still owns history and must still resolve. Gold decides what to show." ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_details_client_portal_rev1" .
+
+dv:legalEntity_state rdf:type owl:DatatypeProperty ;
+    rdfs:label "state" ;
+    rdfs:domain dv:LegalEntity ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_legal_entity_profile_hubspot_rev1" .
+
+dv:legalEntityConsolidation_relationshipStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "relationship status" ;
+    rdfs:comment "Whether this membership is in force. A membership that ends is delivered as a new row saying so, never an update." ;
+    rdfs:domain dv:LegalEntityConsolidation ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "esat_legal_entity_consolidation_effectivity_workday_rev1" .
+
+dv:operatingCompany_operatingCompanyBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "operating company bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- operating_company_hk is the join." ;
+    rdfs:domain dv:OperatingCompany ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_operating_company_rev1" .
+
+dv:operatingCompany_referenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference id" ;
+    rdfs:domain dv:OperatingCompany ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_operating_company_rev1" .
+
+dv:operatingCompany_referenceType rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference type" ;
+    rdfs:domain dv:OperatingCompany ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_operating_company_rev1" .
+
+dv:payPeriod_payPeriodBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay period bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- pay_period_hk is the join." ;
+    rdfs:domain dv:PayPeriod ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_pay_period_rev1" .
+
+dv:payPeriod_payPeriodEndDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay period end date" ;
+    rdfs:domain dv:PayPeriod ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_pay_period_rev1" .
+
+dv:payPeriod_payPeriodStartDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay period start date" ;
+    rdfs:domain dv:PayPeriod ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_pay_period_rev1" .
+
+dv:payrollDetail_amount rdf:type owl:DatatypeProperty ;
+    rdfs:label "amount" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "restricted" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_codeClass rdf:type owl:DatatypeProperty ;
+    rdfs:label "code class" ;
+    rdfs:comment "What the code does to money: net_cash, deduction, tax or earning. The classification this satellite exists to compute." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_codeType rdf:type owl:DatatypeProperty ;
+    rdfs:label "code type" ;
+    rdfs:comment "One of N, D or T -- the payroll code's type as the source classifies it." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_currency rdf:type owl:DatatypeProperty ;
+    rdfs:label "currency" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_eeErIndicator rdf:type owl:DatatypeProperty ;
+    rdfs:label "ee er indicator" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_employerCostAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "employer cost amount" ;
+    rdfs:comment "The portion of this payroll line borne by the employer rather than the worker. Masked by governance.mask_money, so it reads NULL to an identity outside usnc_data_analyst_finance or scope_unmask_currency_values." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_glAccountAsAsserted rdf:type owl:DatatypeProperty ;
+    rdfs:label "gl account as asserted" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_grossAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "gross amount" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "restricted" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_hours rdf:type owl:DatatypeProperty ;
+    rdfs:label "hours" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_liabilityParty rdf:type owl:DatatypeProperty ;
+    rdfs:label "liability party" ;
+    rdfs:comment "Who bears the cost -- employee, employer or none. Decides which side of the GL the amount belongs on." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_lineSequence rdf:type owl:DatatypeProperty ;
+    rdfs:label "line sequence" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_mappedLedgerAccount rdf:type owl:DatatypeProperty ;
+    rdfs:label "mapped ledger account" ;
+    rdfs:comment "The GL account this classification posts to. The mapping is what this satellite computes; the raw payroll line carries no account of its own." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_payCheckDate rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay check date" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_payCheckReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "pay check reference" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_payrollCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "payroll code" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_payrollCodeCategory rdf:type owl:DatatypeProperty ;
+    rdfs:label "payroll code category" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_payrollRegisterReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "payroll register reference" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_rate rdf:type owl:DatatypeProperty ;
+    rdfs:label "rate" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "restricted" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_ruleVersion rdf:type owl:DatatypeProperty ;
+    rdfs:label "rule version" ;
+    rdfs:comment "The version of the classification rules this row was computed under, so a figure can be traced back to the rules that produced it rather than to today's." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_taxAuthorityCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "tax authority code" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_taxableAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "taxable amount" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "restricted" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_workStateCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "work state code" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:payrollDetail_workerWithholdingAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "worker withholding amount" ;
+    rdfs:comment "The portion withheld from the worker's pay. Masked by governance.mask_money, so it reads NULL to an identity outside usnc_data_analyst_finance or scope_unmask_currency_values." ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "csat_payroll_line_classification_rev1" .
+
+dv:payrollDetail_ytdAmount rdf:type owl:DatatypeProperty ;
+    rdfs:label "ytd amount" ;
+    rdfs:domain dv:PayrollDetail ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "restricted" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_payroll_detail_rev2" .
+
+dv:supplier_curncyid rdf:type owl:DatatypeProperty ;
+    rdfs:label "curncyid" ;
+    rdfs:comment "The vendor's default currency code. An identifier, not an amount." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_supplier_details_gp_vendor_rev1" .
+
+dv:supplier_pymtrmid rdf:type owl:DatatypeProperty ;
+    rdfs:label "pymtrmid" ;
+    rdfs:comment "The vendor's default payment terms code. An identifier, not an amount." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_supplier_details_gp_vendor_rev1" .
+
+dv:supplier_supplierBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "supplier bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- supplier_hk is the join." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_supplier_rev2" .
+
+dv:supplier_supplierCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "supplier code" ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_supplier_rev2" .
+
+dv:supplier_supplierTenant rdf:type owl:DatatypeProperty ;
+    rdfs:label "supplier tenant" ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_supplier_rev2" .
+
+dv:supplier_venddba rdf:type owl:DatatypeProperty ;
+    rdfs:label "venddba" ;
+    rdfs:comment "The vendor's trading name -- \"doing business as\" -- where GP holds one. Frequently empty and frequently a different spelling of vendname rather than a different company." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_supplier_details_gp_vendor_rev1" .
+
+dv:supplier_vendname rdf:type owl:DatatypeProperty ;
+    rdfs:label "vendname" ;
+    rdfs:comment "The vendor's name as Great Plains holds it, within one company's books. Not a key and not reliable as one: 630 vendor ids carry different names in different operating companies, which is why the id is scoped rather than the name normalised." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_supplier_details_gp_vendor_rev1" .
+
+dv:supplier_vendshnm rdf:type owl:DatatypeProperty ;
+    rdfs:label "vendshnm" ;
+    rdfs:comment "GP's short name for the vendor. A display convenience, carried because it is what appears on some GP reports and a reconciliation against them needs it." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_supplier_details_gp_vendor_rev1" .
+
+dv:supplier_vendstts rdf:type owl:DatatypeProperty ;
+    rdfs:label "vendstts" ;
+    rdfs:comment "GP's vendor status -- active, inactive, temporary, hold. Recorded and never filtered: a vendor on hold still owns payables history and must still resolve." ;
+    rdfs:domain dv:Supplier ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "sat_supplier_details_gp_vendor_rev1" .
+
+dv:timesheetLine_amount rdf:type owl:DatatypeProperty ;
+    rdfs:label "amount" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_currency rdf:type owl:DatatypeProperty ;
+    rdfs:label "currency" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_lineNo rdf:type owl:DatatypeProperty ;
+    rdfs:label "line no" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_rate rdf:type owl:DatatypeProperty ;
+    rdfs:label "rate" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "financial" ;
+    dv:maskFunction "governance.mask_money" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_timeType rdf:type owl:DatatypeProperty ;
+    rdfs:label "time type" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_timesheetReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "timesheet reference" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_unitType rdf:type owl:DatatypeProperty ;
+    rdfs:label "unit type" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_units rdf:type owl:DatatypeProperty ;
+    rdfs:label "units" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:timesheetLine_weekEnding rdf:type owl:DatatypeProperty ;
+    rdfs:label "week ending" ;
+    rdfs:domain dv:TimesheetLine ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "nhl_timesheet_line_rev2" .
+
+dv:wdReference_referenceId rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference id" ;
+    rdfs:domain dv:WdReference ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_wd_reference_rev1" .
+
+dv:wdReference_referenceIdType rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference id type" ;
+    rdfs:domain dv:WdReference ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_wd_reference_rev1" .
+
+dv:wdReference_referenceStatus rdf:type owl:DatatypeProperty ;
+    rdfs:label "reference status" ;
+    rdfs:comment "Whether Workday still offers this reference value. A withdrawal is delivered as a new row saying so, never as an update." ;
+    rdfs:domain dv:WdReference ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "esat_wd_reference_effectivity_workday_rev1" .
+
+dv:wdReference_wdReferenceBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "wd reference bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- wd_reference_hk is the join." ;
+    rdfs:domain dv:WdReference ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_wd_reference_rev1" .
+
+dv:worker_assessedOn rdf:type owl:DatatypeProperty ;
+    rdfs:label "assessed on" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_hr_eu_rev1" .
+
+dv:worker_competencyCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "competency code" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_hr_eu_rev1" .
+
+dv:worker_level rdf:type owl:DatatypeProperty ;
+    rdfs:label "level" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_hr_eu_rev1" .
+
+dv:worker_masKey rdf:type owl:DatatypeProperty ;
+    rdfs:label "mas key" ;
+    rdfs:comment "The sub-key that makes a multi-active satellite's rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence." ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_striive_eu_rev1" .
+
+dv:worker_proficiency rdf:type owl:DatatypeProperty ;
+    rdfs:label "proficiency" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_striive_eu_rev1" .
+
+dv:worker_skillCode rdf:type owl:DatatypeProperty ;
+    rdfs:label "skill code" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_striive_eu_rev1" .
+
+dv:worker_verifiedAt rdf:type owl:DatatypeProperty ;
+    rdfs:label "verified at" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "msat_worker_skills_striive_eu_rev1" .
+
+dv:worker_workerBk rdf:type owl:DatatypeProperty ;
+    rdfs:label "worker bk" ;
+    rdfs:comment "The business key of this hub in readable form, for a human reading a row. Never joined on -- worker_hk is the join." ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_worker_rev1" .
+
+dv:worker_workerReference rdf:type owl:DatatypeProperty ;
+    rdfs:label "worker reference" ;
+    rdfs:domain dv:Worker ;
+    dv:typeUndeclared "true" ;
+    dv:sqlType "source-derived" ;
+    dv:classification "internal" ;
+    dv:sourceTable "hub_worker_rev1" .

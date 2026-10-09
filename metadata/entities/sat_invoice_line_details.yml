@@ -1,0 +1,125 @@
+# THE LINE'S MEASURES AND ITS DESCRIPTIVE DETAIL, split off nhl_invoice_line on 25 Sep 2026.
+#
+# WHY IT EXISTS. nhl_invoice_line carried nineteen descriptive columns and five money masks
+# on a non-historised link. README's own rule is that a link carries keys and that
+# descriptive attributes belong on a satellite, and validation enforces the first half of
+# that ("links carry keys only"). An NHL is allowed transaction detail, which is how this
+# grew: every column that described the line landed on the link because there was nowhere
+# else to put it.
+#
+# AND BECAUSE THE PIPELINE WOULD NOT BUILD. raw_vault_pay_bill never left INITIALIZING in
+# four attempts, at 50-52% driver GC, on 29,426 source rows. A bisect settled it: with
+# invoice_line deactivated the pipeline completed in 95 seconds. Among the NHLs that DO
+# build -- journal_line (4 parents, 2 masks, 8 payload) and general_journal_line (3 parents,
+# 4 masks, 15 payload) -- invoice_line was the outlier on one axis only, a ten-column
+# transaction key against their one. That is now one hashed column, and the measures that
+# made the declared schema wide are here instead.
+#
+# WHAT IS HISTORISED THAT WAS NOT. On the link these values could only be replaced; here
+# they are versioned by hashdiff, so a re-stated invoice line is a new version rather than a
+# silent overwrite. That is a gain the split brings on its own merits, independent of why it
+# was made.
+
+name: invoice_line_details
+kind: sat
+domain: pay_bill
+parents: [invoice_line]
+key_style: federated
+sensitivity: financial
+
+payload:
+  # ORDER IS PART OF THE CONTRACT -- spec.check_payload_order refuses a reordering, because
+  # the hashdiff is taken over the payload in declared order. New columns append at the END.
+  - invoice_line_item_amount_client
+  - invoice_line_item_amount_supplier
+  - tax_amount
+  - msp_line_amount
+  - rate
+  - hours
+  - invoice_line_item_ref
+  - task_code
+  - rate_category
+  - worker_first_name
+  - worker_last_name
+  - project_code
+  - task_code_ts
+  - task_code_es
+  - task_code_mi
+  - expenditure_type_ts
+  - expenditure_type_es
+  - expenditure_type_mi
+  - expenditure_organization_ts
+  - expenditure_organization_es
+  - expenditure_organization_mi
+
+masks:
+  # THE SAME FIVE THAT WERE ON THE LINK, moved with the columns they protect. Under parent
+  # decision D3 a column mask is the vault's only PII defence, so these travel with the
+  # data rather than being re-decided.
+  invoice_line_item_amount_client: governance.mask_money
+  invoice_line_item_amount_supplier: governance.mask_money
+  tax_amount: governance.mask_money
+  msp_line_amount: governance.mask_money
+  rate: governance.mask_money
+
+sources:
+  - name: FIELDGLASS_US
+    # READS THE BRONZE TABLE DIRECTLY under the same conformance profile as the link, so
+    # both see identical rows -- the same filter, the same renames, the same
+    # line_reference. A satellite that saw a different row set from its parent link would
+    # hang detail off lines that do not exist.
+    bronze_table: 01_usnc_bronze_dev.sap_fieldglass_raw.invoices
+    # GENERATION 2 since 28 September 2026. Bronze dropped and recreated this table
+    # (new Delta id 06b65224-ef33-44fb-beb5-6ca4892277fb), so the generation-1
+    # checkpoint names a Delta object that no longer exists and this flow fails at
+    # analysis with [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE]. See
+    # SourceBinding.stream_generation: a fresh checkpoint re-reads the source and
+    # APPENDS, and the duplicate staging rows dissolve at the hub anti-join.
+    stream_generation: 2
+    conform: fieldglass_us_invoice
+    freshness_sla_hours: 168
+    # THE LINK'S KEY IS RECOMPUTED, NOT COPIED, and that is why all four grandparents
+    # appear here. A link-parented satellite composes its parent's hash key from the link's
+    # own parents' business keys plus the link's transaction key -- so the two cannot drift
+    # apart. Same shape csat_invoice_line_gie already uses against this link.
+    parent_keys:
+      invoice: [buyer_tenant, invoice_id]
+      supplier: [buyer_tenant, supplier_code]
+      worker: [worker_id]
+      client: [buyer_tenant]
+    payload:
+      - invoice_line_item_amount_client
+      - invoice_line_item_amount_supplier
+      - tax_amount
+      - msp_line_amount
+      - rate
+      - hours
+      - invoice_line_item_ref
+      - task_code
+      - rate_category
+      - worker_first_name
+      - worker_last_name
+      - project_code
+      - task_code_ts
+      - task_code_es
+      - task_code_mi
+      - expenditure_type_ts
+      - expenditure_type_es
+      - expenditure_type_mi
+      - expenditure_organization_ts
+      - expenditure_organization_es
+      - expenditure_organization_mi
+    # EVERY MASKED COLUMN DECLARES ITS TYPE, because the MASK clause is emitted into the
+    # table definition. DECIMAL(18,2) matches governance.mask_money's parameter. `rate` is
+    # already normalised to NULL for the empty string by the conformance profile, so this
+    # cast converts nothing that was ever a value.
+    cast:
+      invoice_line_item_amount_client: DECIMAL(18,2)
+      invoice_line_item_amount_supplier: DECIMAL(18,2)
+      tax_amount: DECIMAL(18,2)
+      msp_line_amount: DECIMAL(18,2)
+      rate: DECIMAL(18,2)
+    # NO dedup_by. A satellite that dedupes on its parent key stores one version per key for
+    # ever: the rows are dropped before the hashdiff that would have detected a real change
+    # is computed. The LINK dedupes on line_reference; this records what changed.
+    applied_dts_column: invoice_submit_date

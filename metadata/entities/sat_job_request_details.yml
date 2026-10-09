@@ -1,0 +1,187 @@
+# PLACEHOLDER BRONZE TABLES: every bronze_table below is a placeholder.
+# Replace with the real fully-qualified table before deploying -- the pipeline fails
+# at definition time otherwise. See DEPLOY.md Phase 0a.
+#
+# ONE ENTITY, THREE SOURCES, THREE TABLES.
+#
+# The entity is the business concept -- job_request_details -- and is deliberately
+# source-independent. The same descriptive payload arrives from every VMS we integrate.
+#
+# The factory generates one table PER SOURCE:
+#     sat_job_request_details_striive_eu
+#     sat_job_request_details_bullhorn_eu
+#     sat_job_request_details_prounity_eu
+#
+# That is the one-source-per-satellite rule, enforced by construction: a Bullhorn schema
+# change cannot corrupt the change history of the Pro-Unity satellite, and retiring a
+# source retires exactly one table. Adding a fourth VMS is four lines here, not a new file.
+#
+# Each source maps its OWN column names into the shared payload order. Payload order is a
+# contract per source: new columns are appended at the END only.
+name: job_request_details
+kind: sat
+domain: job
+parents: [job_request]
+sensitivity: internal
+change_detection: cdc
+
+payload:
+  - job_title
+  - city
+  - country
+  - contract_type
+  - positions
+  - status
+  - closing_date
+
+sources:
+  - name: STRIIVE_EU
+    bronze_table: hfig_eu.bronze.striive_job_request
+    # parent_keys, ADDED WITH THE tenant_scoped RE-KEY. Without it this binding takes
+    # factory's fallback -- hash_key(key_columns) -- which knows nothing about the
+    # NOT_APPLICABLE literal hub_job_request now supplies for its tenant position, so the
+    # foreign key would hash one component where the hub hashes two. Declaring the parent
+    # routes the derivation through spec.parent_key_components, which looks the literal up
+    # on the HUB's binding for the same source and folds it in -- which is what makes this
+    # key identical to the hub's by construction rather than by careful copying.
+    parent_keys:
+      job_request: [reference_code]
+    key_columns: [reference_code]
+    payload: [job_title, city, country, contract_type, positions, status, closing_date]
+    applied_dts_column: last_modified_at
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+    expectations: [positions_positive, status_known]
+
+  - name: BULLHORN_EU
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.bullhorn_native_raw.joborders
+    # parent_keys, ADDED WITH THE tenant_scoped RE-KEY. Without it this binding takes
+    # factory's fallback -- hash_key(key_columns) -- which knows nothing about the
+    # NOT_APPLICABLE literal hub_job_request now supplies for its tenant position, so the
+    # foreign key would hash one component where the hub hashes two. Declaring the parent
+    # routes the derivation through spec.parent_key_components, which looks the literal up
+    # on the HUB's binding for the same source and folds it in -- which is what makes this
+    # key identical to the hub's by construction rather than by careful copying.
+    parent_keys:
+      job_request: [joborderid]
+    key_columns: [joborderid]
+    # Bullhorn's column names differ; the payload maps position-for-position onto the
+    # entity's declared payload order.
+    payload: [title, city, countrycode, employmenttype, numopenings, status, dateclosed]
+    applied_dts_column: datelastmodified
+    # NO dedup_by ON A SATELLITE, and it is not an omission.
+    #
+    # factory._stage_full implements dedup_by as a streaming dropDuplicates() with no
+    # watermark, so its state is retained indefinitely and a joborderid seen in ANY
+    # earlier batch is dropped on sight. On a hub that is correct -- a hub row is the key
+    # and nothing else, so the second copy carries no new information, and hub_job_request
+    # keeps its dedup_by for exactly that reason. On a SATELLITE it is data loss: the
+    # payload is what changes, dropDuplicates keys only on joborderid, and the row is
+    # discarded BEFORE its hashdiff is ever computed. Bullhorn would store one version per
+    # job order for ever -- a re-delivered order whose title changed could never reach
+    # sat_job_request_details_bullhorn_eu at all, and the A -> B -> A guarantee
+    # checks/load_satellites.py provides would be guaranteeing something the feed can
+    # never present.
+    #
+    # Within-batch duplicates therefore reach the satellite's staging log, which is what
+    # the log is for: load_satellites' LAG(hashdiff) over the whole log collapses
+    # CONSECUTIVE duplicates and keeps genuine changes, which is the correct rule and the
+    # one dropDuplicates cannot express.
+
+  # FIELDGLASS carries a STANDARD column set plus per-client custom columns. Only the
+  # standard set maps here; the custom columns go to msat_job_request_custom_field,
+  # because putting them in a typed satellite would mean a schema change to a table
+  # serving 300 clients every time one of them is onboarded.
+  # FIELDGLASS_US, renamed from FIELDGLASS_EU: there is no EU instance, and the source
+  # name is hashed INTO the key, so the old name was part of the identity of every row this
+  # would have loaded. Reads the union view checks/apply_source_unions.py builds over the 30
+  # live per-tenant tables, and the real column names -- `buyer` and `job_posting_id`, not
+  # the `buyer_code`/`posting_id` this file guessed before anyone looked at the source.
+  #
+  # NO parent_keys HERE, and that is correct rather than an omission: hub_job_request's
+  # FIELDGLASS_US binding supplies BOTH key positions from columns, so there is no literal
+  # to fold in and the fallback derivation over the same two columns equals the hub's key.
+  # NOT ACTIVE, AND ITS PAYLOAD IS STILL INVENTED. The KEY columns below are real -- the
+  # union view carries buyer and job_posting_id -- but everything else in this binding was
+  # written before anyone looked at Fieldglass, and the pipeline said so at graph analysis:
+  #
+  #   [UNRESOLVED_COLUMN] `last_updated_utc` cannot be resolved
+  #
+  # Measured against the view's 82 real columns, 4 Sep. What this binding asks for, and what
+  # Fieldglass actually calls it:
+  #
+  #   posting_title          -> job_posting_title
+  #   work_location_city     -> city
+  #   work_location_country  -> country_region
+  #   worker_type            -> labor_type
+  #   quantity               -> num_positions_requested
+  #   posting_status         -> job_posting_status
+  #   application_close_date -> job_posting_closed_date
+  #   _cdc_op, _manifest_id  -> absent; Fieldglass delivers neither
+  #
+  # AND THE CLOCK IS A REAL MODELLING QUESTION, not a rename -- now BRZ-15, with the
+  # measurements. applied_dts is the BUSINESS clock, and every candidate in the feed was
+  # measured on 5 Sep over 270,286 valid-key rows and disqualified:
+  #
+  #   job_posting_create_date        1.0 distinct per posting -- constant
+  #   uploaded                       1.0 distinct per posting -- constant, all 7,230
+  #   job_posting_distribution_date  42.4% null
+  #   timestamp                      the only column that moves, and FROZEN across 562 of
+  #                                  the 1,127 postings whose content actually changes
+  #
+  # Declaring nothing is worse than any of them: applied_dts becomes NULL, and the _v1 view
+  # end-dates on it, so every interval is NULL and every version reads as CURRENT -- a wrong
+  # answer given silently rather than an absent one.
+  #
+  # BRZ-15 asks Bronze for a modification timestamp or the `revision` column they already
+  # emit on 62 io_worker tables. If the answer is no, the fallback is `timestamp` with the
+  # _v1 view suppressed for this satellite alone: insert-only history, and no as-of-date
+  # answer offered rather than one that is wrong for half the postings. `job_posting_create_date` is constant per posting, so using it would
+  # give every version the same applied_dts and the _v1 view would produce zero-length
+  # intervals. `timestamp` changes per delivery but is a DELIVERY clock, which this repo
+  # deliberately keeps distinct from the business one (see dedup_order). Choosing between
+  # "use the delivery clock and say so" and "ask Bronze for a modification timestamp" is
+  # Adrian's call.
+  #
+  # So the HUB binding is active and this one is not: hub_job_request needs only the two
+  # key columns, both of which are real. Renaming the payload without settling the clock
+  # would produce a satellite whose history cannot be read.
+  # THE bronze_table IS A PLACEHOLDER ON PURPOSE, and the gate is why. verify_repo's rule
+  # is "a binding reading something REAL in this lake must be in active_sources", because a
+  # real binding left out silently loads nothing. Pointing this at the union view -- which
+  # IS real -- made the gate demand activation for a binding whose payload cannot resolve.
+  # The rule has two states and this is a third: real source, unready binding. A placeholder
+  # says that truthfully, and the eventual target is one line away, named right here:
+  #
+  #     02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_job_posting
+  #
+  # Repoint it AND add job_request_details/FIELDGLASS_US to active_sources in the same
+  # change that maps the payload below. The gate will then require exactly that.
+  - name: FIELDGLASS_US
+    bronze_table: hfig_usnc.bronze.PLACEHOLDER_fieldglass_us_job_posting
+    key_columns: [buyer, job_posting_id]
+    payload: [posting_title, work_location_city, work_location_country, worker_type,
+              quantity, posting_status, application_close_date]
+    applied_dts_column: last_updated_utc
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+
+  - name: PROUNITY_EU
+    bronze_table: hfig_eu.bronze.prounity_request
+    # parent_keys, ADDED WITH THE tenant_scoped RE-KEY. Without it this binding takes
+    # factory's fallback -- hash_key(key_columns) -- which knows nothing about the
+    # NOT_APPLICABLE literal hub_job_request now supplies for its tenant position, so the
+    # foreign key would hash one component where the hub hashes two. Declaring the parent
+    # routes the derivation through spec.parent_key_components, which looks the literal up
+    # on the HUB's binding for the same source and folds it in -- which is what makes this
+    # key identical to the hub's by construction rather than by careful copying.
+    parent_keys:
+      job_request: [request_ref]
+    key_columns: [request_ref]
+    payload: [request_title, location_city, location_country, engagement_type, headcount, request_state, valid_until]
+    applied_dts_column: modified_ts
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id

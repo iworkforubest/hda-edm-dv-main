@@ -1,0 +1,41 @@
+# WHEN EACH CONTAINMENT EDGE WAS IN FORCE, driven on the child.
+#
+# For any consolidation group, at most one parent edge is open at a time. Closing and
+# opening are both inserts; nothing here is updated, which is what keeps "which group did
+# this roll into in March" answerable.
+#
+# WHAT WORKDAY CANNOT GIVE US, stated rather than discovered later. Every organisation
+# carries Last_Updated_DateTime and it is a real modified timestamp -- but it says a row
+# CHANGED, not when the change took legal effect, and Get_Organizations takes no as-of
+# parameter in the criteria we send. So the first load establishes today's structure and
+# effectivity accrues from subsequent loads. History before the first load is not
+# recoverable from this source. That is a property of the source, not a defect to fix.
+name: consolidation_hierarchy_effectivity
+kind: esat
+domain: reference
+sensitivity: internal
+
+parents: [consolidation_hierarchy]
+payload: [relationship_status]
+driving_key: child_consolidation_group_hk
+
+notes: >
+  Effectivity of each parent/child edge in consolidation_hierarchy, driven on the child.
+  Traverse the tree through this satellite whenever the question is "what did this look
+  like on a date"; traverse the link alone only to ask whether an edge has ever existed.
+
+descriptions:
+  relationship_status: >-
+    Whether this containment edge is in force. An edge that ends is delivered as a new row
+    saying so, never an update.
+
+sources:
+  - name: WORKDAY
+    bronze_table: PLACEHOLDER.reference.wd_organization
+    parent_keys:
+      parent: [superior]
+      child: [reference_id]
+    payload: [relationship_status]
+    # THE BUSINESS CLOCK, NOT THE LOAD CLOCK. An edge corrected retrospectively must date
+    # from when it was effective, or every historical rollup shifts to the day we heard.
+    applied_dts_column: effective_from

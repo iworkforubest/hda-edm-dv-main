@@ -1,0 +1,130 @@
+# Quality reporting over the control schema.
+#
+# TWO MECHANISMS, DELIBERATELY DIFFERENT.
+#
+# The DASHBOARD would, with embedded credentials, let a viewer see the data through the
+# publisher's identity and need no UC grant of their own. That was the design's reason for
+# reaching for them, and it is why the datasets query the control schema ONLY: a raw_vault
+# dataset here would put vault rows in front of ungranted viewers.
+# tests/test_accelerator.py asserts the datasets stay inside the control schema.
+# EMBEDDED CREDENTIALS ARE COMMITTED OFF (see the block on quality_silver below), so in
+# this release a viewer needs their own grant on the control schema and business users
+# cannot use this dashboard yet.
+#
+# The GENIE SPACE embeds nothing. Genie evaluates data access as the ASKING USER, so a
+# question about data the user cannot read returns an empty response.
+#
+# THE GENIE SPACE DECLARES THE SIX CONTROL TABLES AND NOTHING ELSE. It carries no vault
+# table, so ROW-LEVEL REJECT INVESTIGATION IS NOT AVAILABLE THROUGH IT in this release --
+# an engineer who needs to see which rows were rejected queries raw_vault.qtn_* directly,
+# with their own grant, in a notebook or the SQL editor, exactly as today. Pointing a
+# Genie space at the vault would be safe (access is evaluated per user), but the DABs
+# bundle schema does not document the shape of `serialized_space`, so the
+# {tables, instructions, sample_questions} structure the emitter writes is UNVALIDATED
+# against the live API. Validating that shape is the first task of any vault-scoped space;
+# adding table names to an unconfirmed structure is not. tests/test_accelerator.py asserts
+# the `tables` list is exactly quality.CONTROL_TABLES, so widening it turns a check red.
+#
+# ONE ARTEFACT, NINE TARGETS: dataset_catalog overrides the catalog for every dataset, so
+# the committed queries stay unqualified and the catalog is resolved per target here.
+#
+# EIGHT OF THE NINE TARGETS CANNOT DEPLOY THESE RESOURCES AS THEY STAND. All three use
+# ${var.sql_warehouse_id}, and only usnc_tds sets it (databricks.yml:374); the global
+# default is "" (databricks.yml:154). An unset value fails the deploy rather than querying
+# the wrong lake, so this is loud rather than dangerous -- but deploying to any other
+# target means setting that variable for that target first. See
+# docs/quality_dashboard_runbook.md.
+resources:
+  dashboards:
+    quality_silver:
+      display_name: "Load quality -- ${bundle.target}"
+      file_path: ../dashboards/quality_silver_${bundle.target}.lvdash.json
+      parent_path: ${workspace.root_path}/dashboards
+      warehouse_id: ${var.sql_warehouse_id}
+      # COMMITTED FALSE ON PURPOSE, AND GATED. Measured live on the deployment directory:
+      # `users CAN_MANAGE inherited=True`. Every workspace user can edit what is deployed
+      # there, and an embedded-credentials dashboard runs its queries as the PUBLISHER --
+      # who holds the privileged group, so masks resolve to CLEARTEXT. A user could repoint
+      # a dataset at raw_vault and read masked payroll data with no grant at all. DEF-43
+      # records that bundle `permissions:` cannot fix it: the CAN_MANAGE is inherited from
+      # /Shared and is not revocable on a child. tests/test_accelerator.py FAILS THE BUILD
+      # on any value but a bare `false` while no bundle_root_prefix is on the
+      # proven-restricted allowlist -- and that allowlist is EMPTY, so the gate is
+      # default-deny and refuses every prefix today, not only /Workspace/Shared.
+      embed_credentials: false
+      # KEPT, BUT THEY ARE NOT WHAT BINDS THE TABLES. Measured 27 Aug: these do not reach
+      # the deployed dashboard, and every tile failed with TABLE_OR_VIEW_NOT_FOUND because
+      # the warehouse resolved bare names against hive_metastore.default. The names are now
+      # fully qualified in the artefact, which is why it is per target. These remain only as
+      # a default for anything added by hand in the UI.
+      dataset_catalog: ${var.catalog}
+      dataset_schema: ${var.control_schema}
+
+    # ==================================================================== #
+    # DISABLED BY DEFAULT -- AND IT MUST STAY THAT WAY BETWEEN EXERCISES.
+    #
+    # A DECLARED RESOURCE IS CREATED ON THE NEXT DEPLOY, not when someone decides to run
+    # the exercise. While this block was live, the FIRST `databricks bundle deploy` to any
+    # target published a dashboard titled "Load quality (SYNTHETIC -- delete after
+    # testing)" pointing at tst_ tables that do not exist -- so every tile failed at view
+    # time, in a folder every workspace user can see, with nothing having gone wrong. The
+    # runbook told the operator to remove the resource AFTER the exercise; nothing told
+    # them that the deploy BEFORE it had already created the dashboard.
+    #
+    # So it is commented out, ready to enable:
+    #   1. uncomment the block between the BEGIN/END markers below;
+    #   2. apply governance/control_test_objects.sql, deploy, and run the exercise;
+    #   3. comment it out again and redeploy, then apply the drop script.
+    #
+    # KEEP `embed_credentials: false` IN THE COMMENTED TEXT. Neither half of the
+    # embedded-credentials gate can see a commented line -- the value scan strips comments
+    # and the presence walk parses YAML -- so this template is the one place that gate
+    # cannot protect. tests/test_accelerator.py therefore un-comments the block between
+    # the markers and asserts the template itself declares `embed_credentials: false`, the
+    # right file_path, and the per-target catalog and schema, so uncommenting it can never
+    # publish with the publisher's identity.
+    #
+    # BEGIN DISABLED RESOURCE quality_silver_synthetic
+    # quality_silver_synthetic:
+    #   display_name: "Load quality (SYNTHETIC -- delete after testing) -- ${bundle.target}"
+    #   file_path: ../dashboards/quality_silver_synthetic_${bundle.target}.lvdash.json
+    #   parent_path: ${workspace.root_path}/dashboards
+    #   warehouse_id: ${var.sql_warehouse_id}
+    #   embed_credentials: false
+    #   dataset_catalog: ${var.catalog}
+    #   dataset_schema: ${var.control_schema}
+    # END DISABLED RESOURCE quality_silver_synthetic
+    # ==================================================================== #
+
+  # BEGIN DISABLED RESOURCE quality_silver_genie
+  #
+  # DISABLED 27 AUGUST, after the deploy attempt that taught us the shape. The service
+  # rejected our serialized_space with "Expected an object, not an array": the table list
+  # belongs at data_sources.tables with each entry keyed `identifier`, and `version` is
+  # required. tools/emit_quality_dashboard.py now emits that proved shape.
+  #
+  # It stays disabled for a different reason. `instructions` is accepted as a key but its
+  # inner field is neither `content` nor `text`, so the artefact carries none -- and those
+  # instructions are the ONLY thing stopping Genie answering "0 rejects" to "how many rows
+  # failed" and implying the pipeline is clean, when the truth is that no rule exists to
+  # evaluate. Shipping the space without them would deliver exactly the misleading answer
+  # the design exists to prevent.
+  #
+  # Second unresolved problem: a Genie space has no dataset_catalog equivalent, so the bare
+  # names in the artefact have nothing to resolve against. A deployable space needs
+  # per-target qualification.
+  #
+  # tests/test_accelerator.py fails the build if this block is un-commented while the
+  # artefact still lacks the not-evaluated instructions.
+  # genie_spaces:
+  # quality_silver_genie:
+  # title: "Load quality (control tables) -- ${bundle.target}"
+  # description: >-
+  # Load quality over the six silver CONTROL tables. Access is evaluated per user, so
+  # this shows nothing to anyone without a grant on them. It declares NO vault table:
+  # row-level reject investigation is not available here in this release -- query
+  # raw_vault.qtn_* directly with your own grant.
+  # file_path: ../dashboards/quality_silver.geniespace.json
+  # parent_path: ${workspace.root_path}/dashboards
+  # warehouse_id: ${var.sql_warehouse_id}
+  # END DISABLED RESOURCE quality_silver_genie

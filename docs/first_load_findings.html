@@ -1,0 +1,248 @@
+<title>First Load of the Data Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+:root{
+  --ground:#FCFCFD; --surface:#FFFFFF; --surface-2:#F2F4F6;
+  --ink:#161A21; --ink-soft:#535B69; --ink-faint:#828B99;
+  --rule:#E3E6EB; --rule-strong:#C9CFD8;
+  --accent:#2F6F62; --accent-soft:#E8F1EE;
+  --proven:#2C6E49;  --proven-bg:#E9F2EC;
+  --open:#8A6420;    --open-bg:#F8F0E0;
+  --blocked:#A93B33; --blocked-bg:#FAECEA;
+  --shadow:0 1px 2px rgba(22,26,33,.05), 0 10px 28px -14px rgba(22,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#12151A; --surface:#191D24; --surface-2:#21262E;
+    --ink:#E9ECF1; --ink-soft:#9AA3B1; --ink-faint:#737C8B;
+    --rule:#2A3038; --rule-strong:#3A424D;
+    --accent:#6BBFAA; --accent-soft:#17251F;
+    --proven:#72C295;  --proven-bg:#132118;
+    --open:#D2A857;    --open-bg:#241D10;
+    --blocked:#E0827A; --blocked-bg:#251614;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.65);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#12151A; --surface:#191D24; --surface-2:#21262E;
+  --ink:#E9ECF1; --ink-soft:#9AA3B1; --ink-faint:#737C8B;
+  --rule:#2A3038; --rule-strong:#3A424D;
+  --accent:#6BBFAA; --accent-soft:#17251F;
+  --proven:#72C295;  --proven-bg:#132118;
+  --open:#D2A857;    --open-bg:#241D10;
+  --blocked:#E0827A; --blocked-bg:#251614;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.65);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:62rem;margin:0 auto;padding:3.5rem 1.5rem 6rem;display:flex;flex-direction:column;gap:3rem}
+h1,h2{font-family:"IBM Plex Serif",Georgia,serif;text-wrap:balance;margin:0;line-height:1.22}
+h1{font-size:2.6rem;font-weight:600;letter-spacing:-.018em}
+h2{font-size:1.5rem;font-weight:600}
+h3{font-family:"IBM Plex Sans",sans-serif;font-size:1.02rem;font-weight:600;margin:0;letter-spacing:-.004em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em}
+code{background:var(--surface-2);padding:.12em .38em;border-radius:3px;border:1px solid var(--rule)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.72rem;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--accent);font-weight:500}
+.lede{color:var(--ink-soft);max-width:64ch;font-size:1.08rem}
+header{display:flex;flex-direction:column;gap:.9rem;padding-bottom:2rem;border-bottom:1px solid var(--rule)}
+.meta{display:flex;flex-wrap:wrap;gap:.35rem 1.25rem;font-size:.8rem;color:var(--ink-faint);
+  font-family:"IBM Plex Mono",monospace}
+section{display:flex;flex-direction:column;gap:1.15rem}
+.sec-lede{color:var(--ink-soft);max-width:66ch}
+
+/* headline figures */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:7px;overflow:hidden}
+.fig{background:var(--surface);padding:1.15rem 1.25rem;display:flex;flex-direction:column;gap:.2rem}
+.fig .n{font-family:"IBM Plex Serif",serif;font-size:1.85rem;font-weight:600;line-height:1;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.fig .l{font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.07em}
+.fig.ok .n{color:var(--proven)}
+
+/* reconciliation block */
+.recon{background:var(--surface);border:1px solid var(--rule);border-radius:7px;
+  box-shadow:var(--shadow);overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:.62rem .95rem;border-bottom:1px solid var(--rule);white-space:nowrap}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+td.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+td.ok{color:var(--proven);font-weight:500}
+caption{caption-side:bottom;text-align:left;padding:.7rem .95rem;font-size:.82rem;color:var(--ink-faint);border-top:1px solid var(--rule)}
+
+pre{margin:0;background:var(--surface-2);border:1px solid var(--rule);border-radius:6px;
+  padding:.85rem 1rem;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:.8rem;
+  line-height:1.55;color:var(--ink-soft)}
+
+/* decision cards */
+.decisions{display:flex;flex-direction:column;gap:1.15rem}
+.dec{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--stripe);
+  border-radius:7px;box-shadow:var(--shadow);padding:1.4rem 1.55rem;display:flex;flex-direction:column;gap:.85rem}
+.dec.a{--stripe:var(--blocked)} .dec.b{--stripe:var(--open)} .dec.c{--stripe:var(--accent)}
+.dec-top{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap}
+.num-badge{font-family:"IBM Plex Serif",serif;font-size:1.5rem;font-weight:600;color:var(--stripe);line-height:1}
+.pill{font-size:.68rem;font-family:"IBM Plex Mono",monospace;text-transform:uppercase;
+  letter-spacing:.09em;padding:.16rem .5rem;border-radius:99px;font-weight:500;white-space:nowrap}
+.pill.a{background:var(--blocked-bg);color:var(--blocked)}
+.pill.b{background:var(--open-bg);color:var(--open)}
+.pill.c{background:var(--accent-soft);color:var(--accent)}
+.opts{display:flex;flex-direction:column;gap:.5rem;margin-top:.15rem}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:.7rem;align-items:baseline;
+  font-size:.92rem;color:var(--ink-soft)}
+.opt b{color:var(--ink);font-weight:600}
+.opt .mark{color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:.8rem}
+@media (max-width:34rem){.opt{grid-template-columns:1fr;gap:.15rem}}
+
+.callout{background:var(--accent-soft);border:1px solid var(--rule);border-left:3px solid var(--accent);
+  border-radius:7px;padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:.55rem}
+.callout p{font-size:.95rem;color:var(--ink-soft)}
+.callout strong{color:var(--ink)}
+
+footer{border-top:1px solid var(--rule);padding-top:1.6rem;font-size:.85rem;color:var(--ink-faint);
+  display:flex;flex-direction:column;gap:.5rem}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">HFIG EDM · Data Vault Accelerator · usnc_tds</span>
+  <h1>First Load of the Data Vault</h1>
+  <p class="lede">The vault holds data for the first time — 13.2 million rows, loaded idempotently, with gate zero green and deduplication proven against genuinely re-delivered sources. This records what the load established, what only a live run could have found, and three decisions that are now blocking.</p>
+  <div class="meta"><span>25 Aug 2026</span><span>02_usnc_silver_edm_dev.raw_vault</span><span>Accelerator v0.2.0 · rulebook 1.0.0</span></div>
+</header>
+
+<section>
+  <h2>What loaded</h2>
+  <div class="figs">
+    <div class="fig ok"><span class="n">13,206,082</span><span class="l">Rows loaded</span></div>
+    <div class="fig ok"><span class="n">7 / 7</span><span class="l">Gate zero, keys &amp; hashdiffs</span></div>
+    <div class="fig ok"><span class="n">3 / 3</span><span class="l">Journals unique on key</span></div>
+    <div class="fig ok"><span class="n">0</span><span class="l">Rows quarantined</span></div>
+  </div>
+
+  <div class="recon">
+    <table>
+      <caption>Every loaded count reconciles exactly to source cardinality measured before any of this was built. The ghost row is one per structure, seeded so PIT joins stay equi-joins.</caption>
+      <thead><tr><th>Table</th><th>Rows</th><th>Distinct key</th><th>Reconciles to</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">nhl_general_journal_line_closed_year</td><td class="num">6,086,493</td><td class="num ok">identical</td><td>gl30000</td></tr>
+        <tr><td class="mono">hub_accounting_journal</td><td class="num">2,759,294</td><td class="num">2,221,108</td><td>794,888 open + 1,964,404 history + 1 UKG + ghost</td></tr>
+        <tr><td class="mono">nhl_general_journal_line</td><td class="num">2,453,132</td><td class="num ok">identical</td><td>2,453,131 keys + ghost</td></tr>
+        <tr><td class="mono">hub_ledger_account</td><td class="num">1,906,877</td><td class="num">—</td><td>1,906,775 GP + 101 UKG + ghost</td></tr>
+        <tr><td class="mono">nhl_journal_line</td><td class="num">261</td><td class="num ok">identical</td><td>260 keys + ghost</td></tr>
+        <tr><td class="mono">hub_organisation</td><td class="num">24</td><td class="num">12</td><td>11 GP + 11 GP history + UKG + ghost</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="sec-lede">Deduplication is the result worth dwelling on, because both sources genuinely re-deliver. Collapsing them is not a synthetic test.</p>
+
+<pre>gl20000    4,444,172 source rows  →  2,453,131 keys   (~1.81 copies, 7 file deliveries)
+ukg_raw.gl       520 source rows  →        260 keys   (exactly 2 copies, 2 deliveries)
+
+re-run with no source change  →  every count byte-identical</pre>
+
+  <p class="sec-lede">Two identity fixes are proven by the arithmetic rather than by a test. <code>hub_ledger_account</code> holds 1,906,775 GP accounts; keying on the unscoped account index would have produced 361,706, silently merging eleven companies' charts of accounts. <code>hub_accounting_journal</code> took 1,964,404 history journals; without the fiscal year in the key it would have been 1,964,276, because GP reuses journal entry numbers across years.</p>
+</section>
+
+<section>
+  <h2>What only a live run could find</h2>
+  <p class="sec-lede">Before this load the repository held 335 unit checks and 534 repository checks, all passing, against a vault holding nothing. Those checks are genuinely valuable — they caught identity collisions, tautological guards and silent orphans. They are also structurally blind to whether the platform behaves as the design assumed.</p>
+
+  <div class="callout">
+    <h3>One constraint explains three separate failures</h3>
+    <p><strong>A streaming table cannot read its own contents.</strong> Change detection needs to compare incoming rows against what is already stored; the year-end close needs to recognise a row it has already seen; a hub needs one row per business key however many sources supply it. All three are the same operation, and the platform refuses it.</p>
+    <p>Two were solved — change detection by delegating to the source, the year-end close by splitting one entity into two. The third is still open, and the entity split could not fix it because both entities share a hub.</p>
+  </div>
+
+  <p class="sec-lede">Three documented platform assumptions were refuted by contact with the runtime, and two undocumented behaviours surfaced: a task fails on a clean exit as readily as a failing one, and a pipeline library cannot locate itself. Neither is discoverable offline.</p>
+
+  <div class="callout">
+    <h3>The gates themselves were not working</h3>
+    <p>The append-only check — the sharpest assertion in the repository — filtered the catalogue for managed tables, while every vault object is a streaming table. <strong>It could never have seen a single table, in any region, ever.</strong> It failed loudly only because someone had written an explicit "no tables found" guard; without it, the check would have exited successfully having asserted nothing.</p>
+    <p>Separately, no gate could report success at all: a clean exit was treated as a task failure, and the scripts died before running on a path resolution that does not exist in that runtime.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Three decisions</h2>
+  <p class="sec-lede">None of these can be settled from the code. Each needs someone with authority over the estate.</p>
+
+  <div class="decisions">
+
+    <article class="dec a">
+      <div class="dec-top"><span class="num-badge">1</span><h3>Mask group mapping</h3><span class="pill a">Blocking three gates</span></div>
+      <p class="sec-lede">The governance SQL grants to <code>hfig_data_engineering</code>, <code>hfig_analysts</code> and <code>hfig_commercials_reader</code>. <strong>None exists.</strong> The estate uses a different convention entirely — <code>usnc_data_platform_bronze_layer_reader</code>, <code>us_tds_bi_builder</code>, <code>usnc_data_custodian_fieldglass</code>, <code>pii_cleared_us</code>.</p>
+      <p class="sec-lede">This is the third item on the README's own <em>reconcile before first load</em> list, never done. The masks work correctly and deny to everyone, including the gate that verifies them — so the journal integrity check reads every amount as null and refuses to assert. The data is intact behind read-time masking.</p>
+      <p class="sec-lede">The governance step also revokes on the shared bronze catalogue, which this project did not create. A revoke is unconditional and lands; the grant that follows names a group that does not exist and fails. <strong>Running it unmapped would leave nobody able to read bronze.</strong> It is held at a documented stop.</p>
+      <div class="opts">
+        <div class="opt"><span class="mark">needs</span><span>A mapping from the four placeholders to real account-level groups, and a decision on whether this project should alter permissions on a catalogue it does not own.</span></div>
+      </div>
+    </article>
+
+    <article class="dec b">
+      <div class="dec-top"><span class="num-badge">2</span><h3>Hub deduplication</h3><span class="pill b">Open modelling defect</span></div>
+      <p class="sec-lede">A hub holds one row per business key regardless of how many sources supply it. Two hubs do not: the journal hub carries 538,186 duplicate keys, the organisation hub 11.</p>
+      <p class="sec-lede">This is not a loading error. <strong>538,186 journals genuinely exist in both the open-year and history tables</strong>, and each binding deduplicated correctly within itself. Collapsing across bindings requires reading the hub's own contents, which is the constraint above.</p>
+      <div class="opts">
+        <div class="opt"><span class="mark">A</span><span><b>A deduplication step outside the pipeline.</b> The documented fallback, and the same answer change detection will need. Adds a stage the design did not have.</span></div>
+        <div class="opt"><span class="mark">B</span><span><b>Deduplicate at read time</b> through a view over each hub. Cheap, but every consumer must use it, and nothing enforces that.</span></div>
+        <div class="opt"><span class="mark">C</span><span><b>Recompute hubs rather than append to them.</b> A hub is conceptually a set of keys, so this is defensible — but it abandons the append-only guarantee the vault is built on.</span></div>
+      </div>
+    </article>
+
+    <article class="dec c">
+      <div class="dec-top"><span class="num-badge">3</span><h3>Clustering</h3><span class="pill c">Performance regression</span></div>
+      <p class="sec-lede">Nothing in this model can be a clustering column. Hash keys are binary, which the storage layer refuses to cluster on, and the load timestamp falls outside the statistics window on an 85-column journal. Clustering is switched off entirely.</p>
+      <p class="sec-lede">Hash-key joins are the Data Vault access path, so this is a real regression against the design's intent on a six-million-row table that will grow.</p>
+      <div class="opts">
+        <div class="opt"><span class="mark">A</span><span><b>Widen the statistics window</b> so the load timestamp is indexed. A table property, reversible, touches nothing ratified.</span></div>
+        <div class="opt"><span class="mark">B</span><span><b>Make hash keys strings</b> so they can be clustered. This changes a ratified constant and re-keys everything — cheapest now, while one region holds one load, and progressively more expensive after.</span></div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <h2>Status of the gates</h2>
+  <div class="recon">
+    <table>
+      <caption>Two gates refused to assert rather than passing on nothing. After what this exercise found, that is the desired behaviour.</caption>
+      <thead><tr><th>Gate</th><th>Result</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">hash_parity</td><td class="ok">PASSED</td><td>7/7 keys, 7/7 hashdiffs — ran before any load, as required</td></tr>
+        <tr><td class="mono">append_only</td><td class="ok">PASSED</td><td>no mutation; key uniqueness holds on all three journals</td></tr>
+        <tr><td class="mono">aggregate_reconciliation</td><td>NOT EVALUATED</td><td>payroll pair deferred by design — matches the runbook exactly</td></tr>
+        <tr><td class="mono">journal_integrity</td><td>REFUSED</td><td>every amount reads null behind the mask — decision 1</td></tr>
+        <tr><td class="mono">loop1_reconciliation</td><td>BLOCKED</td><td>the approval manifest does not exist in this workspace</td></tr>
+        <tr><td class="mono">mask_survival</td><td>deferred</td><td>waits with the satellites</td></tr>
+        <tr><td class="mono">conformance</td><td>dormant</td><td>needs a second region</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sec-lede">Two workspace prerequisites are absent and were not created: the approval manifest that loop-one reconciliation reads, and the data-quality expectations table. Both are platform objects rather than repository defects.</p>
+</section>
+
+<section>
+  <h2>What this cost, and what it bought</h2>
+  <p class="sec-lede">Forty-three defects were found and recorded across the retarget and this sub-project; fifty-eight decisions were taken and written down with their reasoning and what each costs if wrong. Sixty-five commits. The offline suites grew from 123 and 406 checks to 335 and 534.</p>
+  <p class="sec-lede">The defects worth the effort were not the ones that broke a build. They were the ones that would have passed every check and produced wrong data quietly: a link and its parent hub computing different keys for the same identity; an account index merging eleven companies; journal entry numbers colliding across fiscal years; a guard whose condition could never be true; a mask clause that had never once been valid SQL.</p>
+  <p class="sec-lede">Each was found because something insisted on evidence rather than agreement — and the last of them only because the vault was finally asked to hold real rows.</p>
+</section>
+
+<footer>
+  <p>Every figure was measured against the live workspace on 25 August 2026 and re-derived independently before publication. Queries can be re-run on request.</p>
+  <p>Detail lives in the design specifications and decision ledger in the accelerator repository. Questions to Adrian Turcu.</p>
+</footer>
+
+</div>

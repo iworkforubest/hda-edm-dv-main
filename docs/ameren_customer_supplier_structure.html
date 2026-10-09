@@ -1,0 +1,315 @@
+<title>Ameren Customer and Supplier Structure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2F5D8C; --accent-soft:#E8EEF6;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#7FB0DD; --accent-soft:#1B2632;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#7FB0DD; --accent-soft:#1B2632;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style><div class="wrap">
+
+  <header>
+    <p class="eyebrow">MSP001 Ameren &middot; Party structure &middot; Data &amp; AI</p>
+    <h1>The identifiers already exist. Nobody is asking for them.</h1>
+    <p class="lede">
+      An analysis of the customer and supplier structures in
+      <code>MSP001_Ameren.xlsx</code>, the future-state invoicing design for one of
+      <strong>54 MSP clients</strong>. The modelling question is small and the finding
+      underneath it is not: <strong>Fieldglass already carries a code for every party in this
+      flow, and the design drops all of them &mdash; twice.</strong> One worksheet then asks
+      people to key in by hand what the feed supplies for free.
+    </p>
+    <p class="meta">
+      <span>Analysed 23 September 2026</span>
+      <span>Source: <code>MSP001_Ameren.xlsx</code>, 8 sheets</span>
+      <span>Sample: 225 invoices / 555 lines</span>
+      <span>From <code>data_platform_operations</code></span>
+    </p>
+  </header>
+
+  <div class="note">
+    <h3>The shape of the deal, because the model follows from it</h3>
+    <p>
+      This is an <strong>MSP principal</strong> arrangement, and that makes it a three-party
+      flow with a fourth party on every line. <strong>Guidant Global, Inc.</strong> invoices
+      <strong>Ameren</strong> as principal, and separately pays <strong>23 suppliers</strong>
+      who employ the <strong>161 workers</strong> appearing in this extract.
+    </p>
+    <p>
+      <strong>One Fieldglass invoice line therefore creates two financial obligations with
+      two different counterparties</strong> &mdash; a receivable from Ameren and a payable to
+      a supplier &mdash; and the source states both, along with the margin between them:
+    </p>
+    <div class="ev">Invoice Amount                      122.52     <- what Ameren is billed
+Invoice Line Item Amount (Supplier)  120.00     <- what the supplier is paid
+MSP Line Amount                        2.52     <- our margin, stated per line
+
+Gross Invoice Amount                2450.40     Gross Supplier Invoice Amount  2400.00</div>
+    <p>
+      <strong>That is not a derived figure we have to reconstruct &mdash; it is a source
+      field.</strong> Any model that carries only one of the two amounts throws away the
+      margin and forces someone to recompute it later from two systems.
+    </p>
+  </div>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>The finding &mdash; identifiers exist, and are discarded twice</h2>
+      <span class="why">Once between source and master data, once between source and output. Neither loss is recorded as a decision.</span>
+    </div>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">AME-A</span><h3>The identifier this design depends on exists in no feed we receive</h3><span class="pill b">Corrected 23 Sep</span></div>
+      <dl>
+        <dt>What the master sheet contains</dt><dd>Twenty-three suppliers. <strong>Every one of them has a name, a client code, and nothing else.</strong> Measured across all 23 rows:
+          <div class="ev">Supplier ID VMS       filled  0/23   <- EMPTY for all
+Supplier ID Workday   filled  0/23   <- EMPTY for all
+Supplier Name         filled 23/23
+Client ID VMS         filled 23/23   (all AEE1)
+address / email / nominal code / product / AP BU / currency / terms   0/23
+
+CLIENT MASTER: Client ID Workday  0/1  <- EMPTY   (13 of 16 fields blank)</div>
+          The sheet closes with an instruction to &ldquo;complete blank VMS/Workday IDs &hellip; when confirmed&rdquo;.</dd>
+        <dt>What Fieldglass already sends</dt><dd><div class="ev">Supplier Code   B3G4                      Supplier   Business Integra, Inc.
+Buyer Code      AEE1                      Buyer      Ameren
+Worker ID       AEE1WK00000319            Worker     Singaravadivelu, Bhaskar N</div>
+          <strong>This is where the first version of this analysis was wrong, and the lake corrected it.</strong> We wrote that <code>Supplier Code</code> is the VMS supplier identifier and that the blank column is &ldquo;populated on every invoice line we already receive&rdquo;. The first half is what the workbook says. <strong>The second half is false.</strong> Measured against the lake:
+          <div class="ev">invoice tables in 01_usnc_bronze_dev.fieldglass_raw          0
+supplier_code columns across all 302 fieldglass_raw tables   0
+Ameren families landed: distributed_jobposting, jobposting,
+                        jobseeker, timesheet, worker         (no invoice)</div>
+          <code>Supplier Code</code> is listed in the workbook as a field of the <em>Invoice Buyer Without Status Change Download</em> &mdash; <strong>an extract this estate does not receive</strong>. Nothing we are sent carries it. So the identifier is not waiting to be extracted; <strong>it has to be asked for</strong>, and that is a different request to a different team.
+          <br><br><strong>The master-data sheet is manual and is out of scope</strong> &mdash; confirmed by Adrian. It is described here only because it was the route by which the missing identifier was noticed.</dd>
+        <dt>Why this matters more than the keystrokes saved</dt><dd>A hand-populated identifier is <strong>a second source of truth that starts drifting immediately</strong>: it is captured once, at a moment, by someone reading a name. The feed carries the code on every line of every invoice, for ever. <strong>Only the Workday IDs genuinely need confirming</strong> &mdash; those exist nowhere in this flow. The VMS IDs need extracting, not confirming, and that is a different task assigned to a different person.</dd>
+        <dt>What the lake does carry, and why it is worse</dt><dd>The supplier arrives as a <strong>name, in two columns that disagree</strong>. From <code>io_timesheet_ameren</code>, 182,914 rows:
+          <div class="ev">rows with a supplier            178,627
+same company once normalised    178,617   (99.994%)
+genuinely a different company        10   (CSI IT, LLC under Meridian Staffing Services)
+supplier blank                    4,287   (parent_supplier never blank)</div>
+          <code>Zempleo</code>/<code>Zempleo, Inc.</code> &middot; <code>Envision, LLC</code>/<code>Envision</code> &middot; <code>Iconma, LLC</code>/<code>ICONMA LLC</code>. <strong><code>parent_supplier</code> is not a hierarchy &mdash; it is a second spelling of the same company</strong> on all but ten rows of 182,914. The lake holds <strong>29 suppliers against the sheet's 23</strong>, and one is <code>Lorien</code>, an HFIG brand &mdash; an intercompany relationship nobody has mentioned.</dd>
+        <dt>The lesson, since it keeps recurring</dt><dd>Every finding in the first version of this section came from <em>reading the workbook</em>, and the central one was wrong. <strong>The finding that came from querying the lake was right.</strong> That is the fourth time on this programme; it is why the design spec states measurements before decisions.</dd>
+      </dl>
+    </article>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">AME-B</span><h3>The invoice output identifies no supplier and no worker</h3><span class="pill b">Design consequence</span></div>
+      <dl>
+        <dt>What the 13 GIE fields carry</dt><dd>Invoice Number, Invoice Date, Invoice Amount, Description, Line Description, Line Number, Line Type, Amount, Accounting Date, Project Number, Task Number, Expenditure Type, Expenditure Organization. <strong>No supplier field of any kind.</strong> The worker appears only inside two concatenated text fields, as <code>Last, First</code>:
+          <div class="ev">Description       AEE1IN00123410|Kaver, Joseph|2026/07/26|AEE1TS00126533
+Line Description  Kaver, Joseph|2026/07/26|AEE1TS00126533</div></dd>
+        <dt>This is correct, and it has a consequence</dt><dd>Ameren is billed by Guidant as principal, so the customer invoice <em>should</em> not name the supplier. <strong>But it means the Gold output cannot be decomposed back to supplier or worker.</strong> The line that ties an invoice line to the party we owe, and to the person who did the work, exists <strong>only in Bronze and Silver</strong> &mdash; and <code>Worker ID</code> is dropped even though the source provides it.
+          <br><br><strong>The vault is therefore the only place that relationship survives</strong>, which makes it a modelling requirement rather than a nice-to-have. Reconstructing it later from <code>Last, First</code> text is the same class of mistake as identifying a company by its name, and <strong>161 workers is easily enough for two to share one</strong>.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Business keys &mdash; and the one question that must be answered first</h2>
+      <span class="why">Three of the four keys are settled by the data. The fourth is a business question with a silent failure behind it.</span>
+    </div>
+
+    <div class="note">
+      <h3>Fieldglass namespaces almost everything by buyer, which does most of the work for us</h3>
+      <div class="ev">Buyer Code            AEE1
+Invoice ID            AEE1IN00123410     <- AEE1 prefix
+Invoice Line Item Ref AEE1TS00126533     <- AEE1 prefix
+Worker ID             AEE1WK00000319     <- AEE1 prefix
+Supplier Code         B3G4               <- NO buyer prefix</div>
+      <p>
+        <strong>Invoice, line and worker identifiers are already globally unique across all 54
+        clients</strong>, because the buyer code is embedded in them. They need no
+        tenant-scoped rekey. <strong><code>Supplier Code</code> is the exception, and it is
+        the one that matters.</strong>
+      </p>
+    </div>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">AME-C</span><h3>Is a Supplier Code unique across all 54 MSP clients, or only within one?</h3><span class="pill b">Blocks the supplier hub</span></div>
+      <dl>
+        <dt>The question</dt><dd><code>B3G4</code> identifies Business Integra for Ameren. <strong>Does <code>B3G4</code> mean Business Integra for every other MSP client too, or is it a code allocated within Ameren&rsquo;s Fieldglass tenant that another client could reuse for a different supplier?</strong></dd>
+        <dt>Why it cannot be deferred</dt><dd>It decides the hub's business key, and the two answers are not refactors of each other:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>Global</strong> &rarr; key on <code>supplier_code</code> alone. One supplier row serves all 54 clients, and cross-client supplier spend is answerable.</li>
+            <li><strong>Per buyer</strong> &rarr; key on <code>(buyer_code, supplier_code)</code>, tenant-scoped. Cross-client spend then needs a deliberate matching exercise, because the same firm holds different codes per client.</li>
+          </ul></dd>
+        <dt>The failure mode if we guess wrong, and it is the dangerous kind</dt><dd><strong>If codes are per-buyer and we key on the code alone, two different suppliers collapse into one hub row. Nothing fails.</strong> No constraint is violated, no gate goes red, every load succeeds. The only symptom is that payables and supplier spend are wrong one level up &mdash; discovered, if at all, by someone querying a total that looks implausible.
+          <br><br><strong>This is precisely the defect we retired on cost centres</strong> (<span class="mono">WDJ-10</span>), where the business confirmed a single global meaning and made the code safe to key on. The same confirmation is needed here, and the same rule applies: <em>a dimension may be keyed on its code alone only once someone has confirmed the code means one thing across the whole estate.</em></dd>
+        <dt>How to answer it cheaply</dt><dd>Pull <code>Supplier Code</code> and <code>Supplier</code> from the Fieldglass extracts of <strong>two or three other MSP clients</strong> and check for a code appearing against two different supplier names, or one supplier name holding two codes. <strong>That is a measurement, not a meeting</strong> &mdash; and on this evidence it is the first thing to do.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">AME-D</span><h3>Supplier name is not a candidate key, and these 23 names show why</h3><span class="pill">Evidence</span></div>
+      <dl>
+        <dt>What is in the list</dt><dd><div class="ev">Adaptive Solutions Group (WoodRibble &amp; Twyman)   <- parenthetical qualifier
+Strategic Staffing Solutions, S3                 <- trading alias appended
+Iconma, LLC / CSI IT, LLC / SBS Creatix, LLC     <- legal form in the name
+Business Integra, Inc. / Zillion Technologies, Inc / Colaberry Inc
+                                                 <- "Inc." vs "Inc" vs "Inc,"</div></dd>
+        <dt>Why it fails as a key</dt><dd>Legal form changes without the company changing. Trading aliases get appended and removed. Punctuation of <code>Inc.</code> is inconsistent <em>within this single list of 23</em>. <strong>A name is a description of a party, not its identity</strong> &mdash; the same argument that settled <span class="mono">LEG-1</span> for legal entities, arriving here from a different direction.
+          <br><br>Since <strong>the name is currently the only populated identifier for all 23 suppliers</strong>, the master sheet as it stands is keyed on the one field that cannot be a key.</dd>
+      </dl>
+    </article>
+
+    <article class="task">
+      <div class="task-top"><span class="id">AME-E</span><h3>Supplier-to-client is a relationship, not an attribute</h3><span class="pill">Modelling</span></div>
+      <dl>
+        <dt>What the sheet shows</dt><dd>All 23 suppliers carry <code>Client ID VMS = AEE1</code>, as a column on the supplier record.</dd>
+        <dt>Why that shape will not hold</dt><dd>Across 54 MSP clients, <strong>a supplier serves more than one</strong> &mdash; a staffing firm of this size almost certainly appears on several. Holding the client on the supplier record makes the supplier <em>per client</em>, which either duplicates the supplier 54 times or silently overwrites.
+          <br><br>It is a <strong>many-to-many relationship that is effective-dated</strong>: suppliers are onboarded and offboarded per client, and the dates matter for payables. <strong>That is a link with its own satellite, not a column.</strong>
+          <br><br>This is the same distinction the business drew for legal entities in <span class="mono">LEG-3</span> and <span class="mono">LEG-5</span> &mdash; ownership and contractual relationships held separately from the party record, effective-dated &mdash; and it arrives at the same answer independently.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>What the sample data actually proves</h2>
+      <span class="why">The stated controls were tested against the 555 lines rather than taken on trust. They hold.</span>
+    </div>
+    <article class="task">
+      <div class="task-top"><h3>Three controls pass; one is untested by this sample</h3><span class="pill">Measured</span></div>
+      <dl>
+        <dt>Tested and clean</dt><dd><div class="ev">AME008  sum(line Amount) == Invoice Amount     0 failures / 225 invoices
+AME003  gross repeated on every line           0 inconsistencies
+AME006  line numbers a complete 1..n sequence  0 gaps</div>
+          <strong>225 invoices, 555 lines, 2.47 lines per invoice.</strong> The reconciliation that the whole Gold release gate depends on holds exactly on this sample.</dd>
+        <dt>The rule this sample cannot test</dt><dd><strong>There is exactly one <code>TAX</code> line in 555.</strong> <code>AME008</code>'s tax half &mdash; aggregate tax onto a final TAX line, with all lines still summing to gross &mdash; is therefore <strong>effectively unexercised</strong>. A sample where 554 of 555 lines are <code>ITEM</code> proves the simple path and says almost nothing about the path with tax on it. Worth a deliberate test case before go-live rather than discovering it on a client with real sales tax.</dd>
+        <dt>A grain fact worth knowing</dt><dd><strong>81 of 225 invoices span more than one <code>Project Number</code></strong>, and there are 279 distinct projects across 225 invoices. An invoice is not a project-level document, so anything assuming one project per invoice is wrong more than a third of the time.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <div class="note">
+    <h3>What we would do first</h3>
+    <p>
+      <strong>One measurement, then one decision.</strong> Pull <code>Supplier Code</code> and
+      <code>Supplier</code> from two or three other MSP clients' Fieldglass extracts and look
+      for a code carrying two names, or a name carrying two codes. That settles
+      <span class="mono">AME-C</span>, which is the only thing genuinely blocking the supplier
+      hub, and it needs nobody's diary.
+    </p>
+    <p>
+      <strong>And stop the hand-keying before it starts.</strong> The VMS supplier IDs are in
+      the feed. Only the Workday IDs need a human, and only because they exist nowhere in this
+      flow yet.
+    </p>
+  </div>
+
+</div>

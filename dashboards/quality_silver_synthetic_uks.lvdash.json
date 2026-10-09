@@ -1,0 +1,648 @@
+{
+  "datasets": [
+    {
+      "displayName": "Coverage headline",
+      "name": "ds_coverage_summary",
+      "queryLines": [
+        "WITH target_table AS (\n",
+        "  SELECT explode(generated_tables) AS table_name\n",
+        "  FROM 02_uks_silver_edm.governance.meta_vault_model\n",
+        "),\n",
+        "per_table AS (\n",
+        "  SELECT t.table_name, count(e.rule_name) AS rules_declared\n",
+        "  FROM target_table t\n",
+        "  LEFT JOIN 02_uks_silver_edm.control.tst_ref_dq_expectation e\n",
+        "    ON e.dataset = t.table_name AND e.is_current\n",
+        "  GROUP BY t.table_name\n",
+        ")\n",
+        "SELECT\n",
+        "  count(*) AS tables_total,\n",
+        "  sum(CASE WHEN rules_declared > 0 THEN 1 ELSE 0 END) AS tables_with_a_rule,\n",
+        "  sum(CASE WHEN rules_declared = 0 THEN 1 ELSE 0 END) AS tables_with_no_rule\n",
+        "FROM per_table\n"
+      ]
+    },
+    {
+      "displayName": "Expectation coverage by target table",
+      "name": "ds_coverage",
+      "queryLines": [
+        "WITH target_table AS (\n",
+        "  SELECT explode(generated_tables) AS table_name\n",
+        "  FROM 02_uks_silver_edm.governance.meta_vault_model\n",
+        ")\n",
+        "SELECT\n",
+        "  t.table_name,\n",
+        "  count(e.rule_name) AS rules_declared,\n",
+        "  CASE WHEN count(e.rule_name) = 0\n",
+        "       THEN 'no rule' ELSE 'rule declared' END AS coverage_state\n",
+        "FROM target_table t\n",
+        "LEFT JOIN 02_uks_silver_edm.control.tst_ref_dq_expectation e\n",
+        "  ON e.dataset = t.table_name AND e.is_current\n",
+        "GROUP BY t.table_name\n",
+        "ORDER BY rules_declared, t.table_name\n"
+      ]
+    },
+    {
+      "displayName": "Rows staged and accepted per table per run",
+      "name": "ds_load_volume",
+      "queryLines": [
+        "SELECT\n",
+        "  job_run_id, table_name, written_by,\n",
+        "  staged, accepted,\n",
+        "  staged - accepted AS not_accepted,\n",
+        "  recorded_at\n",
+        "FROM 02_uks_silver_edm.control.tst_aud_table_load\n",
+        "ORDER BY recorded_at DESC\n"
+      ]
+    },
+    {
+      "displayName": "Discards by reason",
+      "name": "ds_discard_reason",
+      "queryLines": [
+        "SELECT\n",
+        "  table_name, discard_reason,\n",
+        "  sum(discarded) AS discarded,\n",
+        "  count(DISTINCT job_run_id) AS runs\n",
+        "FROM 02_uks_silver_edm.control.tst_aud_table_discard\n",
+        "GROUP BY table_name, discard_reason\n",
+        "ORDER BY discarded DESC\n"
+      ]
+    },
+    {
+      "displayName": "Acceptance rate, or not evaluated",
+      "name": "ds_accept_rate",
+      "queryLines": [
+        "WITH totals AS (\n",
+        "  SELECT table_name,\n",
+        "         sum(staged) AS denominator,\n",
+        "         sum(accepted) AS accepted\n",
+        "  FROM 02_uks_silver_edm.control.tst_aud_table_load\n",
+        "  GROUP BY table_name\n",
+        ")\n",
+        "SELECT table_name, denominator, accepted,\n",
+        "  CASE WHEN denominator = 0 THEN NULL ELSE accepted / denominator END AS accept_rate,\n",
+        "  CASE WHEN denominator = 0\n",
+        "       THEN 'not evaluated' ELSE 'evaluated' END AS state\n",
+        "FROM totals\n",
+        "ORDER BY table_name\n"
+      ]
+    },
+    {
+      "displayName": "Runs that opened and never completed",
+      "name": "ds_incomplete_runs",
+      "queryLines": [
+        "SELECT job_run_id, target,\n",
+        "       max(CASE WHEN phase = 'opened' THEN recorded_at END) AS opened_at\n",
+        "FROM 02_uks_silver_edm.control.tst_aud_load_run\n",
+        "GROUP BY job_run_id, target\n",
+        "HAVING sum(CASE WHEN phase = 'completed' THEN 1 ELSE 0 END) = 0\n",
+        "ORDER BY opened_at DESC\n"
+      ]
+    },
+    {
+      "displayName": "Rejects later accepted",
+      "name": "ds_supersede",
+      "queryLines": [
+        "SELECT manifest_id, table_name, superseded_by, reason, recorded_at\n",
+        "FROM 02_uks_silver_edm.control.tst_ctl_quarantine_superseded\n",
+        "ORDER BY recorded_at DESC\n"
+      ]
+    },
+    {
+      "displayName": "Approval manifests",
+      "name": "ds_manifest",
+      "queryLines": [
+        "SELECT manifest_id, source_system, approved_count, approved_at, approved_by\n",
+        "FROM 02_uks_silver_edm.control.tst_ctl_approval_manifest\n",
+        "ORDER BY approved_at DESC\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "displayName": "Load quality",
+      "layout": [
+        {
+          "position": {
+            "height": 3,
+            "width": 2,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "w_coverage_counter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_coverage_summary",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`tables_with_no_rule`",
+                      "name": "tables_with_no_rule"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "value": {
+                  "displayName": "Target tables with NO quality rule",
+                  "fieldName": "tables_with_no_rule"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 4,
+            "x": 2,
+            "y": 0
+          },
+          "widget": {
+            "name": "w_coverage_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_coverage",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`rules_declared`",
+                      "name": "rules_declared"
+                    },
+                    {
+                      "expression": "`coverage_state`",
+                      "name": "coverage_state"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "rules_declared",
+                    "title": "rules_declared",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "coverage_state",
+                    "title": "coverage_state",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Coverage by target table"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 6
+          },
+          "widget": {
+            "name": "w_accept_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_accept_rate",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`denominator`",
+                      "name": "denominator"
+                    },
+                    {
+                      "expression": "`accepted`",
+                      "name": "accepted"
+                    },
+                    {
+                      "expression": "`accept_rate`",
+                      "name": "accept_rate"
+                    },
+                    {
+                      "expression": "`state`",
+                      "name": "state"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "denominator",
+                    "title": "denominator",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "accepted",
+                    "title": "accepted",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "accept_rate",
+                    "title": "accept_rate",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "state",
+                    "title": "state",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Acceptance rate, or not evaluated"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 12
+          },
+          "widget": {
+            "name": "w_discard_reason",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_discard_reason",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`discard_reason`",
+                      "name": "discard_reason"
+                    },
+                    {
+                      "expression": "`discarded`",
+                      "name": "discarded"
+                    },
+                    {
+                      "expression": "`runs`",
+                      "name": "runs"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "discard_reason",
+                    "title": "discard_reason",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "discarded",
+                    "title": "discarded",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "runs",
+                    "title": "runs",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Discards by reason"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 18
+          },
+          "widget": {
+            "name": "w_load_volume",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_load_volume",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`job_run_id`",
+                      "name": "job_run_id"
+                    },
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`staged`",
+                      "name": "staged"
+                    },
+                    {
+                      "expression": "`accepted`",
+                      "name": "accepted"
+                    },
+                    {
+                      "expression": "`not_accepted`",
+                      "name": "not_accepted"
+                    },
+                    {
+                      "expression": "`recorded_at`",
+                      "name": "recorded_at"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "job_run_id",
+                    "title": "job_run_id",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "staged",
+                    "title": "staged",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "accepted",
+                    "title": "accepted",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "not_accepted",
+                    "title": "not_accepted",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "recorded_at",
+                    "title": "recorded_at",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Rows staged and accepted"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 5,
+            "width": 3,
+            "x": 0,
+            "y": 24
+          },
+          "widget": {
+            "name": "w_incomplete_runs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_incomplete_runs",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`job_run_id`",
+                      "name": "job_run_id"
+                    },
+                    {
+                      "expression": "`target`",
+                      "name": "target"
+                    },
+                    {
+                      "expression": "`opened_at`",
+                      "name": "opened_at"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "job_run_id",
+                    "title": "job_run_id",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "target",
+                    "title": "target",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "opened_at",
+                    "title": "opened_at",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Runs that never completed"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 5,
+            "width": 3,
+            "x": 3,
+            "y": 24
+          },
+          "widget": {
+            "name": "w_supersede",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_supersede",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`manifest_id`",
+                      "name": "manifest_id"
+                    },
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`superseded_by`",
+                      "name": "superseded_by"
+                    },
+                    {
+                      "expression": "`reason`",
+                      "name": "reason"
+                    },
+                    {
+                      "expression": "`recorded_at`",
+                      "name": "recorded_at"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "manifest_id",
+                    "title": "manifest_id",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "superseded_by",
+                    "title": "superseded_by",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "reason",
+                    "title": "reason",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "recorded_at",
+                    "title": "recorded_at",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Rejects later accepted"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        }
+      ],
+      "name": "page_quality",
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

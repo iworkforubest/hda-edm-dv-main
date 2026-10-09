@@ -1,0 +1,253 @@
+<title>Negative GL amounts</title>\n<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does.
+
+   THIS ONE CITES RATHER THAN ASKS. Every id on it is owned by another document, and
+   verify_repo asserts each still exists there -- so this page cannot outlive the questions
+   it summarises without failing the build. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2E5F7A; --accent-soft:#E9F0F5;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#8FBCD4; --accent-soft:#17222A;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#8FBCD4; --accent-soft:#17222A;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500; white-space:nowrap}
+/* The id column must not wrap. WDJ-10 broke across two lines as "WDJ-" / "10", which reads
+   as a different id -- and this table's whole job is to let a reader carry an id to the
+   document that owns it. The .sub underneath it still wraps, which is what it is for. */
+table.status td:first-child .sub{white-space:normal}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">One question &middot; General ledger &middot; Data &amp; AI</p>
+    <h1>Two journals are being discarded, and we do not think that is our call.</h1>
+    <p class="lede">
+      A data-quality rule in the warehouse drops any general-ledger line whose debit or
+      credit is negative. Across <strong>19 million GL rows</strong> that rule catches
+      <strong>two journals</strong>. Whether it should is an accounting judgement rather
+      than an engineering one, so we are putting the measurements in front of you without a
+      recommendation. We have changed nothing: they are quarantined, not deleted, and every
+      number below is measured rather than estimated.
+    </p>
+    <div class="stats">
+      <div class="stat"><b>2</b>journals affected, estate-wide</div>
+      <div class="stat"><b>19,057,752</b>GL rows scanned</div>
+      <div class="stat"><b>0.00</b>imbalance, with or without them</div>
+      <div class="stat"><b>0</b>marked as reversals or voids</div>
+    </div>
+  </header>
+
+  <section>
+    <h2>The rule</h2>
+    <p>
+      It is governed configuration, not code, and it is currently set to <em>drop</em> &mdash;
+      meaning a matching line never reaches the warehouse at all:
+    </p>
+    <p class="mono">amount_not_negative &nbsp;&middot;&nbsp; action: drop &nbsp;&middot;&nbsp;
+       COALESCE(debitamt &gt;= 0 AND crdtamnt &gt;= 0, TRUE)</p>
+    <p>
+      It applies to the Great Plains general journal, open and closed year.
+    </p>
+  </section>
+
+  <section>
+    <h2>What it actually catches</h2>
+    <p>
+      Two journals, both from the <strong>BRPLM</strong> company database, both FY2025.
+      They appear in both the open-year and closed-year tables:
+    </p>
+    <table>
+      <thead><tr><th>Journal</th><th>Lines</th><th>Negative lines</th><th>Balance</th>
+        <th>Correcting / back-out / void flags</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">BRPLM 496073</td><td>4 open / 2 closed</td><td>all of them</td>
+          <td class="mono">0.00</td><td>all zero</td></tr>
+        <tr><td class="mono">BRPLM 496157</td><td>4 open / 2 closed</td><td>all of them</td>
+          <td class="mono">0.00</td><td>all zero</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Every line in each journal is negative</strong>, so the rule does not unbalance
+      them &mdash; it removes them entirely. Both balance to zero whether the negative lines
+      are included or excluded, because excluding them leaves nothing.
+    </p>
+    <p>
+      They are not flagged as reversals. Great Plains carries
+      <span class="mono">correcting_je</span>, <span class="mono">back_out_je</span>,
+      <span class="mono">original_je</span> and <span class="mono">voided</span>, and all four
+      are <span class="mono">0</span> on every line. Their transaction source is an ordinary
+      <span class="mono">GLTRX&hellip;</span> entry.
+    </p>
+  </section>
+
+  <section>
+    <h2>One inconsistency worth knowing before you answer</h2>
+    <p>
+      The rule tests <span class="mono">debitamt</span> and <span class="mono">crdtamnt</span>.
+      It does not test <span class="mono">ordbtamt</span> and
+      <span class="mono">orcrdamt</span> &mdash; the originating-currency amounts &mdash; and
+      those carry <strong>16 negative values</strong> that pass through untouched and are
+      sitting in the warehouse now.
+    </p>
+    <p>
+      So the estate currently accepts negative amounts in one pair of columns and discards
+      whole journals for them in the other. Whichever way GL-1 is answered, those two
+      treatments do not match today &mdash; which is why the question is not simply
+      &ldquo;are negatives valid?&rdquo; but:
+    </p>
+    <p class="lede"><strong>Why would a negative be acceptable in the originating amount and
+      not in the functional one?</strong></p>
+  </section>
+
+  <section>
+    <h2>What we need decided</h2>
+    <table>
+      <thead><tr><th>#</th><th>Question</th><th>What it changes</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">GL-1</td>
+          <td>Is a negative debit or credit a legitimate posting in this ledger &mdash; for
+            example a correction posted in place rather than by swapping sides?</td>
+          <td>If yes, the rule as written excludes valid postings and these two journals are absent from the warehouse. If no, they are correctly quarantined and we will say so in the reconciliation record.</td></tr>
+        <tr><td class="mono">GL-2</td>
+          <td>If they are legitimate, should the rule be removed, or downgraded from
+            <em>drop</em> to <em>warn</em> so they load and stay visible?</td>
+          <td><em>Drop</em> keeps them out of the warehouse entirely; <em>warn</em> loads them and records that the rule matched. Either is straightforward to implement.</td></tr>
+        <tr><td class="mono">GL-3</td>
+          <td>Should <span class="mono">ordbtamt</span> / <span class="mono">orcrdamt</span>
+            be treated the same way as the functional amounts, whichever way GL-1 goes?</td>
+          <td>Today they are inconsistent. Either answer is fine; the mismatch is not.</td></tr>
+        <tr><td class="mono">GL-4</td>
+          <td>Are BRPLM 496073 and 496157 anything you recognise &mdash; a known correction,
+            an import artefact, something already investigated?</td>
+          <td>Two journals is few enough to look at individually, which is why we are asking
+            rather than generalising.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Why we are asking now</h2>
+    <p>
+      The quarantined rows are also blocking a control. Our reconciliation gate refuses to
+      attribute a quarantined row to a delivery it cannot identify, so while these two
+      journals sit in quarantine, five downstream checks do not run. We could suppress that,
+      and have deliberately not: the gate is right, and the honest fix is to settle whether
+      the rows belong in the warehouse.
+    </p>
+    <p>
+      <strong>Nothing has been deleted.</strong> The rows are in a quarantine table with the
+      rule that caught them recorded alongside. Whichever way this goes, they are recoverable.
+    </p>
+  </section>
+
+</div>

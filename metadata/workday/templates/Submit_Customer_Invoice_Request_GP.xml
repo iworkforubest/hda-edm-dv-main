@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bsvc:Submit_Customer_Invoice_Request xmlns:bsvc="urn:com.workday/bsvc" bsvc:Add_Only="false" bsvc:version="{{version}}">
+
+  <bsvc:Customer_Invoice_Data>
+
+    <bsvc:Customer_Invoice_ID>{{Customer_Invoice_ID}}</bsvc:Customer_Invoice_ID>
+
+    <bsvc:Company_Reference>
+      <bsvc:ID bsvc:type="Company_Reference_ID">{{Company_Reference_ID}}</bsvc:ID>
+    </bsvc:Company_Reference>
+
+    <bsvc:Currency_Reference>
+      <bsvc:ID bsvc:type="Currency_Reference_ID">{{Currency_Reference_ID}}</bsvc:ID>
+    </bsvc:Currency_Reference>
+
+    <bsvc:Customer_Reference>
+      <bsvc:ID bsvc:type="Customer_Reference_ID">{{Customer_Reference_ID}}</bsvc:ID>
+    </bsvc:Customer_Reference>
+
+    <bsvc:Sold_To_Customer_Reference>
+      <bsvc:ID bsvc:type="Sold_To_Customer_Reference_ID">{{Sold_To_Customer_Reference_ID}}</bsvc:ID>
+    </bsvc:Sold_To_Customer_Reference>
+
+    <bsvc:Populate_with_Default_Bill_To_Contacts>{{Populate_with_Default_Bill_To_Contacts}}</bsvc:Populate_with_Default_Bill_To_Contacts>
+
+    <bsvc:Bill_To_Contact_Reference>
+      <bsvc:ID bsvc:type="Bill_To_Contact_Reference_ID">{{Bill_To_Contact_Reference_ID}}</bsvc:ID>
+    </bsvc:Bill_To_Contact_Reference>
+
+    <bsvc:Invoice_Number>{{Invoice_Number}}</bsvc:Invoice_Number>
+
+    <bsvc:Invoice_Date>{{Invoice_Date}}</bsvc:Invoice_Date>
+
+    <bsvc:Due_Date_Override>{{Invoice_Due_Date_Override}}</bsvc:Due_Date_Override>
+
+    <bsvc:Collection_Date>{{Invoice_Collection_Date}}</bsvc:Collection_Date>
+
+    <bsvc:Payment_Amount_Promised>{{Payment_Amount_Promised}}</bsvc:Payment_Amount_Promised>
+
+    <bsvc:Collection_Reason_Reference>
+      <bsvc:ID bsvc:type="Collection_Reason_Reference_ID">{{Collection_Reason_Reference_ID}}</bsvc:ID>
+    </bsvc:Collection_Reason_Reference>
+
+    <bsvc:Followup_Date>{{Invoice_Followup_Date}}</bsvc:Followup_Date>
+
+    <bsvc:Dispute_Date>{{Dispute_Date}}</bsvc:Dispute_Date>
+
+    <bsvc:Dispute_Amount>{{Dispute_Amount}}</bsvc:Dispute_Amount>
+
+    <bsvc:Dispute_Reason_Reference>
+      <bsvc:ID bsvc:type="Dispute_Reason_Reference_ID">{{Dispute_Reason_Reference_ID_1}}</bsvc:ID>
+    </bsvc:Dispute_Reason_Reference>
+    <bsvc:Dispute_Reason_Reference>
+      <bsvc:ID bsvc:type="Dispute_Reason_Reference_ID">{{Dispute_Reason_Reference_ID_2}}</bsvc:ID>
+    </bsvc:Dispute_Reason_Reference>
+    <bsvc:Dispute_Reason_Reference>
+      <bsvc:ID bsvc:type="Dispute_Reason_Reference_ID">{{Dispute_Reason_Reference_ID_3}}</bsvc:ID>
+    </bsvc:Dispute_Reason_Reference>
+    <bsvc:Dispute_Reason_Reference>
+      <bsvc:ID bsvc:type="Dispute_Reason_Reference_ID">{{Dispute_Reason_Reference_ID_4}}</bsvc:ID>
+    </bsvc:Dispute_Reason_Reference>
+    <bsvc:Dispute_Reason_Reference>
+      <bsvc:ID bsvc:type="Dispute_Reason_Reference_ID">{{Dispute_Reason_Reference_ID_5}}</bsvc:ID>
+    </bsvc:Dispute_Reason_Reference>
+
+    <bsvc:Control_Amount_Total>{{Control_Amount_Total}}</bsvc:Control_Amount_Total>
+
+    <bsvc:Payment_Terms_Reference>
+      <bsvc:ID bsvc:type="Payment_Terms_Reference_ID">{{Payment_Terms_Reference_ID}}</bsvc:ID>
+    </bsvc:Payment_Terms_Reference>
+
+    <bsvc:Payment_Type_Reference>
+      <bsvc:ID bsvc:type="Payment_Type_Reference_ID">{{Payment_Type_Reference_ID}}</bsvc:ID>
+    </bsvc:Payment_Type_Reference>
+
+    <bsvc:Additional_Type_Reference>
+      <bsvc:ID bsvc:type="Additional_Type_Reference_ID">{{Additional_Type_Reference_ID}}</bsvc:ID>
+    </bsvc:Additional_Type_Reference>
+
+    <bsvc:Additional_Reference_Number>{{Additional_Reference_Number}}</bsvc:Additional_Reference_Number>
+
+    <bsvc:Statutory_Invoice_Type_Reference>
+      <bsvc:ID bsvc:type="Statutory_Invoice_Type_Reference_ID">{{Statutory_Invoice_Type_Reference_ID}}</bsvc:ID>
+    </bsvc:Statutory_Invoice_Type_Reference>
+
+    <bsvc:Customer_Invoice_Type_Reference>
+      <bsvc:ID bsvc:type="Customer_Invoice_Type_Reference_ID">{{Customer_Invoice_Type_Reference_ID}}</bsvc:ID>
+    </bsvc:Customer_Invoice_Type_Reference>
+
+    <bsvc:Customer_PO_Number>{{Customer_PO_Number}}</bsvc:Customer_PO_Number>
+
+    <bsvc:Worktags_Reference>
+      <bsvc:ID bsvc:type="Worktags_Reference_ID" bsvc:parent_id="{{Worktags_Reference_ID_parent_id}}">{{Worktags_Reference_ID}}</bsvc:ID>
+    </bsvc:Worktags_Reference>
+
+    <bsvc:Document_Link>{{Invoice_Document_Link}}</bsvc:Document_Link>
+
+    <bsvc:Memo>{{Invoice_Memo}}</bsvc:Memo>
+
+    <bsvc:Currency_Rate_Data>
+      <bsvc:Ledger_Currency_Reference>
+        <bsvc:ID bsvc:type="{{Ledger_Currency_Reference_ID_Type}}">{{Ledger_Currency_Reference_ID}}</bsvc:ID>
+      </bsvc:Ledger_Currency_Reference>
+      <bsvc:Is_Primary>{{Is_Primary}}</bsvc:Is_Primary>
+      <bsvc:Rate_Override>{{Rate_Override}}</bsvc:Rate_Override>
+      <bsvc:Document_Currency_Conversion_Rate>{{Document_Currency_Conversion_Rate}}</bsvc:Document_Currency_Conversion_Rate>
+      <bsvc:Currency_Rate_Manual_Override>{{Currency_Rate_Manual_Override}}</bsvc:Currency_Rate_Manual_Override>
+      <bsvc:Default_Currency_Rate>{{Default_Currency_Rate}}</bsvc:Default_Currency_Rate>
+      <bsvc:Currency_Rate_Type_Override_Reference>
+        <bsvc:ID bsvc:type="{{Currency_Rate_Type_Override_Reference_ID_Type}}">{{Currency_Rate_Type_Override_Reference_ID}}</bsvc:ID>
+      </bsvc:Currency_Rate_Type_Override_Reference>
+      <bsvc:Default_Rate_Type_Reference>
+        <bsvc:ID bsvc:type="{{Default_Rate_Type_Reference_ID_Type}}">{{Default_Rate_Type_Reference_ID}}</bsvc:ID>
+      </bsvc:Default_Rate_Type_Reference>
+      <bsvc:Currency_Rate_Date_Override>{{Currency_Rate_Date_Override}}</bsvc:Currency_Rate_Date_Override>
+      <bsvc:Currency_Rate_Lookup_Override>{{Currency_Rate_Lookup_Override}}</bsvc:Currency_Rate_Lookup_Override>
+      <bsvc:Rate_Basis_Date>{{Rate_Basis_Date}}</bsvc:Rate_Basis_Date>
+      <bsvc:Manual_Override_Percent>{{Manual_Override_Percent}}</bsvc:Manual_Override_Percent>
+    </bsvc:Currency_Rate_Data>
+
+    <bsvc:Customer_Invoice_Line_Replacement_Data>
+      <bsvc:Customer_Invoice_Line_Reference_ID>{{Customer_Invoice_Line_ID}}</bsvc:Customer_Invoice_Line_Reference_ID>
+      <bsvc:Sales_Item_Reference>
+        <bsvc:ID bsvc:type="Sales_Item_Reference_ID">{{Sales_Item_Reference_ID}}</bsvc:ID>
+      </bsvc:Sales_Item_Reference>
+      <bsvc:Revenue_Category_Reference>
+        <bsvc:ID bsvc:type="Revenue_Category_Reference_ID">{{Revenue_Category_Reference_ID}}</bsvc:ID>
+      </bsvc:Revenue_Category_Reference>
+      <bsvc:Line_Item_Description>{{Line_Item_Description}}</bsvc:Line_Item_Description>
+      <bsvc:Unit_Cost>{{Invoice_Line_Unit_Cost}}</bsvc:Unit_Cost>
+      <bsvc:Extended_Amount>{{Invoice_Line_Extended_Amount}}</bsvc:Extended_Amount>
+      <bsvc:Memo>{{Invoice_Line_Memo}}</bsvc:Memo>
+      <bsvc:Worktags_Reference>
+        <bsvc:ID bsvc:type="Worktags_Reference_ID" bsvc:parent_id="{{Invoice_Line_Worktags_Reference_ID_parent_id}}">{{Invoice_Line_Worktags_Reference_ID}}</bsvc:ID>
+      </bsvc:Worktags_Reference>
+    </bsvc:Customer_Invoice_Line_Replacement_Data>
+
+    <bsvc:Withholding_Tax_Code_Data>
+      <bsvc:Withholding_Tax_Code_Reference>
+        <bsvc:ID bsvc:type="{{Withholding_Tax_Code_Data_Reference_ID_Type}}">{{Withholding_Tax_Code_Data_Reference_ID}}</bsvc:ID>
+      </bsvc:Withholding_Tax_Code_Reference>
+      <bsvc:Withholding_Tax_Amount>{{Withholding_Tax_Amount}}</bsvc:Withholding_Tax_Amount>
+      <bsvc:Withholding_Tax_Rate_Data>
+        <bsvc:Tax_Rate_Reference>
+          <bsvc:ID bsvc:type="{{Withholding_Tax_Rate_Data_Tax_Rate_Reference_ID_Type}}">{{Withholding_Tax_Rate_Data_Tax_Rate_Reference_ID}}</bsvc:ID>
+        </bsvc:Tax_Rate_Reference>
+        <bsvc:Tax_Amount>{{Withholding_Tax_Rate_Tax_Amount}}</bsvc:Tax_Amount>
+        <bsvc:Tax_Recoverability_Reference>
+          <bsvc:ID bsvc:type="{{Withholding_Tax_Rate_Data_Tax_Recoverability_Reference_ID_Type}}">{{Withholding_Tax_Rate_Data_Tax_Recoverability_Reference_ID}}</bsvc:ID>
+        </bsvc:Tax_Recoverability_Reference>
+        <bsvc:Tax_Type_Reference>
+          <bsvc:ID bsvc:type="{{Withholding_Tax_Rate_Data_Tax_Type_Reference_ID_Type}}">{{Withholding_Tax_Rate_Data_Tax_Type_Reference_ID}}</bsvc:ID>
+        </bsvc:Tax_Type_Reference>
+        <bsvc:Tax_Point_Date_Type_Reference>
+          <bsvc:ID bsvc:type="{{Withholding_Tax_Rate_Tax_Point_Date_Type_Reference_ID_Type}}">{{Withholding_Tax_Rate_Tax_Point_Date_Type_Reference_ID}}</bsvc:ID>
+        </bsvc:Tax_Point_Date_Type_Reference>
+        <bsvc:Tax_Point_Date>{{Withholding_Tax_Rate_Tax_Point_Date}}</bsvc:Tax_Point_Date>
+      </bsvc:Withholding_Tax_Rate_Data>
+    </bsvc:Withholding_Tax_Code_Data>
+
+    <bsvc:Attachments_Data>
+      <bsvc:Invoice_Attachment_Data>
+        <bsvc:Supplier_Invoice_Reference>
+          <bsvc:ID bsvc:type="Supplier_Invoice_Reference_ID">{{Supplier_Invoice_Reference_ID}}</bsvc:ID>
+        </bsvc:Supplier_Invoice_Reference>
+      </bsvc:Invoice_Attachment_Data>
+    </bsvc:Attachments_Data>
+
+  </bsvc:Customer_Invoice_Data>
+
+</bsvc:Submit_Customer_Invoice_Request>

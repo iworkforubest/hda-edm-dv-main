@@ -1,0 +1,158 @@
+# THE JOURNAL REGISTER, under the same reference-type pattern as hub_organisation --
+# and COMPANY-SCOPED, because the journal reference alone is not an identity.
+#
+#   ('GP_Journal_Entry', <input_db>, <openyear|hstyear>, <jrnentry>)
+#   ('UKG_Batch_ID',     <company>,  NOT_APPLICABLE,       <batchid>)
+#
+# THE COLLISION, MEASURED. Round-1 of this task declared the GP key as
+# ('GP_Journal_Entry', jrnentry) and flagged the scope as an open question. The data
+# settles it -- it is not an SME question:
+#
+#     distinct jrnentry                          794,697
+#     distinct (input_db, jrnentry)              794,888   <- 191 collisions
+#     distinct (input_db, openyear, jrnentry)    794,888   <- openyear adds nothing
+#
+# jrnentry 64 exists in FIVE company databases (GUSPV, INSPV, CESPV, BPSPV, GLSPV), and
+# so do 80 and 85. Each `input_db` IS a separate Dynamics GP company database and GP
+# numbers journal entries within a company, so an unscoped key merges unrelated
+# companies' journals into one hub row -- silently, with every gate still passing.
+#
+# THE FISCAL YEAR IS ALSO PART OF THE KEY, and the earlier reasoning that dropped it was
+# measured against a table that could not test it. gl20000 is the OPEN-YEAR table: it
+# holds one year, so (input_db, jrnentry) and (input_db, openyear, jrnentry) were always
+# going to be equal there. Against six years of history they are not:
+#
+#     gl30000: 14,612,795 rows | 6 years
+#       distinct (input_db, jrnentry)          1,964,276
+#       distinct (input_db, hstyear, jrnentry) 1,964,404   <- 128 collisions
+#
+# GP reuses journal entry numbers across fiscal years. The year is part of a GP journal's
+# identity, so it is a fourth key position rather than a fact hung off the hub.
+#
+# THIS DOES NOT RE-KEY A JOURNAL AT THE YEAR-END CLOSE. The value is the same fiscal year
+# either side of the close; only the COLUMN NAME differs -- gl20000 calls it `openyear`,
+# gl30000 calls it `hstyear` (see DEF-22 in nhl_general_journal_line.yml). key_columns is
+# per binding, so the two bindings legitimately name different columns for the same
+# position, and both produce the same key for the same journal.
+#
+# UKG SUPPLIES THE YEAR AS A LITERAL, not a column. ukg_raw.gl has no fiscal-year column
+# at all, and its batchid is already date-prefixed, so there is nothing to read and
+# nothing that needs discriminating. The literal is NOT_APPLICABLE rather than a plausible
+# year: a year-shaped constant would read as an assertion about UKG's fiscal calendar that
+# no source made, and would silently become wrong the moment someone believed it.
+#
+# UKG'S batchid HAS THE SAME PROPERTY, so both bindings are scoped, not just GP's.
+# The extract cannot prove it either way -- it holds ONE company (BRPLM) and ONE batch,
+# which is uninformative rather than reassuring. Three things settle it:
+#   * The SME's statement is explicitly company-scoped: "a batch is unique WITHIN COMPANY
+#     and pay period". batchid alone was never asserted to be a key.
+#   * The measured natural key of ukg_raw.gl is (company, batchid, account, userdefined1)
+#     -- company is IN it. If batchid alone identified a batch, company would be
+#     redundant there, and it is not.
+#   * Structurally it is the same mechanism as GP: a run number minted per company.
+# Fixing one binding and not the other would leave the hub asymmetric on the exact
+# property that made GP wrong.
+#
+# WHY NOT ALSO PAY PERIOD, given "unique within company AND pay period"? Because a batch
+# sits in exactly one pay period (measured: max_periods_per_batch = 1), so the period is
+# DETERMINED by (company, batchid) rather than discriminating between two of them. Adding
+# it would bake a functional dependency into the key and would break the symmetry above,
+# since GP carries no pay period at all. The pay period's relationship to the journal is
+# expressed where it belongs: as a parent of nhl_journal_line.
+#
+# TWO IDENTITIES, ONE REAL-WORLD JOURNAL, DELIBERATELY NOT COLLAPSED. Whether a given GP
+# journal entry corresponds to a given UKG batch is a SAME-AS question, resolved
+# downstream. Collapse it here and the evidence of what each system asserted is gone.
+#
+# WHY AUTHORED AND NO LONGER FEDERATED. Under federated, key_style prepends the SOURCE
+# NAME to the hash. The general journal reads gl20000 AND gl30000 -- two entities since
+# the year-end close split, two source names, one register -- and at every GP year-end
+# close rows MOVE from the open-year table to history. Federated would mint a second
+# identity for a journal entry purely because the year closed, and would break the union
+# the two general-journal tables depend on. The reference type already distinguishes GP from UKG,
+# so the source scope adds nothing and costs that.
+#
+# ONE BINDING PER SOURCE NAME ANY CHILD USES -- see hub_operating_company.yml. This hub is
+# literal-keyed, so spec.parent_key_components refuses to derive its key for a child
+# binding whose source name is absent here.
+#
+# KEY ORDER IS (type, whose, when, which). organisation_reference_id carries the SAME
+# VALUES as hub_operating_company's own reference_id -- input_db from GP, company from UKG
+# -- so the two hubs agree on what a company is called, by construction rather than by
+# convention.
+#
+# THE BUSINESS-KEY COLUMN KEEPS THE WORD `organisation` DELIBERATELY, 29 September 2026.
+# hub_organisation split into hub_client and hub_operating_company that day and the
+# ENTITY is gone, but `organisation_reference_id` is a BUSINESS KEY POSITION here -- it is
+# hashed into accounting_journal_hk. Renaming it would change this hub's key expression
+# and re-key every row already loaded, for a word. The entity moved; the key did not, and
+# that asymmetry is the point rather than an oversight. The same decision is recorded on
+# hub_ledger_account.yml, which shares the column.
+name: accounting_journal
+kind: hub
+domain: finance
+key_style: authored
+business_keys: [reference_type, organisation_reference_id, fiscal_year, reference_id]
+sensitivity: internal
+
+sources:
+  # Dynamics GP, open year (2025-2026).
+  - name: GP_US
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.gl20000
+    # GENERATION 2 since 29 September 2026. Bronze dropped and recreated gl20000 -- the
+    # same event that made it transiently ABSENT and failed assert_source_conformance
+    # earlier the same afternoon. The new Delta id is
+    # 2e03ea09-fc11-476c-9b0e-b81f5533889b; the generation-1 checkpoint still names
+    # 7917a6cb-c133-4593-9344-e33c51f24dec, so this flow fails with
+    # [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE]. See
+    # SourceBinding.stream_generation: a fresh checkpoint re-reads the source and
+    # APPENDS, and the duplicate staging rows dissolve at the hub anti-join.
+    #
+    # WHY ONLY THIS BINDING, when four entities read gl20000. The other three --
+    # nhl_general_journal_line, nhl_journal_line and
+    # nhl_general_journal_line_closed_year -- all take a version bump in the combined
+    # migration, so their flow NAMES changed and they got fresh checkpoints for free.
+    # This hub stays at version 1, so its flow name did not change and its checkpoint
+    # survived. Measured 29 Sep on run 759416082680963: those three COMPLETED while
+    # this one failed 10 times, 9.2 minutes apart, turning a 15-minute load into a
+    # 93-minute retry loop that could never succeed.
+    stream_generation: 2
+    key_columns: [input_db, openyear, jrnentry]
+    key_literals:
+      reference_type: GP_Journal_Entry
+    applied_dts_column: dex_row_ts
+    dedup_by: [input_db, openyear, jrnentry]
+    dedup_order: [dex_row_ts, input_file_name]
+
+  # Dynamics GP history. Without it the register starts in 2025.
+  # NOTE THE COLUMN NAME: gl30000 has `hstyear` where gl20000 has `openyear`. They are the
+  # only two of the 72 columns that differ, and naming the wrong one fails at pipeline
+  # analysis rather than silently.
+  - name: GP_US_HIST
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.gl30000
+    key_columns: [input_db, hstyear, jrnentry]
+    key_literals:
+      reference_type: GP_Journal_Entry
+    applied_dts_column: dex_row_ts
+    dedup_by: [input_db, hstyear, jrnentry]
+    dedup_order: [dex_row_ts, input_file_name]
+
+  # UKG's payroll posting: one batch per delivery, re-delivered whole.
+  - name: UKG_US
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.ukg_raw.gl
+    key_columns: [company, batchid]
+    key_literals:
+      reference_type: UKG_Batch_ID
+      fiscal_year: NOT_APPLICABLE
+    # applied_dts is the BUSINESS clock -- when the source asserted the fact. dedup_order
+    # is the DELIVERY clock -- which re-delivery wins. ukg_raw.gl carries both, and they
+    # are deliberately different columns: `timestamp` is Auto Loader's landing time, which
+    # is a load clock and must not be passed off as an applied clock (naming.SYSTEM_COLUMNS
+    # keeps the two apart on purpose), while `paycheckdate` is the business date of the
+    # posting. Same split on every UKG binding in this model.
+    applied_dts_column: paycheckdate
+    dedup_by: [company, batchid]
+    dedup_order: [timestamp, input_file_name]

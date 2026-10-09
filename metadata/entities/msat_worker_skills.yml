@@ -1,0 +1,30 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# Multi-active satellite: a worker holds several skills at once and a skill has no
+# business key of its own. mas_key is the NATURAL sub-key -- never a generated sequence,
+# which breaks the moment a source reorders its rows.
+#
+# Source-independent entity: skills arrive from the VMS and from the HR system, so two
+# tables are generated -- msat_worker_skills_striive_eu and msat_worker_skills_hr_eu.
+name: worker_skills
+kind: msat
+domain: party
+parents: [worker]
+sensitivity: internal
+mas_key: [skill_code]
+payload: [skill_code, proficiency, verified_at]
+
+sources:
+  - name: STRIIVE_EU
+    bronze_table: hfig_eu.bronze.striive_worker_skill
+    key_columns: [worker_ref]
+    payload: [skill_code, proficiency, verified_at]
+    applied_dts_column: last_modified_at
+    cdc_op_column: _cdc_op
+
+  - name: HR_EU
+    bronze_table: hfig_eu.bronze.hr_competency
+    key_columns: [employee_number]
+    payload: [competency_code, level, assessed_on]
+    applied_dts_column: record_changed_at
+    cdc_op_column: _cdc_op

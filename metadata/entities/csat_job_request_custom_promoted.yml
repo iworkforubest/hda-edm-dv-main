@@ -1,0 +1,72 @@
+# BUSINESS VAULT -- the promotion path for high-variability custom fields.
+#
+# Reads msat_job_request_custom_field and pivots the fields that ref_fieldglass_custom_field
+# marks as promoted, into typed columns Gold can use directly.
+#
+# WHY THE CHURN BELONGS HERE. Promoting a field changes this satellite's payload, which is
+# a schema change -- but this is the Business Vault, so a schema change means truncate and
+# regenerate from data that still exists in full in the Raw Vault. The same change against
+# a raw satellite would mean altering a table holding accumulated insert-only history for
+# 300 clients.
+#
+# So: the Raw Vault absorbs 300 clients' worth of variability with no schema evolution, and
+# the typed shape consumers want is rebuilt here whenever the registry changes.
+#
+# rule_version tracks the registry version the pivot was built from, which is what lets
+# HFIG answer "which fields were promoted when we reported that figure".
+#
+# The payload below is illustrative: the generator emits whatever the registry marks as
+# promoted. Adding a promoted field is a registry change plus a rebuild, not a migration.
+name: job_request_custom_promoted
+kind: csat
+domain: job
+parents: [job_request]
+sensitivity: internal
+
+payload:
+  - client_code
+  - cost_centre_code
+  - project_reference
+  - purchase_order_reference
+  - approver_email_domain
+  - promoted_field_count
+  - registry_version
+  - rule_version
+
+descriptions:
+  # The typed payload columns above are ILLUSTRATIVE -- the generator emits whatever
+  # ref_fieldglass_custom_field marks as promoted -- so they carry no fixed meaning to
+  # describe. These three are the mechanism and do.
+  promoted_field_count: >-
+    How many custom fields the registry had promoted when this row was built. A count of
+    the shape, not of anything in the business.
+  registry_version: The version of ref_fieldglass_custom_field this pivot was built from.
+  rule_version: >-
+    The registry version the promotion ran under, which is what lets HFIG answer "which
+    fields were promoted when we reported that figure".
+
+sources:
+  - name: BUSINESS_VAULT
+    # The rows this satellite computes came from Fieldglass, so its parent key must hash
+    # under FIELDGLASS_EU -- the scope hub_job_request's own loader uses for that feed, and
+    # the scope the msat this reads carries on its own job_request_hk.
+    #
+    # WITHOUT THIS IT HASHED UNDER 'BUSINESS_VAULT', the binding name, which is what a
+    # federated key defaults to. Nothing will ever deliver job requests "from the business
+    # vault", so that key was a well-formed BINARY(32) that no join could ever match --
+    # silent, because the table loads and the join simply returns nothing.
+    #
+    # NOT fixed by renaming the binding: rec_src carries the binding name, and
+    # BUSINESS_VAULT is the truthful record source for a row computed here.
+    key_scope: FIELDGLASS_US
+    bronze_table: 02_usnc_silver_edm_dev.raw_vault.msat_job_request_custom_field_fieldglass_us
+    key_columns: [buyer, job_posting_id]
+    payload:
+      - client_code
+      - cost_centre_code
+      - project_reference
+      - purchase_order_reference
+      - approver_email_domain
+      - promoted_field_count
+      - registry_version
+      - rule_version

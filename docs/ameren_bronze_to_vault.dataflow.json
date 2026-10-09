@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Ameren Invoices: Bronze to Raw Data Vault",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1085,
+      520
+    ]
+  },
+  "stages": [
+    {
+      "label": "Bronze"
+    },
+    {
+      "label": "Filter"
+    },
+    {
+      "label": "Conform"
+    },
+    {
+      "label": "Business keys"
+    },
+    {
+      "label": "Vault"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "bronze",
+      "type": "database",
+      "label": "invoices",
+      "sublabel": "sap_fieldglass_raw",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "tag": "29,426 rows"
+    },
+    {
+      "id": "synthetic",
+      "type": "security",
+      "label": "Synthetic gate",
+      "sublabel": "Is_Test \u00b7 Mike_Tester",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "-35 rows"
+    },
+    {
+      "id": "view",
+      "type": "backend",
+      "label": "union view",
+      "sublabel": "AEE1 \u00b7 13 derived cols",
+      "stage": 2,
+      "row": 2,
+      "width": 150,
+      "tag": "union view"
+    },
+    {
+      "id": "hubs",
+      "type": "database",
+      "label": "4 hubs",
+      "sublabel": "invoice \u00b7 supplier \u00b7 worker",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "tag": "business keys"
+    },
+    {
+      "id": "nhl",
+      "type": "database",
+      "label": "nhl_invoice_line",
+      "sublabel": "11-column key",
+      "stage": 4,
+      "row": 0,
+      "width": 150,
+      "tag": "link"
+    },
+    {
+      "id": "sat",
+      "type": "database",
+      "label": "sat_invoice_header",
+      "sublabel": "masked \u00b7 hashdiff",
+      "stage": 4,
+      "row": 2,
+      "width": 150,
+      "tag": "satellite"
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "bronze",
+      "to": "synthetic",
+      "label": "all 12 buyers",
+      "classification": "landed feed",
+      "variant": "default"
+    },
+    {
+      "id": "f2",
+      "from": "synthetic",
+      "to": "view",
+      "label": "35 test rows cut",
+      "classification": "3 invoices, 43,143.12",
+      "variant": "security"
+    },
+    {
+      "id": "f3",
+      "from": "view",
+      "to": "hubs",
+      "label": "1,172 AEE1 lines",
+      "classification": "419 invoices",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f4",
+      "from": "hubs",
+      "to": "nhl",
+      "label": "parent hash keys",
+      "classification": "SHA-256 BINARY(32)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f5",
+      "from": "hubs",
+      "to": "sat",
+      "label": "invoice descriptors",
+      "classification": "masked amounts",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "The gate keys on markers, not dates",
+      "items": [
+        "35 synthetic rows carry Is_Test, Mike_Tester='test_value_4', PO_2='collision-test-row4', META_run_id='feeder_test_1'",
+        "They are 3 invoices worth 43,143.12 \u2014 and why an earlier measurement read 'keeping every row invents 44,050'"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Every duplicate row is kept",
+      "items": [
+        "All four repeated keys are expense lines: 'food' x3 at 45.00, 'Dinner' x2 at 24.99. No timesheet line duplicates",
+        "Keeping them reconciles to the penny; deduplicating loses 304.99 of billable claims"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Declared, validated, not yet created",
+      "items": [
+        "vault_load reaches task 3 of 26 and stops at CREATE TABLE \u2014 the tenant move left three schemas orphaned",
+        "raw_vault already holds 17.9M rows from GP, UKG and Bullhorn. The vault works; this branch cannot be built yet"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+# REFERENCE TYPES THIS MODEL ALREADY CARRIES AS FIRST-CLASS ENTITIES.
+#
+# A type named here is NOT landed into hub_wd_reference. It already has a hub, and two
+# answers to "what is this customer's key" is worse than none.
+#
+# THE VALUE IS THE ENTITY THAT MODELS IT, and it is checked against the loaded model --
+# a typo here silently disables landing for a whole type and looks deliberate.
+exclusions:
+  Customer_ID: client
+  Customer_Reference_ID: client
+  # ADJUDICATED 29 September 2026, and it was wrong before. Workday's "Company" is a
+  # FINANCIAL-REPORTING ENTITY IN OUR OWN BOOKS -- the same population GP's input_db and
+  # UKG's company carry, which is hub_operating_company. hub_legal_entity holds 2,458
+  # HubSpot companies, which are our CLIENTS' legal entities: a different population under
+  # a similar word. metadata/workday/mapping_customer_invoice.yml already sources
+  # Company_Reference_ID from hub_operating_company.reference_id, so the two files
+  # disagreed until now.
+  #
+  # NOTHING CAUGHT THE DISAGREEMENT, and it is worth knowing why, because the same gap is
+  # still open for every other line in this file. Two things look at these names and
+  # neither adjudicates them:
+  #
+  #   * the checks on THIS file assert only that the value names a real entity in the
+  #     loaded model. `legal_entity` is a real entity, so `Company_Reference_ID:
+  #     legal_entity` passed for as long as it was wrong.
+  #   * src/accelerator/wd_mapping.py enforces, by its own docstring's list, that no
+  #     mapping entry names a field the DCDD does not contain and that every
+  #     must-populate field has an entry. WHICH ENTITY a reference type belongs to is not
+  #     on that list and is checked nowhere.
+  #
+  # So the two files could disagree indefinitely. They are made consistent here; nothing
+  # yet stops them drifting apart again, which is an open item rather than a fixed one.
+  Company_Reference_ID: operating_company
+  Organization_Reference_ID: operating_company
+  Supplier_ID: supplier
+  Supplier_Reference_ID: supplier
+  Employee_ID: worker
+  Contingent_Worker_ID: worker
+  # hub_invoice is tenant_scoped (business_keys [invoice_tenant, invoice_reference]), so
+  # invoice identity is resolved by TENANT, not by customer-vs-supplier kind. Workday's
+  # customer/supplier split is carried by the tenant, not by a separate hub -- both types
+  # below belong on the same entity, and that is deliberate, not a copy-paste error.
+  Customer_Invoice_Reference_ID: invoice
+  Supplier_Invoice_Reference_ID: invoice
+  Ledger_Account_ID: ledger_account
+  Accounting_Journal_ID: accounting_journal
+  Job_Requisition_ID: job_request

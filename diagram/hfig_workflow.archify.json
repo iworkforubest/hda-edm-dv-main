@@ -1,0 +1,514 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "vault_load — task graph",
+    "subtitle": "Generated from resources/vault_job.yml. Never hand-authored."
+  },
+  "lanes": [
+    {
+      "id": "lane0",
+      "label": "Stage 0"
+    },
+    {
+      "id": "lane1",
+      "label": "Stage 1"
+    },
+    {
+      "id": "lane2",
+      "label": "Stage 2"
+    },
+    {
+      "id": "lane3",
+      "label": "Stage 3"
+    },
+    {
+      "id": "lane4",
+      "label": "Stage 4"
+    },
+    {
+      "id": "lane5",
+      "label": "Stage 5"
+    },
+    {
+      "id": "lane6",
+      "label": "Stage 6"
+    },
+    {
+      "id": "lane7",
+      "label": "Stage 7"
+    },
+    {
+      "id": "lane8",
+      "label": "Stage 8"
+    },
+    {
+      "id": "lane9",
+      "label": "Stage 9"
+    },
+    {
+      "id": "lane10",
+      "label": "Stage 10"
+    },
+    {
+      "id": "lane11",
+      "label": "Stage 11"
+    },
+    {
+      "id": "lane12",
+      "label": "Stage 12"
+    },
+    {
+      "id": "lane13",
+      "label": "Stage 13"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "assert_hash_parity",
+      "lane": "lane0",
+      "col": 0,
+      "type": "security",
+      "label": "assert_hash_parity",
+      "width": 131
+    },
+    {
+      "id": "create_control_objects",
+      "lane": "lane1",
+      "col": 0,
+      "type": "backend",
+      "label": "create_control_objects",
+      "width": 158
+    },
+    {
+      "id": "apply_source_unions",
+      "lane": "lane2",
+      "col": 0,
+      "type": "backend",
+      "label": "apply_source_unions",
+      "width": 138
+    },
+    {
+      "id": "assert_key_derivation",
+      "lane": "lane2",
+      "col": 1,
+      "type": "security",
+      "label": "assert_key_derivation",
+      "width": 151
+    },
+    {
+      "id": "assert_source_conformance",
+      "lane": "lane2",
+      "col": 2,
+      "type": "security",
+      "label": "assert_source_conformance",
+      "width": 178
+    },
+    {
+      "id": "create_mask_functions",
+      "lane": "lane2",
+      "col": 3,
+      "type": "backend",
+      "label": "create_mask_functions",
+      "width": 151
+    },
+    {
+      "id": "raw_vault_reference",
+      "lane": "lane3",
+      "col": 0,
+      "type": "backend",
+      "label": "raw_vault_reference",
+      "width": 138
+    },
+    {
+      "id": "raw_vault_finance",
+      "lane": "lane4",
+      "col": 0,
+      "type": "backend",
+      "label": "raw_vault_finance",
+      "width": 124
+    },
+    {
+      "id": "raw_vault_job",
+      "lane": "lane4",
+      "col": 1,
+      "type": "backend",
+      "label": "raw_vault_job",
+      "width": 97
+    },
+    {
+      "id": "raw_vault_pay_bill",
+      "lane": "lane4",
+      "col": 2,
+      "type": "backend",
+      "label": "raw_vault_pay_bill",
+      "width": 131
+    },
+    {
+      "id": "raw_vault_payroll",
+      "lane": "lane4",
+      "col": 3,
+      "type": "backend",
+      "label": "raw_vault_payroll",
+      "width": 124
+    },
+    {
+      "id": "raw_vault_party",
+      "lane": "lane5",
+      "col": 0,
+      "type": "backend",
+      "label": "raw_vault_party",
+      "width": 110
+    },
+    {
+      "id": "load_hubs",
+      "lane": "lane6",
+      "col": 0,
+      "type": "backend",
+      "label": "load_hubs",
+      "width": 92
+    },
+    {
+      "id": "supersede_quarantine",
+      "lane": "lane6",
+      "col": 1,
+      "type": "backend",
+      "label": "supersede_quarantine",
+      "width": 144
+    },
+    {
+      "id": "load_satellites",
+      "lane": "lane7",
+      "col": 0,
+      "type": "backend",
+      "label": "load_satellites",
+      "width": 110
+    },
+    {
+      "id": "business_vault",
+      "lane": "lane8",
+      "col": 0,
+      "type": "backend",
+      "label": "business_vault",
+      "width": 104
+    },
+    {
+      "id": "invoice_issue",
+      "lane": "lane9",
+      "col": 0,
+      "type": "backend",
+      "label": "invoice_issue",
+      "width": 97
+    },
+    {
+      "id": "load_satellites_business",
+      "lane": "lane9",
+      "col": 1,
+      "type": "backend",
+      "label": "load_satellites_business",
+      "width": 172
+    },
+    {
+      "id": "reconcile_loop1",
+      "lane": "lane9",
+      "col": 2,
+      "type": "backend",
+      "label": "reconcile_loop1",
+      "width": 110
+    },
+    {
+      "id": "assert_aggregate_reconciliation",
+      "lane": "lane10",
+      "col": 0,
+      "type": "security",
+      "label": "assert_aggregate_reconciliation",
+      "width": 219
+    },
+    {
+      "id": "assert_append_only",
+      "lane": "lane10",
+      "col": 1,
+      "type": "security",
+      "label": "assert_append_only",
+      "width": 131
+    },
+    {
+      "id": "assert_landing_integrity",
+      "lane": "lane10",
+      "col": 2,
+      "type": "security",
+      "label": "assert_landing_integrity",
+      "width": 172
+    },
+    {
+      "id": "assert_mask_survival",
+      "lane": "lane10",
+      "col": 3,
+      "type": "security",
+      "label": "assert_mask_survival",
+      "width": 144
+    },
+    {
+      "id": "invoice_export",
+      "lane": "lane10",
+      "col": 4,
+      "type": "backend",
+      "label": "invoice_export",
+      "width": 104
+    },
+    {
+      "id": "assert_audit_completeness",
+      "lane": "lane11",
+      "col": 0,
+      "type": "security",
+      "label": "assert_audit_completeness",
+      "width": 178
+    },
+    {
+      "id": "assert_freshness",
+      "lane": "lane11",
+      "col": 1,
+      "type": "security",
+      "label": "assert_freshness",
+      "width": 117
+    },
+    {
+      "id": "assert_no_broad_grant",
+      "lane": "lane11",
+      "col": 2,
+      "type": "security",
+      "label": "assert_no_broad_grant",
+      "width": 151
+    },
+    {
+      "id": "apply_governance",
+      "lane": "lane12",
+      "col": 0,
+      "type": "backend",
+      "label": "apply_governance",
+      "width": 117
+    },
+    {
+      "id": "publish_model_metadata",
+      "lane": "lane13",
+      "col": 0,
+      "type": "backend",
+      "label": "publish_model_metadata",
+      "width": 158
+    }
+  ],
+  "edges": [
+    {
+      "from": "assert_no_broad_grant",
+      "to": "apply_governance"
+    },
+    {
+      "from": "assert_hash_parity",
+      "to": "apply_source_unions"
+    },
+    {
+      "from": "create_control_objects",
+      "to": "apply_source_unions"
+    },
+    {
+      "from": "load_satellites_business",
+      "to": "assert_aggregate_reconciliation"
+    },
+    {
+      "from": "load_satellites_business",
+      "to": "assert_append_only"
+    },
+    {
+      "from": "assert_mask_survival",
+      "to": "assert_audit_completeness"
+    },
+    {
+      "from": "assert_append_only",
+      "to": "assert_freshness"
+    },
+    {
+      "from": "assert_hash_parity",
+      "to": "assert_key_derivation"
+    },
+    {
+      "from": "create_control_objects",
+      "to": "assert_key_derivation"
+    },
+    {
+      "from": "load_satellites_business",
+      "to": "assert_landing_integrity"
+    },
+    {
+      "from": "supersede_quarantine",
+      "to": "assert_landing_integrity"
+    },
+    {
+      "from": "load_satellites_business",
+      "to": "assert_mask_survival"
+    },
+    {
+      "from": "assert_aggregate_reconciliation",
+      "to": "assert_no_broad_grant"
+    },
+    {
+      "from": "assert_append_only",
+      "to": "assert_no_broad_grant"
+    },
+    {
+      "from": "reconcile_loop1",
+      "to": "assert_no_broad_grant"
+    },
+    {
+      "from": "assert_hash_parity",
+      "to": "assert_source_conformance"
+    },
+    {
+      "from": "create_control_objects",
+      "to": "assert_source_conformance"
+    },
+    {
+      "from": "load_satellites",
+      "to": "business_vault"
+    },
+    {
+      "from": "assert_hash_parity",
+      "to": "create_control_objects"
+    },
+    {
+      "from": "assert_hash_parity",
+      "to": "create_mask_functions"
+    },
+    {
+      "from": "create_control_objects",
+      "to": "create_mask_functions"
+    },
+    {
+      "from": "invoice_issue",
+      "to": "invoice_export"
+    },
+    {
+      "from": "business_vault",
+      "to": "invoice_issue"
+    },
+    {
+      "from": "raw_vault_finance",
+      "to": "load_hubs"
+    },
+    {
+      "from": "raw_vault_job",
+      "to": "load_hubs"
+    },
+    {
+      "from": "raw_vault_party",
+      "to": "load_hubs"
+    },
+    {
+      "from": "raw_vault_pay_bill",
+      "to": "load_hubs"
+    },
+    {
+      "from": "raw_vault_payroll",
+      "to": "load_hubs"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "load_hubs"
+    },
+    {
+      "from": "load_hubs",
+      "to": "load_satellites"
+    },
+    {
+      "from": "business_vault",
+      "to": "load_satellites_business"
+    },
+    {
+      "from": "apply_governance",
+      "to": "publish_model_metadata"
+    },
+    {
+      "from": "assert_audit_completeness",
+      "to": "publish_model_metadata"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "raw_vault_finance"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "raw_vault_job"
+    },
+    {
+      "from": "raw_vault_pay_bill",
+      "to": "raw_vault_party"
+    },
+    {
+      "from": "raw_vault_payroll",
+      "to": "raw_vault_party"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "raw_vault_party"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "raw_vault_pay_bill"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "raw_vault_payroll"
+    },
+    {
+      "from": "apply_source_unions",
+      "to": "raw_vault_reference"
+    },
+    {
+      "from": "assert_hash_parity",
+      "to": "raw_vault_reference"
+    },
+    {
+      "from": "assert_key_derivation",
+      "to": "raw_vault_reference"
+    },
+    {
+      "from": "assert_source_conformance",
+      "to": "raw_vault_reference"
+    },
+    {
+      "from": "create_mask_functions",
+      "to": "raw_vault_reference"
+    },
+    {
+      "from": "business_vault",
+      "to": "reconcile_loop1"
+    },
+    {
+      "from": "supersede_quarantine",
+      "to": "reconcile_loop1"
+    },
+    {
+      "from": "raw_vault_finance",
+      "to": "supersede_quarantine"
+    },
+    {
+      "from": "raw_vault_job",
+      "to": "supersede_quarantine"
+    },
+    {
+      "from": "raw_vault_party",
+      "to": "supersede_quarantine"
+    },
+    {
+      "from": "raw_vault_pay_bill",
+      "to": "supersede_quarantine"
+    },
+    {
+      "from": "raw_vault_payroll",
+      "to": "supersede_quarantine"
+    },
+    {
+      "from": "raw_vault_reference",
+      "to": "supersede_quarantine"
+    }
+  ]
+}

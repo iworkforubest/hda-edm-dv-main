@@ -1,0 +1,93 @@
+# PLACEHOLDER BRONZE TABLE, IN A FAKE CATALOG, DELIBERATELY -- see hub_invoice.yml for
+# the full reasoning; this file only records what differs. bronze_table names the same
+# fake 02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_invoice table as hub_invoice.yml, hub_supplier.yml,
+# nhl_invoice_line.yml and the FIELDGLASS_US bindings on hub_organisation.yml/hub_worker.yml
+# -- Task 1 deliberately did not declare the Fieldglass invoice source union
+# (metadata/source_unions.yml), because a declared union with zero real tables behind it
+# makes checks/apply_source_unions.py return 1 on every run and takes the LIVE
+# fieldglass_us_job_posting load down with it. REPOINT THIS AND DECLARE THE SOURCE UNION
+# IN THE SAME CHANGE as the other five bindings.
+#
+# SINGLE SOURCE, because validation refuses a multi-source satellite. When Beeline
+# and VNDLY arrive they get their own satellites on the same hub.
+name: invoice_header
+kind: sat
+domain: pay_bill
+parents: [invoice]
+sensitivity: financial
+masks:
+  gross_invoice_amount: governance.mask_money
+  net_invoice_amount: governance.mask_money
+payload:
+  - invoice_type
+  - gross_invoice_amount
+  - net_invoice_amount
+  - currency
+  - invoice_submit_date
+  - original_invoice_id
+descriptions:
+  invoice_type: >-
+    Fieldglass invoice type, IN in the sample. Retained because a credit note is a
+    different document and must not be released as an invoice.
+  gross_invoice_amount: >-
+    The invoice total CHARGED TO THE CLIENT, inclusive of MSP margin and before tax.
+    AME003 repeats this on every line and AME008 asserts the lines sum to it -- so this
+    column is the reconciliation target, not a convenience copy. Settled 24 September
+    2026: the client total is what Ameren is invoiced, and the supplier total
+    (gross_supplier_invoice_amount) is the underlying cost. The two differ by the MSP
+    margin, measured at 24,054.04 across 380 of 419 invoices.
+    Masked by governance.mask_money.
+  net_invoice_amount: >-
+    THE SOURCE'S NAMES ARE INVERTED AND THIS IS THE LARGER FIGURE. Despite being called
+    "net", this is the invoice total INCLUDING tax: measured across all 419 real invoices,
+    net_invoice_amount = gross_invoice_amount + invoice_adjustment_amount, without
+    exception. Independently confirmed by Amy Keser's `Ameren Invoice Value Analysis`
+    of 24 September, which reaches the same reading from the client's own figures.
+    The columns keep the source's spelling because the raw vault records what the source
+    sent; this description is where the trap is named, because only 2 of the 419 invoices
+    carry any tax, so on the other 417 the two columns are equal and the inversion is
+    invisible. Masked by governance.mask_money.
+  original_invoice_id: >-
+    Present when this invoice supersedes another. Carried so a reissue can be
+    distinguished from a first issue, which the issuance ledger in Task 6 needs.
+sources:
+  - name: FIELDGLASS_US
+    # READS THE BRONZE TABLE DIRECTLY, with the profile's filter and renames applied
+    # in the flow (conform:) instead of through a view. A masked entity reading a view
+    # cannot be built -- SDP reconciles the streaming plan against the declared schema
+    # at definition time and never finished. 25 September.
+    bronze_table: 01_usnc_bronze_dev.sap_fieldglass_raw.invoices
+    # GENERATION 2 since 28 September 2026. Bronze dropped and recreated this table
+    # (new Delta id 06b65224-ef33-44fb-beb5-6ca4892277fb), so the generation-1
+    # checkpoint names a Delta object that no longer exists and this flow fails at
+    # analysis with [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE]. See
+    # SourceBinding.stream_generation: a fresh checkpoint re-reads the source and
+    # APPENDS, and the duplicate staging rows dissolve at the hub anti-join.
+    stream_generation: 2
+    conform: fieldglass_us_invoice
+    # WEEKLY, per Amy's 22 September template: "Invoice frequency: Weekly", delivered
+    # Thursdays by sFTP. NOT an exemption -- a 0 here means a feed that legitimately never
+    # re-delivers, and this one is meant to.
+    #
+    # IT WILL REPORT A BREACH TODAY, AND THAT IS THE POINT. Measured 24 September: this
+    # feed has landed three times -- 5 rows on 8 Sep, 30 on 9 Sep, 1,172 on 11 Sep -- and
+    # nothing in the thirteen days since. So it is not yet the weekly feed the template
+    # describes. Declaring the real SLA makes that visible; exempting it would hide a
+    # silent feed behind a decision that looks deliberate.
+    freshness_sla_hours: 168
+    key_columns: [buyer_tenant, invoice_id]
+    # SAME REASON AS nhl_invoice_line's: a masked column carries its MASK in the table
+    # definition, so it must declare a type. Both arrive as STRING and both cast with ZERO
+    # losses across all 29,426 rows -- no blanks, no malformed values -- so unlike `rate`
+    # there is nothing here that becomes NULL.
+    cast:
+      gross_invoice_amount: DECIMAL(18,2)
+      net_invoice_amount: DECIMAL(18,2)
+    payload:
+      - invoice_type
+      - gross_invoice_amount
+      - net_invoice_amount
+      - currency
+      - invoice_submit_date
+      - original_invoice_id
+    applied_dts_column: invoice_submit_date

@@ -1,0 +1,19 @@
+# Code owners for the HFIG Data Vault Accelerator.
+#
+# WHY THIS FILE EXISTS: branch protection on `main` sets
+# require_code_owner_reviews, which means an approval only counts if it comes
+# from an owner named here. Without this file that setting has nothing to
+# match, and any collaborator's approval would satisfy the gate.
+#
+# The rule is deliberately the whole repository. This accelerator's correctness
+# lives in places a path-scoped rule would miss: a hashing constant, a gate's
+# allowlist, an entity YAML and a bundle variable can each change behaviour in
+# the lake, and several defects found here came from exactly the files nobody
+# would think to scope a review to.
+#
+# NOTE ON SELF-APPROVAL: GitHub does not allow approving your own pull request.
+# Admins are exempt from protection (enforce_admins=false) so the owner can
+# still merge their own work; everyone else needs the owner's review. If a
+# second owner is ever added, tighten enforce_admins and remove that exemption.
+
+* @Adrian-Turcu

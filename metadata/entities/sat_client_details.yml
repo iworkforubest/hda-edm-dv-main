@@ -1,0 +1,83 @@
+# THE GREAT PLAINS CUSTOMER MASTER'S DESCRIPTIVE ATTRIBUTES, 29 September 2026.
+#
+# hub_client records that a customer number was asserted; this records what GP said about
+# it. rm00101 is the receivables customer master and the only place in this workspace that
+# names a GP customer at all.
+#
+# VERSIONED, NOT CURRENT-STATE, AND THAT IS WHAT THE ROW COUNT SAYS. 889 rows over 345
+# customers across five deliveries -- ~2.6 rows per customer. Those are not duplicates to
+# be collapsed: each delivery is GP's answer at a different moment, and a satellite exists
+# precisely to keep the answers apart. So this binding declares NO dedup_by. The hub
+# deduplicates because a hub holds one row per identity; a satellite holding one row per
+# identity would be a satellite that has thrown its history away, and the loss is silent --
+# the table still loads, it just cannot answer "what was this customer's class in August".
+#
+# applied_dts IS dex_row_ts, NOT modifdt. The same choice hub_ledger_account's GP_US
+# binding already made for this source, and measured again on this table: 366 distinct
+# dex_row_ts against 183 distinct modifdt over the same 889 rows. Twice as granular, so it
+# separates versions modifdt would collapse -- and a satellite whose ordering column ties
+# hands the loader an arbitrary sub_seq, which is DEF-55's unrecoverable case.
+#
+# `custclas` IS CARRIED AND NOT INTERPRETED. It holds values like VMS, GROUP FILL and TPV.
+# Nothing in the raw vault decides what those mean -- no filter, no CASE, no derived flag.
+# A raw satellite records what the source said; whoever knows what a TPV customer is says
+# so in the business vault or in gold, where the decision can be reviewed and changed
+# without re-keying anything. Baking a meaning in here would put it below the point where
+# it can be corrected.
+#
+# `inactive` IS CARRIED AND NEVER FILTERED, for the same reason sat_legal_entity_details
+# keeps a dissolved company: an inactive customer still owns history and must still
+# resolve. A staging filter on it would drop rows the hub already holds keys for, leaving
+# hub rows with no satellite and every point-in-time join quietly short.
+#
+# NO MASK. Nothing here is money -- `curncyid` is a currency CODE and `pymtrmid` a payment
+# TERMS code, both identifiers, neither an amount. So this satellite needs no ALTER path
+# after a CTAS, which is the thing a mask would have required.
+#
+# ONE SOURCE, AND THE SOURCE NAME MATCHES THE HUB'S BINDING BY NECESSITY. hub_client is
+# literal-keyed, so spec.parent_key_components takes its strict path: the parent key is
+# composed from the HUB's binding of the same name, literal folded in. A source name this
+# hub does not carry is refused rather than silently reduced to a column-only key -- which
+# would be well formed and would never join.
+name: client_details
+kind: sat
+domain: party
+parents: [client]
+sensitivity: internal
+
+payload:
+  - custname
+  - custclas
+  - inactive
+  - curncyid
+  - pymtrmid
+
+descriptions:
+  custname: >-
+    The customer's name as Great Plains holds it. Spelling is not normalised and is not
+    reliable as a key -- KCCA is "KIMBERLY CLARK CANADA" in one company database and
+    "Kimberly Clark Canada" in another. The customer NUMBER is the identity.
+  custclas: >-
+    GP's customer class -- VMS, GROUP FILL, TPV and others. Carried verbatim. Nothing in
+    the raw vault decides what a class means; that reading belongs downstream where it can
+    be changed without re-keying.
+  inactive: >-
+    GP's inactive flag, set on real records in this extract. Recorded and never filtered:
+    an inactive customer still owns receivables history and must still resolve.
+  curncyid: >-
+    The customer's default currency code. An identifier, not an amount.
+  pymtrmid: >-
+    The customer's default payment terms code. An identifier, not an amount.
+
+sources:
+  - name: GP_CUSTOMER
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.rm00101
+    parent_keys:
+      client: [custnmbr]
+    payload:
+      - custname
+      - custclas
+      - inactive
+      - curncyid
+      - pymtrmid
+    applied_dts_column: dex_row_ts

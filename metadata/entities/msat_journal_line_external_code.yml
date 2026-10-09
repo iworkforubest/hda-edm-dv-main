@@ -1,0 +1,40 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# LINK SATELLITE + MULTI-ACTIVE. Two patterns at once, and both are forced by the source.
+#
+# ExternalCode is minOccurs=0 maxOccurs=unbounded name/value pairs on a journal LINE. In
+# batch 202608141 every line carries four: UserDefined1, TransactionType,
+# PayPeriodStartDate, PayPeriodEndDate.
+#
+#   * It hangs off the LINE, not off any single hub -- so parent is the NHL. Forcing it
+#     onto a hub would attach pay-period context to the wrong grain.
+#   * Several are active at once with no business key of their own -- so multi-active,
+#     mas_key = code_name, which is a NATURAL sub-key. A generated sequence would break
+#     the moment the source emits the codes in a different order.
+#
+# WHY NOT PIVOT THE FOUR KNOWN NAMES INTO TYPED COLUMNS?
+# Because the set is open. A new UserDefined2 appears and a pivoted satellite silently
+# drops it, whereas this structure absorbs it. Keep the faithful assertion here and pivot
+# the known names in a COMPUTED satellite, where a changed pivot is a rebuild rather than
+# lost data.
+name: journal_line_external_code
+kind: msat
+domain: finance
+parents: [journal_line]
+sensitivity: internal
+mas_key: [code_name]
+payload: [code_name, code_value]
+
+sources:
+  - name: UKG_US
+    bronze_table: hfig_usnc.bronze.ukg_journal_line_external_code
+    # A link satellite rebuilds the LINK's key from the link's own parents, so it
+    # must map every one of nhl_journal_line's four -- pay_period included.
+    parent_keys:
+      accounting_journal: [company, batchid]
+      operating_company: [company]
+      ledger_account: [company, account]
+      pay_period: [payperiodstartdate, payperiodenddate]
+    payload: [code_name, code_value]
+    applied_dts_column: accounting_date
+    cdc_op_column: _cdc_op

@@ -1,0 +1,66 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# control_total_amount is a RECONCILIATION CONTROL carried inside the payload: the source
+# format states what the journal should total. That is the loop-1 pattern arriving for
+# free, and it is checked in checks/journal_balance_check.py -- not as an expectation,
+# because SUM(lines) = control_total is an AGGREGATE invariant and a row-level expectation
+# cannot express it.
+name: accounting_journal_header
+kind: sat
+domain: finance
+parents: [accounting_journal]
+sensitivity: financial
+change_detection: cdc
+
+masks:
+  control_total_amount: governance.mask_money
+
+# THE CONTROL TOTAL LIVES HERE, ON THE HEADER, NOT ON THE LINE. Declaring the role is
+# what lets checks/journal_integrity_check.py find it from metadata instead of
+# hardcoding a table and column name: it looks for an entity that declares
+# accounting.control_total and hangs off the same journal parent as the lines it is
+# checking. If no entity declares one -- as is the case for Dynamics GP, which supplies
+# no control figure -- the gate reports the control-total property as NOT EVALUATED for
+# those lines by name rather than passing silently on a comparison it never made.
+accounting:
+  control_total: control_total_amount
+
+payload:
+  - company_reference_id
+  - currency
+  - ledger_type
+  - accounting_date
+  - journal_source
+  - journal_number
+  - journal_entry_memo
+  - book_code
+  - adjustment_journal
+  - create_reversal
+  - reversal_date
+  - control_total_amount
+
+sources:
+  - name: UKG_US
+    bronze_table: hfig_usnc.bronze.ukg_journal_header
+    # accounting_journal is now literal-keyed, so this satellite must derive its
+    # parent's key through parent_keys. The key_columns fallback in factory._stage
+    # would omit the reference-type literal and point at a hub row that never exists.
+    parent_keys:
+      accounting_journal: [company_reference_id, journal_external_reference_id]
+    payload:
+      - company_reference_id
+      - currency
+      - ledger_type
+      - accounting_date
+      - journal_source
+      - journal_number
+      - journal_entry_memo
+      - book_code
+      - adjustment_journal
+      - create_reversal
+      - reversal_date
+      - control_total_amount
+    applied_dts_column: accounting_date
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+    expectations: [ledger_type_known, accounting_date_in_open_period]

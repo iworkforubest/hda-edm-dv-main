@@ -1,0 +1,299 @@
+{
+  "note": "Golden vectors for the AME invoice rules. BOTH the pure-Python implementation in src/accelerator/invoice_rules.py AND the Spark SQL derived_columns are measured against these. Neither implementation defines correctness; this file does. Every value here was produced by actually calling invoice_rules.py and recording what it returned -- see task-1-report.md and task-2-report.md for the transcripts -- not guessed from the business rules sheet. EXTENDED in Task 2 fix round 1: the original set could not distinguish the correct SQL port from three wrong ones that all read as correct in review -- REPLACE(x, ')', '') for rstrip(')'), a greedy pipe split, and Spark TRIM (spaces only) for Python .strip() (all whitespace). The cases that separate them carry non-space whitespace, repeated pipes and interior parentheses, and each was measured, not reasoned about.",
+  "rules": {
+    "AME004_AME005_worker_name": [
+      {
+        "inputs": {
+          "last": "Smith",
+          "first": "Jane"
+        },
+        "expected": "Smith, Jane"
+      },
+      {
+        "inputs": {
+          "last": "Smith",
+          "first": ""
+        },
+        "expected": "Smith, "
+      },
+      {
+        "inputs": {
+          "last": "",
+          "first": "Jane"
+        },
+        "expected": ", Jane"
+      },
+      {
+        "inputs": {
+          "last": "  Smith  ",
+          "first": "  Jane  "
+        },
+        "expected": "Smith, Jane"
+      },
+      {
+        "inputs": {
+          "last": null,
+          "first": "Jane"
+        },
+        "expected": ", Jane"
+      },
+      {
+        "inputs": {
+          "last": "Smith",
+          "first": null
+        },
+        "expected": "Smith, "
+      },
+      {
+        "inputs": {
+          "last": null,
+          "first": null
+        },
+        "raises": "ValueError"
+      }
+    ],
+    "AME007_line_type": [
+      {
+        "inputs": {
+          "source_type": "Tax"
+        },
+        "expected": "TAX"
+      },
+      {
+        "inputs": {
+          "source_type": "tax"
+        },
+        "expected": "TAX"
+      },
+      {
+        "inputs": {
+          "source_type": "TAX"
+        },
+        "expected": "TAX"
+      },
+      {
+        "inputs": {
+          "source_type": "Labor"
+        },
+        "expected": "ITEM"
+      },
+      {
+        "inputs": {
+          "source_type": ""
+        },
+        "expected": "ITEM"
+      },
+      {
+        "inputs": {
+          "source_type": null
+        },
+        "expected": "ITEM"
+      },
+      {
+        "inputs": {
+          "source_type": "tax\n"
+        },
+        "expected": "TAX"
+      },
+      {
+        "inputs": {
+          "source_type": "tax\t"
+        },
+        "expected": "TAX"
+      },
+      {
+        "inputs": {
+          "source_type": "tax\r"
+        },
+        "expected": "TAX"
+      },
+      {
+        "inputs": {
+          "source_type": " tax "
+        },
+        "expected": "TAX"
+      }
+    ],
+    "AME011_task_number": [
+      {
+        "inputs": {
+          "task_code": "ABC|123"
+        },
+        "expected": "123"
+      },
+      {
+        "inputs": {
+          "task_code": "ABC(123)"
+        },
+        "expected": "ABC(123"
+      },
+      {
+        "inputs": {
+          "task_code": "PLAIN"
+        },
+        "expected": "PLAIN"
+      },
+      {
+        "inputs": {
+          "task_code": ""
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "task_code": null
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "task_code": "A|B|C"
+        },
+        "expected": "B|C"
+      },
+      {
+        "inputs": {
+          "task_code": "|Z"
+        },
+        "expected": "Z"
+      },
+      {
+        "inputs": {
+          "task_code": "X|Y)"
+        },
+        "expected": "Y"
+      },
+      {
+        "inputs": {
+          "task_code": "AB)123))"
+        },
+        "expected": "AB)123"
+      },
+      {
+        "inputs": {
+          "task_code": "ABC"
+        },
+        "expected": "ABC"
+      },
+      {
+        "inputs": {
+          "task_code": "  Task | 42 )  "
+        },
+        "expected": "42"
+      },
+      {
+        "inputs": {
+          "task_code": "|sales"
+        },
+        "expected": "sales"
+      },
+      {
+        "inputs": {
+          "task_code": "\t"
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "task_code": "  "
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "task_code": "\n"
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "task_code": "\r"
+        },
+        "raises": "ValueError"
+      }
+    ],
+    "AME012_AME013_module_value": [
+      {
+        "inputs": {
+          "line_item_type": "TS",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "a"
+      },
+      {
+        "inputs": {
+          "line_item_type": "ES",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "b"
+      },
+      {
+        "inputs": {
+          "line_item_type": "MI",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "c"
+      },
+      {
+        "inputs": {
+          "line_item_type": null,
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "line_item_type": "XX",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "raises": "ValueError"
+      },
+      {
+        "inputs": {
+          "line_item_type": "ts",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "a"
+      },
+      {
+        "inputs": {
+          "line_item_type": "ts\n",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "a"
+      },
+      {
+        "inputs": {
+          "line_item_type": " ts ",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "a"
+      },
+      {
+        "inputs": {
+          "line_item_type": "mi\t",
+          "ts": "a",
+          "es": "b",
+          "mi": "c"
+        },
+        "expected": "c"
+      }
+    ]
+  }
+}

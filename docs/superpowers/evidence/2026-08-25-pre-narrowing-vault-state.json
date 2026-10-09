@@ -1,0 +1,166 @@
+{
+ "counts": {
+  "raw_vault.hub_accounting_journal": "2759294",
+  "raw_vault.hub_ledger_account": "1906877",
+  "raw_vault.hub_organisation": "24",
+  "raw_vault.hub_pay_period": "2",
+  "raw_vault.nhl_general_journal_line": "2453132",
+  "raw_vault.nhl_general_journal_line_closed_year": "6086493",
+  "raw_vault.nhl_journal_line": "261"
+ },
+ "hk": {
+  "hub_accounting_journal.accounting_journal_hk": {
+   "max_hk": "FFFFFD804366A198811132C21082ABD9707B941EB4FE92588ECFA072ABD64727",
+   "md5sum_all": "1590601934512778668595222",
+   "md5sum_distinct": "1280159575918877905131538",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2221108",
+   "n_rows": "2759294",
+   "sum_all": "5924898515274100"
+  },
+  "hub_ledger_account.ledger_account_hk": {
+   "max_hk": "FFFFFFB92C802601349899ECF312143975D3C2C9E7B7CBB8926B1AE9988039B7",
+   "md5sum_all": "1099058090544990483121143",
+   "md5sum_distinct": "1099058090544990483121143",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "1906877",
+   "n_rows": "1906877",
+   "sum_all": "4096104912632735"
+  },
+  "hub_organisation.organisation_hk": {
+   "max_hk": "D7DF05A99F4B916A6151D3B93B8FD7752094A9B9E26DBC90E68628E1F6FCD4F6",
+   "md5sum_all": "14995202278613873869",
+   "md5sum_distinct": "7239922711186292125",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "12",
+   "n_rows": "24",
+   "sum_all": "58980722468"
+  },
+  "hub_pay_period.pay_period_hk": {
+   "max_hk": "88BE224E883EDAE47D42CC789216C03EDE7C045B8B8BEBB2A9BC47D2B98950B6",
+   "md5sum_all": "635323650930437518",
+   "md5sum_distinct": "635323650930437518",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2",
+   "n_rows": "2",
+   "sum_all": "2223132431"
+  },
+  "nhl_general_journal_line.accounting_journal_hk": {
+   "max_hk": "FFFFFD804366A198811132C21082ABD9707B941EB4FE92588ECFA072ABD64727",
+   "md5sum_all": "1416042196083469225778705",
+   "md5sum_distinct": "458226208652700943995974",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "794889",
+   "n_rows": "2453132",
+   "sum_all": "5245271970855366"
+  },
+  "nhl_general_journal_line.general_journal_line_hk": {
+   "max_hk": "FFFFEF9A96D7AF99AA19A90DF3255A074E2260C0C6FA074B7A81A48882ED9A87",
+   "md5sum_all": "1413768092601659061624090",
+   "md5sum_distinct": "1413768092601659061624090",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2453132",
+   "n_rows": "2453132",
+   "sum_all": "5267527462982636"
+  },
+  "nhl_general_journal_line.ledger_account_hk": {
+   "max_hk": "FFFD2562004B4917E1C08D8A6B181BAF9646B65D8DA85E53FB834416A2E13A65",
+   "md5sum_all": "1481092402063900617194471",
+   "md5sum_distinct": "5906921717696205519275",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "10267",
+   "n_rows": "2453132",
+   "sum_all": "5621116889238868"
+  },
+  "nhl_general_journal_line.organisation_hk": {
+   "max_hk": "D7DF05A99F4B916A6151D3B93B8FD7752094A9B9E26DBC90E68628E1F6FCD4F6",
+   "md5sum_all": "1412040625774291504120896",
+   "md5sum_distinct": "7239922711186292125",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "12",
+   "n_rows": "2453132",
+   "sum_all": "3699009399146194"
+  },
+  "nhl_general_journal_line_closed_year.accounting_journal_hk": {
+   "max_hk": "FFFFFD804366A198811132C21082ABD9707B941EB4FE92588ECFA072ABD64727",
+   "md5sum_all": "3513509410299550587118167",
+   "md5sum_distinct": "1132374794826611305572556",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "1964405",
+   "n_rows": "6086493",
+   "sum_all": "13044263287249145"
+  },
+  "nhl_general_journal_line_closed_year.general_journal_line_closed_year_hk": {
+   "max_hk": "FFFFFCAAB183D7CCF9810CDA090A60CAB06C5B389C85C44329BA3A7665267E8D",
+   "md5sum_all": "3508026615282545524201537",
+   "md5sum_distinct": "3508026615282545524201537",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "6086493",
+   "n_rows": "6086493",
+   "sum_all": "13070674720897592"
+  },
+  "nhl_general_journal_line_closed_year.ledger_account_hk": {
+   "max_hk": "FFF50A5927D762B2B6D795F84855AA6205D633EFACA9CCEAEFDF387ECA948C42",
+   "md5sum_all": "3725827616879297999699559",
+   "md5sum_distinct": "7997902697642239300132",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "13824",
+   "n_rows": "6086493",
+   "sum_all": "14145983217488087"
+  },
+  "nhl_general_journal_line_closed_year.organisation_hk": {
+   "max_hk": "D7DF05A99F4B916A6151D3B93B8FD7752094A9B9E26DBC90E68628E1F6FCD4F6",
+   "md5sum_all": "3686314086761832748319580",
+   "md5sum_distinct": "7239922711186292125",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "12",
+   "n_rows": "6086493",
+   "sum_all": "9156783554254075"
+  },
+  "nhl_journal_line.accounting_journal_hk": {
+   "max_hk": "A5AED9ECA20967974F06E1A06BCAC63C56006114817B1DAEBD6DA40FEB8D76CD",
+   "md5sum_all": "261953422834587570412",
+   "md5sum_distinct": "1083406811749606236",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2",
+   "n_rows": "261",
+   "sum_all": "525568483535"
+  },
+  "nhl_journal_line.journal_line_hk": {
+   "max_hk": "FF31019BE47F087F213CA7AD8FB9C2232E29FC986BB0D69A39E860E172F9B5BC",
+   "md5sum_all": "153076656786113250364",
+   "md5sum_distinct": "153076656786113250364",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "261",
+   "n_rows": "261",
+   "sum_all": "542286175512"
+  },
+  "nhl_journal_line.ledger_account_hk": {
+   "max_hk": "FE1B7B90F0D85D2B4796806F2BB5AA2C484F57A4EFDC5A627469E03C3803B012",
+   "md5sum_all": "141279773245339190687",
+   "md5sum_distinct": "60365447417269989036",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "102",
+   "n_rows": "261",
+   "sum_all": "548333837868"
+  },
+  "nhl_journal_line.organisation_hk": {
+   "max_hk": "B61B2EBA1D5A9555FEBBC0EFA963E4C472552FAB29D477B9F90A577A4B5036E0",
+   "md5sum_all": "153877504188375931432",
+   "md5sum_distinct": "667730201571869163",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2",
+   "n_rows": "261",
+   "sum_all": "955324039895"
+  },
+  "nhl_journal_line.pay_period_hk": {
+   "max_hk": "88BE224E883EDAE47D42CC789216C03EDE7C045B8B8BEBB2A9BC47D2B98950B6",
+   "md5sum_all": "145451801021603703732",
+   "md5sum_distinct": "635323650930437518",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2",
+   "n_rows": "261",
+   "sum_all": "349039350235"
+  }
+ }
+}

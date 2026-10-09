@@ -1,0 +1,185 @@
+{
+  "rulebook": {
+    "version": "1.0.0",
+    "algorithm": "sha2_256",
+    "delimiter": "||",
+    "null_token": "^^",
+    "key_uppercase": true,
+    "trim": true,
+    "binary_output": true,
+    "hashdiff_uppercase": false
+  },
+  "keys": [
+    {
+      "name": "authored_client",
+      "values": [
+        "CLI-00417"
+      ],
+      "source_scope": null,
+      "note": "Client Portal mints the key; no source scope",
+      "pre_hash_string": "CLI-00417",
+      "sha256_hex": "0959570c782c5783a9161f5ed2b0ce06ca0c8b2b92c90e0124d7adbf247afc51"
+    },
+    {
+      "name": "federated_striive_job",
+      "values": [
+        "STR-2026-00912"
+      ],
+      "source_scope": "STRIIVE_EU",
+      "note": "source scope is part of identity",
+      "pre_hash_string": "STRIIVE_EU||STR-2026-00912",
+      "sha256_hex": "e0ccf17e53438ac758b29527e46ed1729d59c712b605dc72619371c2d1b75205"
+    },
+    {
+      "name": "federated_bullhorn_job",
+      "values": [
+        "BBBH-45821"
+      ],
+      "source_scope": "BULLHORN_EU",
+      "note": "same real job, different source, DIFFERENT key by design",
+      "pre_hash_string": "BULLHORN_EU||BBBH-45821",
+      "sha256_hex": "cf5d8d5257a074543b6cfe9153d69289d89c8a7e53ef3bb81bddb80b5cd59545"
+    },
+    {
+      "name": "case_and_whitespace_noise",
+      "values": [
+        "  str-2026-00912 "
+      ],
+      "source_scope": "STRIIVE_EU",
+      "note": "must equal federated_striive_job",
+      "pre_hash_string": "STRIIVE_EU||STR-2026-00912",
+      "sha256_hex": "e0ccf17e53438ac758b29527e46ed1729d59c712b605dc72619371c2d1b75205"
+    },
+    {
+      "name": "null_key_component",
+      "values": [
+        null
+      ],
+      "source_scope": "STRIIVE_EU",
+      "note": "NULL becomes the null token, never an empty string",
+      "pre_hash_string": "STRIIVE_EU||^^",
+      "sha256_hex": "f01c04e8349ce6a4c5a5832d19a76fcd32a04ec5d41e587987bf8ae95d8e0731"
+    },
+    {
+      "name": "blank_key_component",
+      "values": [
+        "   "
+      ],
+      "source_scope": "STRIIVE_EU",
+      "note": "blank collapses to the same token as NULL",
+      "pre_hash_string": "STRIIVE_EU||^^",
+      "sha256_hex": "f01c04e8349ce6a4c5a5832d19a76fcd32a04ec5d41e587987bf8ae95d8e0731"
+    },
+    {
+      "name": "composite_nhl_txn_key",
+      "values": [
+        "W-4471",
+        "JR-00912",
+        "CLI-00417",
+        "TS-2026-W34",
+        "3"
+      ],
+      "source_scope": "STRIIVE_EU",
+      "note": "worker x job x client x timesheet ref x line_no",
+      "pre_hash_string": "STRIIVE_EU||W-4471||JR-00912||CLI-00417||TS-2026-W34||3",
+      "sha256_hex": "cf071e4d56f9dc07554ca67a2d4d05b4edcfffa083c13de171626b328b69651b"
+    }
+  ],
+  "hashdiffs": [
+    {
+      "name": "baseline",
+      "values": [
+        "Senior Java Developer",
+        "Utrecht",
+        "Contract",
+        3,
+        "Open"
+      ],
+      "note": "day-1 payload",
+      "pre_hash_string": "Senior Java Developer||Utrecht||Contract||3||Open",
+      "sha256_hex": "806e2e950bba07cad68d2f71e139a012e0c502be15d64e674ba1e2d3b349ae68"
+    },
+    {
+      "name": "appended_null_column",
+      "values": [
+        "Senior Java Developer",
+        "Utrecht",
+        "Contract",
+        3,
+        "Open",
+        null
+      ],
+      "note": "NEW column appended, still null -> MUST equal baseline",
+      "pre_hash_string": "Senior Java Developer||Utrecht||Contract||3||Open",
+      "sha256_hex": "806e2e950bba07cad68d2f71e139a012e0c502be15d64e674ba1e2d3b349ae68"
+    },
+    {
+      "name": "appended_two_null_columns",
+      "values": [
+        "Senior Java Developer",
+        "Utrecht",
+        "Contract",
+        3,
+        "Open",
+        null,
+        null
+      ],
+      "note": "two appended nulls -> MUST equal baseline",
+      "pre_hash_string": "Senior Java Developer||Utrecht||Contract||3||Open",
+      "sha256_hex": "806e2e950bba07cad68d2f71e139a012e0c502be15d64e674ba1e2d3b349ae68"
+    },
+    {
+      "name": "appended_populated_column",
+      "values": [
+        "Senior Java Developer",
+        "Utrecht",
+        "Contract",
+        3,
+        "Open",
+        "EUR"
+      ],
+      "note": "appended column now populated -> MUST differ",
+      "pre_hash_string": "Senior Java Developer||Utrecht||Contract||3||Open||EUR",
+      "sha256_hex": "eb8d45d970b094f9fa8b46822f5330f81562cf26e1ed3cf88375beafd092d9a1"
+    },
+    {
+      "name": "case_correction",
+      "values": [
+        "senior java developer",
+        "Utrecht",
+        "Contract",
+        3,
+        "Open"
+      ],
+      "note": "case change IS a change -> MUST differ from baseline",
+      "pre_hash_string": "senior java developer||Utrecht||Contract||3||Open",
+      "sha256_hex": "6163ac8eeb6b87da52f448bb424d8ff244c7f8d51a5535d1326a1650eaed89cc"
+    },
+    {
+      "name": "value_change",
+      "values": [
+        "Senior Java Developer",
+        "Utrecht",
+        "Contract",
+        2,
+        "Open - Urgent"
+      ],
+      "note": "positions and status changed",
+      "pre_hash_string": "Senior Java Developer||Utrecht||Contract||2||Open - Urgent",
+      "sha256_hex": "c628e10e74367e89cce3930ff05e58d7c6c87180f43659f5daacdeb2f0da69ec"
+    },
+    {
+      "name": "reordered_payload",
+      "values": [
+        "Utrecht",
+        "Senior Java Developer",
+        "Contract",
+        3,
+        "Open"
+      ],
+      "note": "reordering breaks everything -> MUST differ",
+      "pre_hash_string": "Utrecht||Senior Java Developer||Contract||3||Open",
+      "sha256_hex": "875f701823c2c04b1c2f4f50f67b1025e6c2c7f19f147107d8527537f9f4d8b6"
+    }
+  ]
+}

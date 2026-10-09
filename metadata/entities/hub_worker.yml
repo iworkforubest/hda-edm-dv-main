@@ -1,0 +1,104 @@
+# PLACEHOLDER BRONZE TABLES: every bronze_table below is a placeholder.
+# Replace with the real fully-qualified table in db-weu-datalakehouse-tds
+# before deploying -- the pipeline fails at definition time otherwise.
+# See DEPLOY.md Phase 0a.
+name: worker
+kind: hub
+domain: party
+key_style: federated
+business_keys: [worker_reference]
+sensitivity: internal
+sources:
+  - name: STRIIVE_EU
+    bronze_table: hfig_eu.bronze.striive_worker
+    key_columns: [worker_ref]
+    applied_dts_column: last_modified_at
+    cdc_op_column: _cdc_op
+  - name: HR_EU
+    bronze_table: hfig_eu.bronze.hr_employee
+    key_columns: [employee_number]
+    applied_dts_column: record_changed_at
+    cdc_op_column: _cdc_op
+
+  # UKG_US -- ADDED 4 September 2026 to close a silent orphan foreign key.
+  #
+  # nhl_payroll_detail/UKG_US declares `worker: [worker_reference_id]` and so hashes its
+  # worker_hk as SHA-256('UKG_US', worker_reference_id). This hub had no UKG_US binding, so
+  # it never produced a key under that scope and every payroll-detail row pointed at a
+  # worker row that does not exist. Silent by construction: both tables load, and the join
+  # returns nothing -- no count, no reconciliation and no append-only check can see it.
+  #
+  # THE SAME TABLE THE NHL ALREADY READS, deliberately. The payroll register detail is
+  # where the worker reference arrives from UKG; pointing this hub at any other table would
+  # be a second opinion about which value is the worker's identity.
+  #
+  # A FEDERATED HUB MEANS A UKG WORKER IS ITS OWN IDENTITY. It does not merge with the same
+  # human's STRIIVE_EU or HR_EU row, and that is the declared intent of key_style:
+  # federated -- no system is authoritative for a worker. Resolving the three into one
+  # person is a same-as-link concern for the registry and Gold, not this hub's job.
+  #
+  # NO dedup_by, unlike the 01_usnc_bronze_dev bindings. The register carries one row per
+  # payroll line and therefore many per worker, but a hub is in naming.STAGED_KINDS -- it
+  # loads through a staging log and an anti-join, so duplicate business keys collapse
+  # whether or not they are pre-deduplicated. dedup_by would be a volume optimisation, and
+  # spec.validate requires dedup_order alongside it: naming order columns on a table this
+  # lake cannot see would fail the pipeline at definition time on a guess. No other
+  # placeholder binding declares dedup either.
+  - name: UKG_US
+    bronze_table: hfig_usnc.bronze.ukg_payroll_register_detail
+    key_columns: [worker_reference_id]
+    applied_dts_column: pay_check_date
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+
+  # FIELDGLASS_US -- ADDED for Ameren invoicing (Task 2). FEDERATED, so a Fieldglass
+  # worker is its own identity and does NOT merge with the same human's STRIIVE_EU,
+  # HR_EU or UKG_US row. That is this hub's declared intent: no system is
+  # authoritative for a worker. Resolving the four into one person is a same-as-link
+  # concern for the registry and Gold, not this hub's job.
+  #
+  # PLACEHOLDER CATALOG, FAKE ON PURPOSE -- same reasoning as hub_invoice.yml,
+  # hub_supplier.yml and hub_organisation.yml's FIELDGLASS_US binding: Task 1
+  # deliberately left the Fieldglass invoice source union undeclared, because
+  # declaring a union with zero real tables behind it makes
+  # checks/apply_source_unions.py fail every run and take the live
+  # fieldglass_us_job_posting load down with it. Naming the real union view here
+  # before it exists would reproduce that failure. bronze_table therefore names a
+  # table in the fake hfig_usnc.bronze PLACEHOLDER catalog, which cannot match
+  # verify_repo's "reads 01_usnc_bronze_dev. => real => must be in active_sources"
+  # rule and so cannot trip it.
+  #
+  # REPOINT THIS in the same change that repoints hub_invoice.yml, hub_supplier.yml
+  # and hub_organisation.yml's FIELDGLASS_US binding, and declares the source union in
+  # metadata/source_unions.yml. All four move together, or none of them should move.
+  - name: FIELDGLASS_US
+    # READS THE BRONZE TABLE DIRECTLY, with the profile's filter and renames applied
+    # in the flow (conform:) instead of through a view. A masked entity reading a view
+    # cannot be built -- SDP reconciles the streaming plan against the declared schema
+    # at definition time and never finished. 25 September.
+    bronze_table: 01_usnc_bronze_dev.sap_fieldglass_raw.invoices
+    # GENERATION 2 since 28 September 2026. Bronze dropped and recreated this table
+    # (new Delta id 06b65224-ef33-44fb-beb5-6ca4892277fb), so the generation-1
+    # checkpoint names a Delta object that no longer exists and this flow fails at
+    # analysis with [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE]. See
+    # SourceBinding.stream_generation: a fresh checkpoint re-reads the source and
+    # APPENDS, and the duplicate staging rows dissolve at the hub anti-join.
+    stream_generation: 2
+    conform: fieldglass_us_invoice
+    # WEEKLY, per Amy's 22 September template: "Invoice frequency: Weekly", delivered
+    # Thursdays by sFTP. NOT an exemption -- a 0 here means a feed that legitimately never
+    # re-delivers, and this one is meant to.
+    #
+    # IT WILL REPORT A BREACH TODAY, AND THAT IS THE POINT. Measured 24 September: this
+    # feed has landed three times -- 5 rows on 8 Sep, 30 on 9 Sep, 1,172 on 11 Sep -- and
+    # nothing in the thirteen days since. So it is not yet the weekly feed the template
+    # describes. Declaring the real SLA makes that visible; exempting it would hide a
+    # silent feed behind a decision that looks deliberate.
+    freshness_sla_hours: 168
+    key_columns: [worker_id]
+    # THE FEED RE-DELIVERS, and a worker appears on every line they billed, so without this
+    # the hub stages one row per invoice line rather than one per worker. Required of every
+    # binding reading a real Bronze table since this one stopped reading a view.
+    dedup_by: [worker_id]
+    dedup_order: [invoice_submit_date]
+    applied_dts_column: invoice_submit_date

@@ -1,0 +1,49 @@
+# WHY A HUB AND NOT ref_period.
+# EDM v0.4 models ref_period as governed config with a lock_state that gates re-entry.
+# That is right for the LOCK STATE -- Finance owns whether a period is open, and it is
+# configuration with an approval trail.
+#
+# But the period ITSELF is a business concept: it has a key people quote on paperwork
+# ("pay period 2026-07-27 to 2026-08-09"), it participates in the unit of work of every
+# payment, and it survives every system that records it. So identity lives here and the
+# lock state stays in ref_period, referenced by foreign key. One of them is identity, the
+# other is configuration, and they are owned by different people.
+#
+# THE KEY IS THE INTERVAL, and no longer company-scoped. The previous key was
+# (company_reference_id, start, end) on the reasoning that pay calendars differ per
+# company. They do -- and that is already expressed by the interval: a fortnightly
+# 2026-07-27..2026-08-09 and a monthly 2026-08-01..2026-08-31 are different intervals and
+# therefore different rows. Two companies only share a row when they genuinely share the
+# same calendar interval, which is the truth. WHICH organisation transacted in a period is
+# a fact of the LINK -- nhl_journal_line and nhl_payroll_detail both carry organisation and
+# pay_period as parents -- not of the period object. Parent spec E3 lists this hub among
+# the entities the fold re-keys.
+#
+# NOT BOUND TO great_plains_raw.fiscalperiods. A fiscal period is an accounting MONTH; a
+# pay period is a payroll CYCLE. Binding one to the other would conflate two business
+# concepts -- the same class of error as company versus client -- merely because a period
+# entity happened to exist. Sub-project 3a spec E3a-3.
+#
+# ukg_raw.gl is the ONLY place the pay period survives: posting to Dynamics GP loses it.
+# gl20000 has periodid (fiscal) and no pay-period column at all, which is precisely why
+# the payroll journal and the general journal are two entities.
+name: pay_period
+kind: hub
+domain: payroll
+key_style: authored
+business_keys: [pay_period_start_date, pay_period_end_date]
+sensitivity: internal
+
+sources:
+  # 520 rows against 260 distinct (company, batchid, account, userdefined1) across 2
+  # files: the same lines delivered twice. dedup_by is this hub's own key, so one row
+  # per interval survives per batch.
+  - name: UKG_US
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.ukg_raw.gl
+    key_columns: [payperiodstartdate, payperiodenddate]
+    applied_dts_column: paycheckdate
+    dedup_by: [payperiodstartdate, payperiodenddate]
+    dedup_order: [timestamp, input_file_name]

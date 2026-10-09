@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waiting on Finance and Bronze</title>
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does.
+
+   THIS ONE CITES RATHER THAN ASKS. Every id on it is owned by another document, and
+   verify_repo asserts each still exists there -- so this page cannot outlive the questions
+   it summarises without failing the build. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#5B4A7A; --accent-soft:#EFEBF5;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#B7A6D6; --accent-soft:#201A2A;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#B7A6D6; --accent-soft:#201A2A;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500; white-space:nowrap}
+/* The id column must not wrap. */
+table.status td:first-child .sub{white-space:normal}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Two teams &middot; Outstanding asks &middot; Data &amp; AI</p>
+    <h1>Six answers we are waiting on, and one new request.</h1>
+    <p class="lede">
+      Four of them are accounting judgements for Finance; the rest belong to the Bronze
+      team. This page is a status summary, not a restatement &mdash; every item is owned by
+      the document named beside it, and the detail lives there. It exists because the two
+      sets of asks were in separate places and nobody could see, on one page, what is
+      actually blocked today.
+    </p>
+    <div class="stats">
+      <div class="stat"><b>4</b>Finance questions, unanswered</div>
+      <div class="stat"><b>1</b>Bronze request blocking a live control</div>
+      <div class="stat"><b>1</b>new Bronze request, not yet numbered</div>
+      <div class="stat"><b>1</b>request now blocking the Workday export</div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Finance &mdash; four questions about negative GL amounts</h2>
+    <p>
+      A data-quality rule drops any general-ledger line whose debit or credit is negative.
+      Across 19,057,752 GL rows it catches exactly two journals, both from
+      <span class="mono">BRPLM</span>, both FY2025, both balancing to zero. Whether they
+      belong in the warehouse is an accounting judgement, which is why it is a question
+      rather than a change. Nothing has been deleted; the rows are quarantined with the
+      rule that caught them recorded alongside.
+    </p>
+    <table class="tbl">
+      <thead><tr><th>Id</th><th>Question</th><th>What it changes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">GL-1</td>
+          <td>Is a negative debit or credit a legitimate posting in this ledger &mdash; for
+              example a correction posted in place rather than by swapping sides?</td>
+          <td>If yes, the rule excludes valid postings and two journals are missing from the
+              warehouse. If no, they are correctly quarantined.</td>
+        </tr>
+        <tr>
+          <td class="mono">GL-2</td>
+          <td>If they are legitimate, should the rule be removed, or downgraded from
+              <span class="mono">drop</span> to <span class="mono">warn</span> so they load
+              and stay visible?</td>
+          <td>Either is straightforward. <span class="mono">drop</span> keeps them out
+              entirely; <span class="mono">warn</span> loads them and records the match.</td>
+        </tr>
+        <tr>
+          <td class="mono">GL-3</td>
+          <td>Should <span class="mono">ordbtamt</span> / <span class="mono">orcrdamt</span>
+              be treated the same way as the functional amounts, whichever way GL-1 goes?</td>
+          <td>Today they are inconsistent: 16 negative originating-currency values sit in the
+              warehouse untouched. Either answer is fine; the mismatch is not.</td>
+        </tr>
+        <tr>
+          <td class="mono">GL-4</td>
+          <td>Are BRPLM 496073 and 496157 anything you recognise &mdash; a known correction,
+              an import artefact, something already investigated?</td>
+          <td>Two journals is few enough to look at individually, which is why we are asking
+              rather than generalising.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="why">
+      <strong>Why it matters now.</strong> The quarantined rows block a control: the
+      reconciliation gate refuses to attribute a quarantined row to a delivery it cannot
+      identify, so five downstream checks do not run while these two journals sit there. We
+      could suppress that and have deliberately not &mdash; the gate is right, and the honest
+      fix is to settle whether the rows belong in the warehouse.
+    </p>
+    <p class="note">
+      Full measurements, the rule text and the per-journal breakdown:
+      <span class="mono">docs/gl_negative_amounts_question.html</span>
+    </p>
+  </section>
+
+  <section>
+    <h2>Bronze &mdash; one request blocking a control today</h2>
+    <div class="task">
+      <div class="task-top">
+        <span class="pill mono">BRZ-12</span>
+        <span class="who">Bronze</span>
+        <span class="status warn">Request sent &middot; still open</span>
+      </div>
+      <p><strong>Carry a control / ETL id in the Fieldglass payload</strong> &mdash; when
+         Snaplogic pulls Fieldglass over the API and lands it into Bronze, include an
+         <span class="mono">etl_id</span> / <span class="mono">control_id</span> style value
+         as a field in the payload it writes. One value per run, the same on every record
+         that run delivers, plus the number of records that run delivered.</p>
+      <p class="note warn">
+        <strong>CORRECTED 28 September. This supersedes the reduced form this page carried
+        before.</strong> That earlier note said a stamp on the landed data was
+        <em>no longer asked for</em> and that no column would be added. That reduction was
+        wrong: it removed the part the control depends on. The gate groups landed rows
+        <em>by</em> the id, so a manifest row on its own gives it nothing to group &mdash;
+        every row still has to say which run brought it in. Its own message, quoted below,
+        asks for a <span class="mono">manifest_column</span>, which is a column on the row.
+      </p>
+      <p class="note">
+        Nothing else about the feed changes: not how Fieldglass is called, not what is
+        landed, not when. One extra field in the payload, plus a count per run.
+      </p>
+      <p class="why">
+        <strong>What it blocks, measured 27 September.</strong> The loop-1 reconciliation
+        gate reported <span class="mono">status=NOT_EVALUATED asserted=0</span> on the last
+        full vault load. Its own message: <em>&ldquo;no ACTIVE reconcilable binding declares
+        a manifest_column, so no row carries a manifest_id to group by and no producer can
+        exist&rdquo;</em>. Without an id there is nothing to group by, so
+        <em>landed + (quarantined &minus; superseded) = approved</em> cannot be evaluated at all. The gate is
+        honest about asserting nothing rather than passing silently &mdash; but it is
+        asserting nothing.
+      </p>
+      <p class="note">
+        For the three feeds that de-duplicate on load, a stamped id is necessary and not
+        sufficient: loop-1 also needs a count taken <em>after</em> de-duplication, and that
+        count is ours to compute, not yours to supply.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bronze &mdash; one new request, not yet numbered</h2>
+    <div class="task">
+      <div class="task-top">
+        <span class="pill mono">new</span>
+        <span class="who">Bronze</span>
+        <span class="status warn">Raised &middot; sent 28 September</span>
+      </div>
+      <p><strong>A <span class="mono">workday</span> / <span class="mono">workday_raw</span>
+         schema pair in the bronze catalog</strong>, landing Workday reference values the
+         same way every other source system lands.</p>
+      <p class="why">
+        <strong>Why.</strong> Logan's DCDDs specify the Workday load by reference: a field
+        does not carry a name, it carries a <span class="mono">Reference_ID</span> whose
+        value Workday already knows. In the customer-invoice DCDD, <strong>27 of the 91
+        fields we populate</strong> validate against those references &mdash; 108 across the
+        full workbook, including the rows marked
+        <span class="mono">Do Not Populate</span>. Nothing in this estate holds them.
+      </p>
+      <p class="why">
+        <strong>Measured 27 September.</strong>
+        <span class="mono">01_usnc_bronze_dev</span> has no schema matching
+        <span class="mono">workday</span> or <span class="mono">wd_</span>. The catalog
+        already follows a <span class="mono">&lt;source&gt;</span> /
+        <span class="mono">&lt;source&gt;_raw</span> convention &mdash;
+        <span class="mono">fieldglass</span>, <span class="mono">ukg</span>,
+        <span class="mono">hubspot</span> &mdash; so this is that pattern applied to one more
+        system, not a new shape.
+      </p>
+      <p class="note">
+        <strong>Two interfaces, and they are not interchangeable.</strong> Snaplogic calling
+        the SOAP <span class="mono">Get_References</span> service needs nothing new from
+        Workday. Databricks Lakeflow Connect's Workday connector ingests Reports-as-a-Service
+        instead, which would require somebody in Workday to publish a custom report first.
+        The choice decides who else has to be asked.
+      </p>
+      <p class="note">
+        Until this lands, the values land in an interim silver schema,
+        <span class="mono">workday_landing</span>, which is built to be deleted: when Bronze
+        exists the two entity bindings move and the schema is dropped.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Platform &mdash; the request that was refused, and what replaced it</h2>
+    <div class="task">
+      <div class="task-top">
+        <span class="pill mono">PLT-2</span>
+        <span class="who">Platform admin</span>
+        <span class="status ready">ANSWERED 28 September &middot; refused, and replaced with a better design</span>
+      </div>
+      <p><strong>WITHDRAWN. The ask was to add the load identity to
+         <span class="mono">global_dataplatform_pipeline_job_runners</span>. The platform team
+         declined, and they were right to.</strong></p>
+      <p class="note warn">
+        <strong>CORRECTED 28 September.</strong> This page previously asked for that membership
+        and called it &ldquo;the group every mask function admits by name&rdquo;. Both halves are
+        now wrong, and the sentence is left here only so a reader who saw the earlier version can
+        tell what changed.
+      </p>
+      <p class="why">
+        <strong>Their argument, and it is the better one.</strong> That group is operational
+        &mdash; its function is to let data engineers run jobs. The service principal did not
+        need it to run anything; it needed it only because
+        <span class="mono">mask_money</span> unmasked for that group. That makes it a
+        <em>data-access grant wearing an operational group&rsquo;s clothes</em>: anyone added
+        merely to run jobs would also get cleartext currency.
+      </p>
+      <p class="why">
+        <strong>What exists instead.</strong> A dedicated group,
+        <span class="mono">scope_unmask_currency_values</span>, with the pipeline service
+        principals already in it. People who need cleartext amounts are added by explicit
+        request rather than as a side effect of being able to run a job.
+      </p>
+      <p class="note">
+        <strong>Our side, and it is two functions rather than one.</strong> The reply named
+        <span class="mono">mask_money</span> (27 declared columns). We are also repointing
+        <span class="mono">mask_money_double</span> (4 columns, including
+        <span class="mono">nhl_general_journal_line.ordbtamt</span> and
+        <span class="mono">orcrdamt</span> &mdash; the originating-currency amounts
+        <span class="mono">assert_journal_integrity</span> reads). Changing only the first would
+        have half-fixed it. The three PII masks keep the operational group: a
+        <em>currency</em> group is the wrong exemption for a personal name, and no column
+        declares them today.
+      </p>
+      <p class="note warn">
+        <strong>NOT YET DEPLOYED, and it must not go everywhere at once.</strong> Four targets
+        &mdash; <span class="mono">weu_tds</span>, <span class="mono">uks_tds</span>,
+        <span class="mono">aue_tds</span> and <span class="mono">dev</span> &mdash; declare no
+        <span class="mono">run_as</span>, so their loads run as a named human who is in the
+        operational group but not the currency one. Deploying there would have the money masks
+        deny the loading identity, and a materialized view would then write those NULLs into the
+        insert-only silver vault. That is the same irreversible harm this request was raised to
+        prevent, arriving from the opposite direction. <span class="mono">usnc_tds</span> runs as
+        the service principal and is unaffected.
+      </p>
+      <p class="note">
+        Full request and its history:
+        <span class="mono">docs/platform_team_requests.html</span>
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Everything else on Bronze</h2>
+    <p>
+      Eighteen requests are recorded and tracked, with their own status and history, at
+      <span class="mono">docs/bronze_layer_work_requests.html</span>. They are not repeated
+      here on purpose &mdash; a second copy is a second thing to keep in step. The two above
+      are singled out only because one is blocking a control today and the other has not
+      been raised yet.
+    </p>
+    <p class="note">
+      Of note among the rest: <span class="mono">BRZ-1</span> (Change Data Feed on the
+      <span class="mono">_raw</span> tables) affects every satellite load after the first,
+      and <span class="mono">BRZ-8</span> (a payroll detail feed) is parked while the current
+      scope is Ameren.
+    </p>
+  </section>
+
+  <section class="closing">
+    <h2>What we have not done</h2>
+    <p>
+      We have not suppressed the reconciliation gate, deleted a quarantined row, or worked
+      around the missing manifest id. We have not created a Workday schema in a catalog that
+      is not ours. Each of those would turn a visible gap into an invisible one, and every
+      item on this page is recoverable precisely because nothing was worked around.
+    </p>
+    <p class="note">
+      Companion pages:
+      <span class="mono">docs/platform_team_requests.html</span> (platform),
+      <span class="mono">docs/gl_negative_amounts_question.html</span> (the GL detail),
+      <span class="mono">docs/bronze_layer_work_requests.html</span> (the Bronze register).
+    </p>
+  </section>
+
+</div>
+
+</body>
+</html>

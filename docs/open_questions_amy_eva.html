@@ -1,0 +1,365 @@
+<title>Open Questions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does.
+
+   THIS ONE CITES RATHER THAN ASKS. Every id on it is owned by another document, and
+   verify_repo asserts each still exists there -- so this page cannot outlive the questions
+   it summarises without failing the build. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2E5F7A; --accent-soft:#E9F0F5;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#8FBCD4; --accent-soft:#17222A;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#8FBCD4; --accent-soft:#17222A;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500; white-space:nowrap}
+/* The id column must not wrap. WDJ-10 broke across two lines as "WDJ-" / "10", which reads
+   as a different id -- and this table's whole job is to let a reader carry an id to the
+   document that owns it. The .sub underneath it still wraps, which is what it is for. */
+table.status td:first-child .sub{white-space:normal}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Open questions &middot; Ameren invoicing &amp; client structure &middot; Data &amp; AI</p>
+    <h1>Eleven questions, and none of them are engineering.</h1>
+    <p class="lede">
+      Everything we can answer by measuring, we have measured. What is left needs a
+      decision from someone who owns the business fact. <strong>Nine are Amy's, two are
+      Eva's</strong>, and they are ordered within each section by what they block &mdash;
+      the first in each is the one holding up work today.
+    </p>
+    <p class="lede">
+      <strong>Two have been answered since this was drafted</strong> and are kept here,
+      marked, rather than deleted &mdash; an answered question is the most useful thing on
+      a list like this. Hubspot is the system of record for deal and commercial data, so it
+      decides contract value and Workday decides the contract id; <strong>Q7 is what that
+      answer created</strong>, and it is the one item here with a deadline of its own.
+    </p>
+    <p class="meta">
+      <span>24 September 2026</span>
+      <span>For Amy Keser &middot; Eva and the CRM team</span>
+      <span>From <code>data_platform_operations</code></span>
+      <span>Nothing here is blocked on engineering</span>
+    </p>
+  </header>
+
+  <div class="strip">
+    <div class="stat p1"><span class="n">3</span><span class="l">Blocking now</span></div>
+    <div class="stat p2"><span class="n">9</span><span class="l">For Amy</span></div>
+    <div class="stat p2"><span class="n">2</span><span class="l">For Eva / CRM</span></div>
+    <div class="stat"><span class="n">2</span><span class="l">Answered since drafting</span></div>
+  </div>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Two things that changed this week</h2>
+    </div>
+    <div class="note">
+      <h3>Workday reference data is coming to us, not being fetched by us</h3>
+      <p>
+        Agreed internally: <strong>both Hubspot and Workday write into Databricks</strong>,
+        and Workday's reference values land with us as Workday reference data. That settles
+        a question three pieces of work were waiting on, and it changes how Q7 below should
+        be read &mdash; the traffic flows towards us, so asking Workday to hold a Hubspot
+        id goes against the grain in a way that asking Hubspot for one does not.
+      </p>
+      <p>
+        <strong>And a caution worth carrying into the call with Paul.</strong> Everything we
+        have measured in Workday so far &mdash; 82 companies, the consolidation hierarchy,
+        the empty customer list &mdash; comes from the <em>implementation</em> tenant. It
+        has been the right place to build against and it is not a source of reference data:
+        its internal identifiers mean nothing in production. If the answer is a different
+        tenant, those findings need re-measuring.
+      </p>
+    </div>
+    <div class="tier-head">
+      <h2>For Amy</h2>
+      <span class="why">Ameren invoicing, and the new client contract process.</span>
+    </div>
+
+    <div class="task b">
+      <div class="task-top"><span class="id">Q1</span><span class="pill b">Blocking</span>
+        <h3>What date should the invoice carry?</h3></div>
+      <dl>
+        <dt>Why us</dt><dd>Nothing. <strong>We compute the date in Databricks</strong> and freeze it at issue, so your copy and ours can never drift apart. GIE only renders the document.</dd>
+        <dt>What we need</dt><dd>The rule. Your template says <em>"create the invoice date using the agreed date rule"</em> without stating what it is.</dd>
+        <dt>Evidence</dt><dd>The sample suggests it behaved as the <strong>release date</strong> &mdash; Invoice Date had 1 distinct value across all 225 invoices while Accounting Date had 14. Plausible, but we would rather be told than infer it from one file. The code deliberately refuses to default it.</dd>
+      </dl>
+    </div>
+
+    <div class="task b">
+      <div class="task-top"><span class="id">Q2</span><span class="pill b">Blocking</span>
+        <h3>Can one client have two contracts in force at the same time?</h3></div>
+      <dl>
+        <dt>Why it matters</dt><dd>It decides whether the client contract design works at all. We select the contract an invoice posts against from <strong>client + invoice date</strong>. If a client can have two at once, that does not identify a contract and we need a third term &mdash; service type, or the contract named on the order.</dd>
+        <dt>Your own words</dt><dd>&ldquo;this may change as we go through the legal entity unification only where we have <strong>a mix of services and one is professional services (SOW)</strong>&rdquo; &mdash; which reads like yes.</dd>
+        <dt>If two are ever open</dt><dd>We will <strong>refuse to pick</strong> rather than choose by row order. An invoice posted against the wrong contract is not something a later report would catch.</dd>
+      </dl>
+    </div>
+
+    <div class="task r">
+      <div class="task-top"><span class="id">Q3</span><span class="pill r">Answered &mdash; thank you</span>
+        <h3>MSP on expenses now rejects, across all clients</h3></div>
+      <dl>
+        <dt>Your answer</dt><dd>&ldquo;MSP fee's should not be applied on expenses across all clients and therefore we should expect a record to reject where this is present in the data.&rdquo;</dd>
+        <dt>Built</dt><dd>Done. An MSP fee on an expense line is rejected with a reason a person can act on. An absent or zero fee is <strong>not</strong> a rejection &mdash; 39 of your 419 invoices are wholly expenses, so treating a missing fee as a present one would reject the normal case.</dd>
+        <dt>Worth saying</dt><dd>We had measured this and deliberately <em>not</em> built it, because you had said the variety was real. <strong>Measuring could not settle it and asking did</strong> &mdash; but the measurement is what made the question specific enough to answer.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q3b</span><span class="pill w">With you</span>
+        <h3>Misc fees &mdash; per entry, or per client?</h3></div>
+      <dl>
+        <dt>Your open question</dt><dd>&ldquo;For Misc Fee's it's slightly different they may or may not attract an MSP fee (this is a newer feature). I have asked whether this is something applied per misc invoice entry or if it's at a client level.&rdquo;</dd>
+        <dt>Why it matters to us</dt><dd>The two answers need <strong>different things built</strong>, so it is worth knowing before rather than after. <em>Some with, some without</em> means we pass the data through and build no rule. <em>All or nothing per client</em> means a rule held in <strong>reference data, keyed by client</strong> &mdash; which is a different shape from the across-all-clients rule expenses just got.</dd>
+        <dt>Meanwhile</dt><dd>Miscellaneous lines pass through untouched. That cannot reject an invoice which is correct under either answer, and rejecting could. A test holds this open deliberately, so it fails the day someone closes it quietly.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q4</span><span class="pill w">Design</span>
+        <h3>Does the Workday posting carry one contract id per invoice, or per line?</h3></div>
+      <dl>
+        <dt>We assume</dt><dd>Per invoice.</dd>
+        <dt>Breaks if</dt><dd>A client bills several services on one document. Related to Q2 &mdash; if a client can hold two contracts, a single invoice may span both.</dd>
+        <dt>Note</dt><dd>This is the <strong>Workday posting</strong>, not the invoice you send Ameren. Those thirteen columns are Ameren's own template and we are not adding to them.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q5</span><span class="pill w">Design</span>
+        <h3>Does a tax line carry project and task coding?</h3></div>
+      <dl>
+        <dt>The problem</dt><dd>Gold asks <strong>every</strong> released line for Project Number, Task Number, Expenditure Type and Expenditure Organization. A tax line belongs to no Fieldglass module, so there is nothing to derive them from &mdash; and guessing would put another module's coding on the line.</dd>
+        <dt>Today</dt><dd>An invoice carrying an aggregated tax line is routed to exceptions and <strong>never released</strong>.</dd>
+        <dt>Why it has not bitten</dt><dd>The sample holds <strong>one tax line in 555</strong>, and only 2 of 419 invoices carry any tax at all. Resolve it by either exempting tax lines from the coding requirement, or saying what coding they carry.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q6</span><span class="pill w">In flight</span>
+        <h3>Ameren is not a Workday customer, and none of the 29 suppliers exists there</h3></div>
+      <dl>
+        <dt>Measured</dt><dd>Workday holds 29 customers &mdash; Biogen, Johnson &amp; Johnson, Lonza. <strong>No Ameren.</strong> Its 14 suppliers are demo data, and none of your 29 is among them.</dd>
+        <dt>Effect</dt><dd>Blocks <strong>posting</strong>, not building. Everything from Fieldglass and your master data is in hand.</dd>
+        <dt>Moving</dt><dd>You are calling Paul to settle which tenant we use and to provide the reference IDs for the client and supplier lines. Nothing more needed from you until that lands.</dd>
+        <dt>One caution worth carrying into that call</dt><dd>Everything we have measured in Workday &mdash; 82 companies, the consolidation hierarchy, the empty customer list &mdash; comes from the <strong>implementation</strong> tenant. Its internal identifiers mean nothing in production. <strong>If Paul names a different tenant, those findings need re-measuring</strong>, and none of them can be promoted as reference data.</dd>
+      </dl>
+    </div>
+
+    <div class="task b">
+      <div class="task-top"><span class="id">Q7</span><span class="pill b">Time-sensitive</span>
+        <h3>Can the Workday contract record carry the Hubspot deal id?</h3></div>
+      <dl>
+        <dt>Background</dt><dd><strong>Already answered:</strong> Hubspot is the main system for deal and commercial data, so it decides contract value, dates and stage. Workday is authoritative for the <strong>contract identifier</strong> &mdash; the thing the posting must carry. Clean split, and we have built to it.</dd>
+        <dt>What it creates</dt><dd>The two halves now have to be joinable, and today <strong>nothing joins them</strong>. Hubspot deals key on their own id; Workday contracts are a reference id against a customer. There is no shared key.</dd>
+        <dt>Three ways out</dt><dd><strong>(a)</strong> the contract id already exists as a Hubspot property and is simply not replicated to us &mdash; cheapest if true, and only the CRM team can say; <strong>(b)</strong> Databricks replicates the id between Hubspot and Workday, which removes the problem rather than answering it, because we would then hold both ids by construction; <strong>(c)</strong> Workday's record carries the Hubspot deal id when it is keyed in.</dd>
+        <dt>What we checked</dt><dd>It is <strong>not in the Hubspot data we hold</strong>. Deals carry 35 columns and the only identifier is the deal's own id &mdash; no order, contract or quote field, and nothing hidden in the unmapped-field capture either. But we only see what is replicated to us, and 35 properties is plainly a subset, so it may well exist in Hubspot itself.</dd>
+        <dt>Why now</dt><dd>(c) is nearly free while the process is manual and being designed this minute, and expensive afterwards. The alternative nobody should accept is matching contracts to deals on client and dates &mdash; an inference, on money, of exactly the kind that goes wrong quietly.</dd>
+        <dt>Note on (b)</dt><dd>It is the best outcome and not the cheapest, and it runs <strong>against the direction now agreed</strong>: both Hubspot and Workday write <em>into</em> Databricks, and Workday's reference values will land with us as Workday reference data. Everything we do with Workday today is <em>read</em>. Sending an id back the other way is a new posture needing a credential arrangement we have asked Platform for, and an owner. Which makes <strong>(a)</strong> materially more attractive if the property already exists in Hubspot.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q8</span><span class="pill w">Mapping</span>
+        <h3>Worked examples for the task-code parsing rule</h3></div>
+      <dl>
+        <dt>Ask</dt><dd>One worked example each for a <strong>timesheet</strong>, an <strong>expense</strong> and a <strong>miscellaneous</strong> line &mdash; source value in, expected Task Number out.</dd>
+        <dt>Why</dt><dd>We take the value after the pipe and strip a trailing parenthesis. That fits the sample; three examples would confirm it rather than leave it inferred.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q9</span><span class="pill w">Process</span>
+        <h3>Who delivers the invoice to Ameren AP, and in what form?</h3></div>
+      <dl>
+        <dt>Status</dt><dd>We can produce the thirteen fields. How the document reaches Ameren &mdash; sFTP, email, portal &mdash; and who owns that step is not recorded anywhere we can see.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q10</span><span class="pill w">Finance</span>
+        <h3>The nominal code is marked "for testing only"</h3></div>
+      <dl>
+        <dt>Ask</dt><dd>Your template gives <code>400100</code> and flags it as testing only. What is the real one, and does it vary by service or entity?</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>For Eva and the CRM team</h2>
+      <span class="why">Hubspot turned out to answer two things we had written off.</span>
+    </div>
+
+    <div class="note">
+      <h3>Context, briefly</h3>
+      <p>
+        We had concluded there was no source anywhere for client company structure, and we
+        were wrong &mdash; Hubspot has it.
+        <code>companies.hs_parent_company_id</code> gives client parent/child:
+        <strong>Aerotek</strong> and <strong>TEKsystems</strong> both roll up to
+        <strong>Allegis Group</strong>, <strong>Aetna</strong> to <strong>CVS Health</strong>.
+        That is exactly what is needed to answer &ldquo;what does this client group spend
+        with us in total&rdquo;. <code>deals</code> also carries contract value and contract
+        dates, which is one end of the new deal &rarr; quote &rarr; contract process.
+      </p>
+      <p>
+        We have <strong>not</strong> changed anything in Hubspot and are not asking for
+        anything to be changed. Both questions are about meaning, not access.
+      </p>
+    </div>
+
+    <div class="task b">
+      <div class="task-top"><span class="id">Q11</span><span class="pill b">Blocking</span>
+        <h3>How does a Fieldglass buyer code map to a Hubspot company?</h3></div>
+      <dl>
+        <dt>Why it blocks</dt><dd>This is the <strong>only</strong> thing standing between us and client-group spend reporting. The hierarchy is in Hubspot; the spend is in Fieldglass; nothing joins them.</dd>
+        <dt>The problem</dt><dd>Spend attaches at a 4-character buyer code. Of the <strong>12</strong> buyer codes in the invoice feed, <strong>only one carries a company name at all</strong> &mdash; the other eleven are blank.</dd>
+        <dt>What we will not do</dt><dd><code>TEKS</code> looks like TEKsystems. We are recording that as a guess and nothing more: matching companies by name resemblance is exactly how you end up merging two real clients into one, and every total above it would still look plausible.</dd>
+        <dt>Ideal answer</dt><dd>A list &mdash; buyer code to Hubspot company id &mdash; even a partial one. Twelve rows would unblock it today.</dd>
+      </dl>
+    </div>
+
+    <div class="task w">
+      <div class="task-top"><span class="id">Q12</span><span class="pill w">Meaning</span>
+        <h3>Is one Hubspot deal one client contract?</h3></div>
+      <dl>
+        <dt>What we see</dt><dd>A deal carries <code>total_contract_value</code>, <code>contract_start_date</code> and <code>end_date_contract</code>, which reads like one deal is one contract.</dd>
+        <dt>What gives us pause</dt><dd><strong>15,430 deals against 2,457 companies</strong> &mdash; about six per company. We cannot tell how many became contracts, or whether a renewal is a new deal or an edit to the old one.</dd>
+        <dt>Why it matters</dt><dd>It decides the grain we bind the contract data at. Getting it wrong would double-count contract value.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Measured 24 September 2026 against the live Fieldglass extract loaded 11 September,
+      Workday tenant <code>headfirst3</code>, and
+      <code>01_usnc_bronze_dev.hubspot_raw</code>. Figures quoted are counts from those
+      sources, not estimates.
+    </p>
+    <p>
+      Q1&ndash;Q5 detail: <code>2026-09-24-ameren-invoicing-design.md</code> and
+      <code>2026-09-24-client-contract-design.md</code>. Q11&ndash;Q12:
+      <code>docs/superpowers/OPEN_ITEMS.md</code>.
+    </p>
+  </footer>
+
+</div>

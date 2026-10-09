@@ -1,0 +1,104 @@
+reload parity :: catalog=02_usnc_silver_edm_dev
+
+  PASS  hub_accounting_journal.accounting_journal_hk  2759294 rows / 2221108 distinct, digests identical
+  PASS  hub_ledger_account.ledger_account_hk  1906877 rows / 1906877 distinct, digests identical
+  PASS  hub_organisation.organisation_hk  24 rows / 12 distinct, digests identical
+  PASS  hub_pay_period.pay_period_hk  2 rows / 2 distinct, digests identical
+  FAIL  nhl_general_journal_line.accounting_journal_hk
+          n_distinct: before=794888 after=794889
+          sum_all: before=5245271086781691 after=5245271970855366
+          md5sum_all: before=1416042119896796560488933 after=1416042196083469225778705
+          min_hk: before=0000357F01BEC0869539E733D4889C276405A012D3DDFB544588BC197A127122 after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=458226132466028278706202 after=458226208652700943995974
+  PASS  nhl_general_journal_line.general_journal_line_hk  2453132 rows / 2453132 distinct, digests identical
+  FAIL  nhl_general_journal_line.ledger_account_hk
+          n_distinct: before=10266 after=10267
+          sum_all: before=5621116005165193 after=5621116889238868
+          md5sum_all: before=1481092325877227951904699 after=1481092402063900617194471
+          min_hk: before=000477BF387AB376509F01C74A815F56C9B699B05BF3747419B93A7BD5D10E28 after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=5906845531023540229503 after=5906921717696205519275
+  FAIL  nhl_general_journal_line.organisation_hk
+          n_distinct: before=11 after=12
+          sum_all: before=3699008515072519 after=3699009399146194
+          md5sum_all: before=1412040549587618838831124 after=1412040625774291504120896
+          min_hk: before=096A317600581031ABB96E70420FE91A59D24912CD5A180564024D40C2B97D7D after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=7163736038521002353 after=7239922711186292125
+  FAIL  nhl_general_journal_line_closed_year.accounting_journal_hk
+          n_distinct: before=1964404 after=1964405
+          sum_all: before=13044262403175470 after=13044263287249145
+          md5sum_all: before=3513509334112877921828395 after=3513509410299550587118167
+          min_hk: before=00000DC2C133F4C1E126019230F63CDD74869A2E5D6E126D48FF28936FF03CCA after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=1132374718639938640282784 after=1132374794826611305572556
+  PASS  nhl_general_journal_line_closed_year.general_journal_line_closed_year_hk  6086493 rows / 6086493 distinct, digests identical
+  FAIL  nhl_general_journal_line_closed_year.ledger_account_hk
+          n_distinct: before=13823 after=13824
+          sum_all: before=14145982333414412 after=14145983217488087
+          md5sum_all: before=3725827540692625334409787 after=3725827616879297999699559
+          min_hk: before=000477BF387AB376509F01C74A815F56C9B699B05BF3747419B93A7BD5D10E28 after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=7997826510969574010360 after=7997902697642239300132
+  FAIL  nhl_general_journal_line_closed_year.organisation_hk
+          n_distinct: before=11 after=12
+          sum_all: before=9156782670180400 after=9156783554254075
+          md5sum_all: before=3686314010575160083029808 after=3686314086761832748319580
+          min_hk: before=096A317600581031ABB96E70420FE91A59D24912CD5A180564024D40C2B97D7D after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=7163736038521002353 after=7239922711186292125
+  FAIL  nhl_journal_line.accounting_journal_hk
+          n_distinct: before=1 after=2
+          sum_all: before=524684409860 after=525568483535
+          md5sum_all: before=261877236161922280640 after=261953422834587570412
+          min_hk: before=A5AED9ECA20967974F06E1A06BCAC63C56006114817B1DAEBD6DA40FEB8D76CD after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=1007220139084316464 after=1083406811749606236
+  PASS  nhl_journal_line.journal_line_hk  261 rows / 261 distinct, digests identical
+  FAIL  nhl_journal_line.ledger_account_hk
+          n_distinct: before=101 after=102
+          sum_all: before=547449764193 after=548333837868
+          md5sum_all: before=141203586572673900915 after=141279773245339190687
+          min_hk: before=004104D91C8611BA4CBEF21447CE1B5DCAB25C13C3FAF18F89303CA34D9453BE after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=60289260744604699264 after=60365447417269989036
+  FAIL  nhl_journal_line.organisation_hk
+          n_distinct: before=1 after=2
+          sum_all: before=954439966220 after=955324039895
+          md5sum_all: before=153801317515710641660 after=153877504188375931432
+          min_hk: before=B61B2EBA1D5A9555FEBBC0EFA963E4C472552FAB29D477B9F90A577A4B5036E0 after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=591543528906579391 after=667730201571869163
+  FAIL  nhl_journal_line.pay_period_hk
+          n_distinct: before=1 after=2
+          sum_all: before=348155276560 after=349039350235
+          md5sum_all: before=145375614348938413960 after=145451801021603703732
+          min_hk: before=88BE224E883EDAE47D42CC789216C03EDE7C045B8B8BEBB2A9BC47D2B98950B6 after=0000000000000000000000000000000000000000000000000000000000000000
+          md5sum_distinct: before=559136978265147746 after=635323650930437518
+
+column counts -- REPORTED, not asserted (narrowing is the point):
+  hub_accounting_journal                       92 ->   13
+  hub_job_request                               8 ==    8
+  hub_ledger_account                           62 ->   11
+  hub_organisation                             92 ->   11
+  hub_pay_period                               22 ->   11
+  hub_worker                                    8 ==    8
+  lnk_client_job_request                        8 ==    8
+  msat_job_request_custom_field_fieldglass_eu    8 ==    8
+  msat_journal_line_external_code_ukg_us        8 ==    8
+  msat_journal_line_worktag_ukg_us              8 ==    8
+  msat_worker_skills_hr_eu                      8 ==    8
+  msat_worker_skills_striive_eu                 8 ==    8
+  nhl_general_journal_line                     83 ->   26
+  nhl_general_journal_line_closed_year         83 ->   26
+  nhl_journal_line                             25 ->   17
+  nhl_payroll_detail                            8 ==    8
+  nhl_timesheet_line                            8 ==    8
+  qtn_accounting_journal                       94 ->   15
+  qtn_general_journal_line                     85 ->   28
+  qtn_general_journal_line_closed_year         85 ->   28
+  qtn_journal_line                             27 ->   19
+  qtn_ledger_account                           64 ->   13
+  qtn_organisation                             94 ->   13
+  qtn_pay_period                               24 ->   13
+  sat_accounting_journal_header_ukg_us          8 ==    8
+  sat_job_request_commercials_striive_eu        8 ==    8
+  sat_job_request_details_bullhorn_eu           8 ==    8
+  sat_job_request_details_fieldglass_eu         8 ==    8
+  sat_job_request_details_prounity_eu           8 ==    8
+  sat_job_request_details_striive_eu            8 ==    8
+
+==================================================================
+RELOAD PARITY FAILED: 10 of 17 key(s) differ

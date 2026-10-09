@@ -1,0 +1,623 @@
+<title>Workday Journal Export</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+/* Tokens, type and components are the legal-entity page's, deliberately: same kind of
+   document -- findings and asks addressed to a team that is not us -- and a reader who has
+   seen one should recognise the other. Only the accent moves, because the audience does. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#5D4A8C; --accent-soft:#EEEBF6;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#A99AD6; --accent-soft:#211E30;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#A99AD6; --accent-soft:#211E30;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)} .stat.p4 .n{color:var(--ready)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the edge -- the
+   labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax caps
+   the damage; min-width:0 on both cells is what lets a wide .ev scroll inside its cell
+   rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note.good{background:var(--ready-bg); border-left-color:var(--ready)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+table.status td.num{font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Findings &amp; asks &middot; Workday Journal load &middot; Data &amp; AI</p>
+    <h1>The vault has the journal&rsquo;s shape. The two charts do not meet.</h1>
+    <p class="lede">
+      An analysis of the <code>Journal</code> worksheet in
+      <code>HeadFirst_YesNoGlobal_Master_Workbook.xlsx</code> against what the Data Vault
+      holds today &mdash; and, since 6 September, against your tenant itself.
+      <strong>The structural news is good:</strong> Workday&rsquo;s journal is one header,
+      many lines, many worktags per line, and the vault is already shaped exactly that way.
+      The export is a serialisation, not a remodel.
+      <strong>The coding news is not:</strong> where we have compared our identifiers with
+      yours, they do not meet &mdash; not the accounts, not the worktags, not the companies.
+      Ten asks follow, five of which exist only because we called the service rather than
+      reading about it.
+    </p>
+    <p class="meta">
+      <span>6&ndash;7 September 2026 &middot; sent 7 September</span>
+      <span>From <code>data_platform_operations</code></span>
+      <span>Source: <code>Journal</code> tab, 84 field rows &middot; 29 reference types probed</span>
+      <span>Model: <code>metadata/entities/</code>, finance domain</span>
+    </p>
+  </header>
+
+  <div class="note">
+    <h3>One question first, because a yes removes most of what follows</h3>
+    <p>
+      <strong>Has Great Plains&rsquo; chart of accounts already been mapped to Workday
+      somewhere we cannot see?</strong>
+    </p>
+    <p>
+      We ask because the tenant suggests it has not, and we would rather be wrong than
+      duplicate work. Your cost centres carry retired families from <strong>Sage, UKG, EH,
+      AFAS</strong> and a generic load &mdash; five legacy systems brought across and marked
+      <code>zzOLD</code>. <strong>Great Plains has no family at all.</strong> It is the one
+      ledger source with no trace in your tenant, and GP is where our US general ledger lives.
+    </p>
+    <p>
+      If that mapping exists, <span class="mono">WDJ-8</span> should not be started &mdash; it
+      asks you to decide an 855-to-135 account crosswalk and a 710-to-64 cost-centre redesign,
+      which is weeks of finance judgement that would be spent twice. <strong>If it does not
+      exist, that is worth knowing just as quickly</strong>, because nothing else here is
+      buildable without it.
+    </p>
+    <p class="closing" style="margin-top:.25rem">
+      Everything below is the detail. This is the one question that changes what the rest of it
+      costs.
+    </p>
+  </div>
+
+  <div class="note warn">
+    <h3>Before anything is built: an export written today would ship a file full of nulls</h3>
+    <p>
+      <code>DebitAmount</code> and <code>CreditAmount</code> come from vault columns carrying
+      <code>governance.mask_money</code>. The gate that proves those values survive
+      &mdash; <code>assert_journal_integrity</code> &mdash; is <strong>red right now</strong>,
+      because the pipeline&rsquo;s run-as identity is not a member of the group admitted by the
+      mask. It reads roughly <strong>8.5&nbsp;million debit and credit values as NULL</strong>.
+    </p>
+    <p>
+      A journal export built on that produces a perfectly well-formed Workday file in which
+      every amount is empty. Workday would either reject it or accept balanced-to-zero
+      journals; both outcomes are worse than a failure, because the file <em>looks</em> right.
+      <strong>The blocker is group membership, it sits with the admin team, and it is already
+      on our board.</strong> The detector exists and works &mdash; it must be green before a
+      first export runs, not after.
+    </p>
+  </div>
+
+  <section>
+    <h2>Where the worksheet stands</h2>
+    <div class="strip">
+      <div class="stat p3"><span class="n">84</span><span class="l">field rows</span></div>
+      <div class="stat p4"><span class="n">20</span><span class="l">answered Yes</span></div>
+      <div class="stat p2"><span class="n">6</span><span class="l">answered TBD</span></div>
+      <div class="stat p1"><span class="n">33</span><span class="l">not answered at all</span></div>
+    </div>
+    <div class="tbl" style="margin-top:1.25rem">
+      <table class="status">
+        <thead><tr><th>Section</th><th class="num">Rows</th><th class="num">Yes</th><th class="num">TBD</th><th class="num">No</th><th class="num">Unanswered</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Request</td><td class="num">2</td><td class="num">2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td>Envelope flags, not data</td></tr>
+          <tr><td>Header</td><td class="num">28</td><td class="num">10</td><td class="num">3</td><td class="num">15</td><td class="num">&mdash;</td><td>Complete</td></tr>
+          <tr><td>Line</td><td class="num">21</td><td class="num">8</td><td class="num">3</td><td class="num">10</td><td class="num">&mdash;</td><td>Complete</td></tr>
+          <tr><td>ALC Line</td><td class="num">4</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">4</td><td>Alternate ledger currency</td></tr>
+          <tr><td>Tax Detail</td><td class="num">15</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">15</td><td><strong>4 of these are Workday-Required</strong></td></tr>
+          <tr><td>Attachment</td><td class="num">7</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">7</td><td>Document payloads</td></tr>
+          <tr><td>Sub-Process BP</td><td class="num">7</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">7</td><td>Business-process routing</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="closing" style="margin-top:1.25rem">
+      <strong>Every field in the first three sections is answered; not one field in the last
+      four is.</strong> That reads as a scoping boundary rather than an oversight &mdash; but
+      it needs confirming rather than assuming, because four unanswered rows are marked
+      <em>Required</em> by Workday itself. See <span class="mono">WDJ-6</span>.
+    </p>
+  </section>
+
+  <section>
+    <h2>Where the twenty &ldquo;Yes&rdquo; fields resolve today</h2>
+    <p class="closing">
+      Eight already read from tables that are deployed and loading. Six read from entities
+      that are modelled, gated and bound to <strong>placeholder</strong> Bronze tables that do
+      not exist. Three are constants the writer sets. Three have no home at all.
+    </p>
+
+    <div class="tbl" style="margin-top:1.25rem">
+      <table class="status">
+        <thead><tr><th>Workday field</th><th>Vault source</th><th class="who">State</th></tr></thead>
+        <tbody>
+          <tr><td>AccountingJournalID</td><td><strong>Workday should mint this</strong> &mdash; the sheet says <code>accounting_journal_hk</code> and a hash cannot serve as a permanent external identifier. <span class="mono">WDJ-2</span><span class="sub">the vault value exists and is live; it is the wrong value to send</span></td><td class="who them">redirect</td></tr>
+          <tr><td>JournalExternalReferenceID</td><td>hub business key <code>reference_id</code><span class="sub">GP <code>jrnentry</code>, UKG <code>batchid</code></span></td><td class="who ok">live</td></tr>
+          <tr><td>LedgerAccountReferenceID</td><td><code>hub_ledger_account.ledger_account_reference</code><span class="sub"><strong>live, and the wrong grain</strong> &mdash; it holds GP's index over the whole 5-segment account string, 361,706 of them against your 135. <span class="mono">WDJ-8</span></span></td><td class="who them">grain</td></tr>
+          <tr><td>DebitAmount / CreditAmount</td><td><code>nhl_journal_line.debit/credit</code> &middot; <code>nhl_general_journal_line.debitamt/crdtamnt</code><span class="sub">masked &mdash; see the warning above</span></td><td class="who ok">live</td></tr>
+          <tr><td>Line Currency</td><td><code>nhl_journal_line.currencyid</code></td><td class="who ok">live</td></tr>
+          <tr><td>Memo</td><td>UKG <code>reference</code> + <code>userdefined1</code>, per the sheet</td><td class="who ok">live</td></tr>
+          <tr><td>JournalLineExternalReferenceID</td><td><code>nhl_journal_line.userdefined1</code><span class="sub">the link&rsquo;s declared <code>transaction_key</code></span></td><td class="who ok">live</td></tr>
+          <tr><td>CompanyReferenceID</td><td><code>sat_accounting_journal_header.company_reference_id</code><span class="sub">also derivable from <code>hub_organisation.reference_id</code>, which IS live &mdash; 11 organisations, needing the crosswalk in <span class="mono">WDJ-9</span></span></td><td class="who them">no source</td></tr>
+          <tr><td>Header Currency</td><td><code>sat_accounting_journal_header.currency</code></td><td class="who them">no source</td></tr>
+          <tr><td>LedgerType</td><td><code>sat_accounting_journal_header.ledger_type</code><span class="sub">the tenant holds exactly one ledger type, <code>Actuals</code> &mdash; so this is a constant unless you tell us otherwise</span></td><td class="who them">no source</td></tr>
+          <tr><td>AccountingDate</td><td><code>sat_accounting_journal_header.accounting_date</code></td><td class="who them">no source</td></tr>
+          <tr><td>JournalEntryMemo</td><td><code>sat_accounting_journal_header.journal_entry_memo</code></td><td class="who them">no source</td></tr>
+          <tr><td>WorktagsReferenceID</td><td><code>msat_journal_line_worktag</code><span class="sub"><code>mas_key: worktag_type</code> &mdash; Workday&rsquo;s own &ldquo;one worktag per type per line&rdquo; rule, modelled</span></td><td class="who them">no source</td></tr>
+          <tr><td>addOnly &middot; createJournalwithErrors &middot; Submit</td><td>Constants set by the export writer</td><td class="who us">n/a</td></tr>
+          <tr><td>AccountingJournalReferenceID</td><td>Nothing &mdash; it points at a journal already in Workday</td><td class="who them">undefined</td></tr>
+          <tr><td>JournalSource</td><td>Derivable from the vault&rsquo;s <code>record_source</code>, not yet declared</td><td class="who us">easy</td></tr>
+          <tr><td>LineOrder &mdash; UKG only</td><td>GP has <code>seqnumbr</code>; UKG&rsquo;s line has no equivalent</td><td class="who them">missing</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note warn" style="margin-top:1.5rem">
+      <h3>The single biggest structural gap</h3>
+      <p>
+        <strong>The export&rsquo;s entire Header section, apart from the ID and the external
+        reference, comes from one satellite with no source.</strong>
+        <code>sat_accounting_journal_header</code> is fully modelled &mdash; its payload is
+        the Workday header field list, in order &mdash; and bound to
+        <code>hfig_usnc.bronze.ukg_journal_header</code>, which is a placeholder. Five
+        &ldquo;Yes&rdquo; fields depend on it, and one more (<code>WorktagsReferenceID</code>)
+        depends on a satellite in the same state.
+      </p>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Decide first &mdash; both are expensive to reverse</h2>
+      <span class="why">Neither is a lookup, and neither survives being deferred: both become permanent the moment the first file lands in Workday.</span>
+    </div>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">WDJ-1</span><h3>Which of the two identifier fields is which?</h3><span class="pill b">Confirm before build</span></div>
+      <dl>
+        <dt>What we see</dt><dd>The two descriptions in the worksheet appear to be <strong>swapped</strong>:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><code>AccountingJournalReferenceID</code> &rarr; <em>&ldquo;Reference to an existing Accounting Journal&rdquo;</em></li>
+            <li><code>AccountingJournalID</code> &rarr; <em>&ldquo;Accounting Journal Reference ID. This is the Accounting Journal unique identifier&rdquo;</em></li>
+          </ul>
+        </dd>
+        <dt>Why it matters</dt><dd>These are the identity chain. Getting them the wrong way round produces <strong>duplicate journals</strong> on one path and <strong>silent non-matching</strong> on the other &mdash; and neither shows up as an error. The workbook&rsquo;s own standing rule says identifiers must survive every hop; this is the pair that rule exists for.</dd>
+        <dt>Ask</dt><dd>Workday team to confirm which field carries our value on a <em>create</em>, and which is only populated on an <em>update</em> to an existing journal.</dd>
+        <dt>Done when</dt><dd>One sentence, and the worksheet descriptions corrected if they are indeed reversed.</dd>
+      </dl>
+    </article>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">WDJ-2</span><h3>The hash cannot be the Workday identifier &mdash; this one is a correction, not a choice</h3><span class="pill b">Design</span></div>
+      <dl>
+        <dt>What the sheet says</dt><dd><code>AccountingJournalID</code> = <em>&ldquo;Hashkey from Databricks&rdquo;</em>. That is <code>accounting_journal_hk</code>, a SHA-256 <code>BINARY(32)</code>.</dd>
+        <dt>Why it cannot work</dt><dd>A hash key is <strong>derived, not issued</strong>. Its value is a function of two things that are both allowed to change, and <strong>no amount of engineering on our side makes either of them permanent</strong>:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>The rulebook.</strong> Algorithm, binary-vs-hex, casing and separator are versioned in our code precisely <em>because</em> they may change. Exporting the value inverts the reason it is versioned: an internal, revisable constant becomes an external, immutable one.</li>
+            <li><strong>The business keys.</strong> UKG supplies no fiscal year, so we hash the literal <code>NOT_APPLICABLE</code>. That is a placeholder waiting for a value, not a fact &mdash; and the day UKG supplies one, every UKG journal re-keys.
+              <div class="ev" style="margin-top:.4rem">business_keys: [reference_type, organisation_reference_id, fiscal_year, reference_id]</div>
+            </li>
+          </ul>
+        </dd>
+        <dt>What is wanted</dt><dd>An external identifier must be <strong>issued once and stored</strong>. Every key in this vault is deliberately the opposite &mdash; recomputable, so that two lakes deriving independently agree without coordinating. <strong>Recomputability is the whole design, and it is exactly what an external permanent identifier must not have.</strong> There is no Databricks-side mechanism that reconciles the two.</dd>
+        <dt>A one-way door</dt><dd>The constraint does not begin when we notice it. It begins the moment the first file lands, and it applies retroactively to every journal already sent.</dd>
+        <dt>The fix</dt><dd><strong>Workday mints the ID.</strong> Three parts, and only the third is work:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>Workday generates <code>AccountingJournalID</code></strong> &mdash; it is their key, in their system, under their control.</li>
+            <li><strong>We send <code>JournalExternalReferenceID</code></strong> carrying the source system&rsquo;s own identifier as that system spells it. The sheet already describes this field as <em>&ldquo;use when source system provides a value&rdquo;</em>, which is precisely what it is for. It must be a readable composite, not a bare key: GP&rsquo;s <code>jrnentry</code> is unique within a company and year, UKG&rsquo;s <code>batchid</code> within a company.</li>
+            <li><strong>We capture Workday&rsquo;s ID back</strong> so reconciliation does not depend on <em>our</em> key staying stable either. This is the one part that is new work &mdash; and it may be much less than it sounds: the same Reference Service in <span class="mono">WDJ-5</span> returns the instances and ids for a reference ID type, so <strong>if journals are retrievable by their external reference id, the return path is a call rather than a build</strong>. Worth asking before scoping it. It is also the same return path <span class="mono">WDJ-1</span> is about.</li>
+          </ul>
+        </dd>
+        <dt>What it removes</dt><dd>It removes the rulebook dependency entirely and the hex-encoding question with it. It does <strong>not</strong> remove the business-key dependency: whatever we send as an external reference is externally frozen, readable or not. Capturing Workday&rsquo;s ID back is what removes that last one, which is why it is part of the recommendation rather than a refinement of it.</dd>
+        <dt>Sizing it</dt><dd><strong>Now a cheap experiment.</strong> We looked. <code>External_Reference_Id</code> <strong>is</strong> a reference ID type in v46.2, and retrieving it from <code>headfirst3</code> returns <strong>zero rows</strong> &mdash; consistent with nothing having been loaded with an external reference yet, rather than with the mechanism not existing. <code>Accounting_Journal_ID</code> returns 21 journals whose ids are Workday&rsquo;s own (<code>ACCOUNTING_JOURNAL-6-1</code>), which is what we would expect it to mint for us.
+          <br><br><strong>So load one journal with a <code>JournalExternalReferenceID</code> and retrieve <code>External_Reference_Id</code> again.</strong> If it appears, the return path is a call we already have and this recommendation costs nothing beyond it. If it does not, it is a bespoke build. One test journal answers it.</dd>
+        <dt>Done when</dt><dd>The Workday team confirms Workday mints <code>AccountingJournalID</code>, and we agree the composite format for <code>JournalExternalReferenceID</code> per source system.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Needed to build</h2>
+      <span class="why">Each has a named owner. None blocks the other four.</span>
+    </div>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">WDJ-3</span><h3>A source for the journal header</h3><span class="pill w">Bronze team &mdash; BRZ-17</span></div>
+      <dl>
+        <dt>Ask</dt><dd>A Bronze table carrying, per journal: company reference, currency, ledger type, accounting date and entry memo. Today <code>sat_accounting_journal_header</code> points at <code>hfig_usnc.bronze.ukg_journal_header</code>, which does not exist.</dd>
+        <dt>Not derivable</dt><dd>Some of it is on the UKG GL line and could be lifted &mdash; but a header attribute inferred from an arbitrary line is a guess that will be right until the day two lines disagree, and then wrong silently. The header is a real record; it should arrive as one.</dd>
+        <dt>Same request covers</dt><dd><code>ukg_journal_line_worktag</code>, which <code>WorktagsReferenceID</code> depends on, and <code>ukg_journal_line_external_code</code>.</dd>
+        <dt>Raised as</dt><dd><strong>BRZ-17</strong> in <code>docs/bronze_layer_work_requests.html</code>, 6 September, so it sits in the queue the Bronze team already works from rather than in a second list.</dd>
+        <dt>Done when</dt><dd>Three fully-qualified table names we can repoint the bindings to, or a written &ldquo;not planned&rdquo; &mdash; which is also an answer.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">WDJ-4</span><h3>Line ordering for UKG journals</h3><span class="pill w">Ours &mdash; decision</span></div>
+      <dl>
+        <dt>The gap</dt><dd>Workday wants <code>LineOrder</code>. GP supplies <code>seqnumbr</code> and the model already declares it as the line order. <strong>UKG&rsquo;s GL has no equivalent column.</strong></dd>
+        <dt>Proposal</dt><dd>Derive it &mdash; a deterministic ordinal within each journal, computed in the business vault rather than in export SQL, so any other consumer that needs line numbering gets the same answer.</dd>
+        <dt>Question for finance</dt><dd>Does line order carry meaning in UKG journals (a presentation order somebody expects to see), or is it merely a required sequence? If the former, we need the rule; if the latter, any stable ordering will do.</dd>
+        <dt>Done when</dt><dd>Confirmation that a derived ordinal is acceptable, or the ordering rule.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">WDJ-5</span><h3>Access to the Reference Service &mdash; not a spreadsheet</h3><span class="pill w">Workday team &middot; revised</span></div>
+      <dl>
+        <dt>What the sheet says</dt><dd><code>CompanyReferenceID</code> &mdash; <em>&ldquo;Needs to be mapped to Workday values&rdquo;</em>. The same is true of <code>LedgerAccountReferenceID</code>, and of every <code>&hellip;TypeReferenceID</code> in Tax Detail.</dd>
+        <dt>This ask changed</dt><dd><strong>And it got much smaller.</strong> We had asked for a maintained crosswalk in the shape of the <code>GP&nbsp;Mapping_</code> tabs. <strong>That is the wrong ask</strong>: Workday&rsquo;s own Reference Service already publishes these values.
+          <div class="ev" style="margin-top:.4rem">Get_References (Integrations v46.2) -- RUN AGAINST headfirst3 on 6 Sep
+  in   Reference_ID_Type          REQUIRED, one per call. There is no "all types"
+  out  Reference_ID_Data/ID       the value a journal must quote
+       Reference_ID_Reference/ID @type="WID"   the index entry -- tenant-specific
+  page Count max 999, Total_Pages drives the loop
+
+  proven: Company_Reference_ID -> 82 rows, 2 pages</div>
+          <span class="sub" style="margin-top:.4rem">Its <code>@type</code> enumeration is the same one the Journal fields reference &mdash; <code>wd:type="Cost_Center_Reference_ID"</code> in the sheet&rsquo;s own <code>WorktagsReferenceID</code> example &mdash; and it carries <strong>5,855</strong> reference ID types, including every one this export needs.</span>
+        </dd>
+        <dt>Access</dt><dd><strong>Already in hand.</strong> We hold an integration system user and an endpoint &mdash; <code>ISU_Databricks</code> against tenant <code>headfirst3</code>, Web Services <strong>v46.2</strong>. So this is no longer a request for access. Two things are still yours:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>Confirm this is the intended ISU</strong> for the journal integration, and that read volume against the Reference Service is expected rather than something that will surprise anyone.</li>
+            <li><strong>Please grant this ISU the domain covering <code>Get_Organizations</code></strong> in Human_Resources. We tried it on 7 September and it is refused &mdash; <code>SOAP-ENV:Server.processingError | The task submitted is not authorized</code>. That is a permission refusal and not a malformed request: a deliberately broken request to the same service returns <code>Client.validationError</code> instead, so Workday validated ours and then declined it. <strong>This is the call that returns the consolidation membership</strong> &mdash; the legal-entity hierarchy our business and legal colleagues are otherwise being asked to write out by hand.</li>
+            <li><strong>Which reference ID types may this ISU read?</strong> A per-type question after all: <code>Reference_ID_Type</code> is required on every call, so there is no &ldquo;fetch everything&rdquo; and each type is a separate retrieval. We have proven <code>Company_Reference_ID</code> works &mdash; 82 rows across two pages. Tell us the rest and we will not discover them one refusal at a time.</li>
+          </ul>
+        </dd>
+        <dt>Implementation tenant</dt><dd><strong>This changes what the values mean.</strong> <code>impl-services1</code> is not production. That is fine for building and proving the integration, and <strong>it is not fine as the source of a crosswalk anyone loads against</strong>:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>WIDs are tenant-specific.</strong> A WID retrieved from an implementation tenant identifies nothing in production. Anything we persist keyed on a WID from here is wrong the day it is used for real.</li>
+            <li><strong>Configured reference IDs usually migrate, and &ldquo;usually&rdquo; is not a guarantee.</strong> <code>Company_Reference_ID</code> and <code>Ledger_Account_ID</code> are configuration; whether the production tenant carries the same values is a question for you, not an assumption for us.</li>
+          </ul>
+          <span class="sub" style="margin-top:.4rem">So: build against impl, and tell us the production host before any retrieved value is treated as reference data. <strong>We understand there is one global tenant for the group, hosted in Belgium</strong> &mdash; so this is not a question about which regional tenant to use, only about the production hostname behind <code>impl-services1.wd502</code>. We will not quietly promote impl values.</span>
+        </dd>
+        <dt>Still a mapping</dt><dd>Retrieving Workday&rsquo;s values does not tell us which of <em>ours</em> each one corresponds to. But it turns the human question from &ldquo;write out both columns&rdquo; into &ldquo;confirm these pairings&rdquo;, and the half that goes stale is the half we can now refresh ourselves.</dd>
+        <dt>Worktag enum</dt><dd><code>msat_journal_line_worktag</code> already names <code>ref_workday_reference_type</code> as governed config, generatable from the XSD. The XSD gives the ~160 type <em>names</em>; the Reference Service gives their live <em>values</em>. Same principle, better source.</dd>
+        <dt>Built, and run</dt><dd>A client, and on 6 September it retrieved <strong>82 companies from <code>headfirst3</code></strong>. So this is proven rather than designed. Our first attempt was rejected because we had misread your schema and omitted the required <code>Reference_ID_Type</code>; your tenant&rsquo;s validation message said exactly what was wrong, which we appreciated.</dd>
+        <dt>Probed 7 Sep</dt><dd><strong>Everything the sheet names.</strong> The <em>Reference ID types</em> column names <strong>29</strong> types across the Journal sheet. We probed every one, so this document reports what your tenant holds rather than what we assumed it held:
+          <div class="ev" style="margin-top:.4rem">HAS DATA                                  EMPTY
+  Employee_ID                   2121      Business_Unit_ID
+  Organization_Reference_ID     1528      Fund_ID
+  Cost_Center_Reference_ID       666      Tax_Code_ID
+  Custom_Organization_Ref_ID     188      Withholding_Tax_Code_ID
+  Location_ID                    164      Tax_Rate_ID
+  Ledger_Account_ID              135      Withholding_Tax_Rate_ID
+  Region_Reference_ID             99      Tax_Applicability_ID
+  Revenue_Category_ID             97      Tax_Recoverability_Object_ID
+  Contingent_Worker_ID            90      Project_ID
+  Company_Reference_ID            82      Grant_ID
+  Customer_ID / _Reference_ID     29
+  Accounting_Journal_ID           21
+  Supplier_ID / _Reference_ID      9
+  Tax_Point_Date_Type_ID           7
+  Tax_Type_ID                      3
+  Tax_Recoverability_Type_ID       3
+  Document_Category_ID             2</div>
+          <span class="sub" style="margin-top:.4rem"><strong>Two of the five balancing-worktag types your sheet offers are empty</strong> &mdash; <code>Business_Unit_ID</code> and <code>Fund_ID</code>. Worth knowing before anyone specifies a balancing worktag against them.</span>
+        </dd>
+        <dt>Retrieved in full</dt><dd>
+          <div class="ev" style="margin-top:.4rem">Organization_Reference_ID   1528     Currency_ID                345
+Cost_Center_Reference_ID     666     Spend_Category_ID          288
+Ledger_Account_ID            135     Journal_Source_ID          135
+Region_Reference_ID           99     Company_Reference_ID        82
+Accounting_Journal_ID         21     Book_Code_ID                 5
+Ledger_Type_ID                 1
+
+Tax_Code_ID  Tax_Rate_ID  Tax_Applicability_ID  Project_ID      0 rows each</div>
+        </dd>
+        <dt>Done when</dt><dd>Confirmation that <code>ISU_Databricks</code> is the right identity, what its domain security exposes, and the production hostname for the global tenant, to point at when we stop building and start loading.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">WDJ-6</span><h3>Confirm the scope boundary &mdash; 33 rows have no answer</h3><span class="pill w">Workday team</span></div>
+      <dl>
+        <dt>The observation</dt><dd>ALC Line, Tax Detail, Attachment and Sub-Process BP are entirely unanswered. That looks deliberate, but four of those rows are marked <strong>Required</strong> by Workday:
+          <div class="ev" style="margin-top:.4rem">TaxTypeReferenceID
+TaxCodeReferenceID
+TaxRateReferenceID
+TaxableEventLineReference -> LineOrder</div>
+        </dd>
+        <dt>Why it matters</dt><dd>If any HFIG journal ever carries tax, Tax Detail becomes a second satellite hanging off the journal line, and <strong>none of it is modelled</strong>. That is a real piece of work, not a column addition &mdash; better known now than after the first rejected file.</dd>
+        <dt>Not the unknown</dt><dd>Their <em>values</em>. <code>TaxTypeReferenceID</code>, <code>TaxCodeReferenceID</code> and <code>TaxRateReferenceID</code> are reference ID types like any other, so the Reference Service in <span class="mono">WDJ-5</span> supplies them.</dd>
+        <dt>Evidence</dt><dd><strong>A more precise answer than we first wrote.</strong> We said tax &ldquo;appears not to be configured&rdquo;. Probing every tax type the sheet names gives a sharper picture: <strong>the scaffolding exists and the data does not.</strong>
+          <div class="ev" style="margin-top:.4rem">Tax_Point_Date_Type_ID        7      Tax_Code_ID                   0
+Tax_Type_ID                  3      Tax_Rate_ID                   0
+Tax_Recoverability_Type_ID   3      Tax_Applicability_ID          0
+                                    Withholding_Tax_Code_ID       0
+                                    Withholding_Tax_Rate_ID       0
+                                    Tax_Recoverability_Object_ID  0</div>
+          <span class="sub" style="margin-top:.4rem">Type-level configuration is present; the codes, rates and applicabilities a journal would actually quote are all absent. That is consistent with tax being out of scope, and equally consistent with it being configured later. <strong>Please confirm rather than let us infer it.</strong> <code>Project_ID</code> and <code>Grant_ID</code> are also empty.</span>
+        </dd>
+        <dt>Ask</dt><dd>Confirm these four sections are out of scope for the HFIG journal load, or tell us which are in.</dd>
+        <dt>Done when</dt><dd>Four yes/no answers at section level.</dd>
+      </dl>
+    </article>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">WDJ-8</span><h3>The GP chart and yours do not meet &mdash; not the accounts, and not the worktags</h3><span class="pill b">Found 7 Sep</span></div>
+      <dl>
+        <dt>What we found</dt><dd>We pulled your chart and compared it with ours. They are not two spellings of one thing:
+          <div class="ev" style="margin-top:.4rem">Workday  Ledger_Account_ID              135 accounts, 6-digit
+ours     hub_ledger_account         361,706 distinct references, 1 to 9 digits
+         exact code overlap                 13</div>
+        </dd>
+        <dt>Why the gap</dt><dd>Great Plains keys a GL line by <code>actindx</code>, its index over the <strong>whole account string</strong> &mdash; five segments, e.g. <code>30-60-5600-606502-00</code>. Our vault records what GP sends, so our ledger-account hub is really a hub of <em>account combinations</em>. Segment cardinalities: <strong>36 &middot; 34 &middot; 710 &middot; 855 &middot; 11</strong>.</dd>
+        <dt>The account segment</dt><dd><strong>The fourth.</strong> It is 6-digit like yours, and it carries the account meaning &mdash; <code>102000</code> is &ldquo;A/R TRADE&rdquo;, <code>201000</code> is &ldquo;A/P Trade&rdquo;. One segment-4 value spans thousands of combinations: <code>500000</code> alone covers 4,936.</dd>
+        <dt>A NEW chart</dt><dd>GP has <strong>855</strong> distinct segment-4 values. Only <strong>16</strong> of your 135 accounts appear among them, and 119 of yours appear in GP not at all. So this is not a formatting exercise &mdash; the mapping does not exist and cannot be derived.</dd>
+        <dt>For the export</dt><dd>A journal built on the model as it stands would put a GP <code>actindx</code> into <code>LedgerAccountReferenceID</code> &mdash; a value like <code>105676229</code>, against a field with 135 valid values. <strong>Every line would be rejected</strong>, which is at least a loud failure rather than a quiet one.</dd>
+        <dt>The answer's shape</dt><dd>One GP account string decomposes into <strong>one Workday ledger account plus several worktags</strong> &mdash; which is what <code>WorktagsReferenceID</code> is for, and is how a segmented chart is normally retired. Segments 1, 2, 3 and 5 are candidate worktag dimensions; we do not know which of your worktag types they correspond to.</dd>
+        <dt>The worktag half</dt><dd><strong>Starker.</strong> Every GP segment against every worktag type we can read: <strong>zero overlap, everywhere.</strong> Not a near miss &mdash; your worktag codes are entirely non-numeric (<code>C1100</code>, <code>REGION-Americas</code>, <code>SC002</code>) and GP's segments are entirely numeric. No code-level mapping was ever possible.</dd>
+        <dt>Cost centres</dt><dd><strong>They say something more useful.</strong> Of 666, <strong>602 are marked <code>zzOLD</code></strong> &mdash; legacy codes imported and retired. They fall into five families, and the sixth is the live one:
+          <div class="ev" style="margin-top:.4rem">zSAGE   207   all retired        Sage
+zUKG    158   all retired        UKG
+zEH     100   all retired
+zAFAS    79   all retired        AFAS
+zCOST    58   all retired
+C        64   LIVE               the new structure -- C1100 Sales, C2100 Customer Success
+
+Great Plains                     NO FAMILY AT ALL</div>
+        </dd>
+        <dt>What that tells us</dt><dd>Two things, and both change the size of the job. <strong>The live target is 64 cost centres, not 666</strong> &mdash; so GP's 710 segment-3 values collapse roughly eleven to one, which is a redesign rather than a rename. And <strong>Great Plains is the only ledger source you have not brought across</strong>, even as retired reference: Sage, UKG, EH and AFAS all have their old codes in your tenant, and GP has nothing.</dd>
+        <dt>Candidate home</dt><dd><strong>For the other segments, and the evidence is weaker than we first put it.</strong> We said segments 1, 2 and 5 were &ldquo;the right order of magnitude&rdquo; against <code>Custom_Organization_Reference_ID</code>. That is cardinality resemblance, not evidence, and we have since tested the codes: <strong>zero overlap on all four segments</strong> &mdash; which was never possible, because your codes are non-numeric and ours are not. Treat what follows as where they plausibly belong, not as a finding. <code>Custom_Organization_Reference_ID</code> holds <strong>188 entries and none is retired</strong> &mdash; a live, purpose-built dimension carrying several concepts at once: functions (<code>CO_Function_Sales</code>, <code>_Finance</code>, <code>_Legal</code>), lines of business (<code>LOB</code>, 9), products (<code>PRD</code>: PERM, TEMP, Secondment), payroll companies by country, geographies (NA, APAC, UK&amp;I, Benelux, Nordics), and legal-entity consolidation groups. GP's segments 1, 2 and 5 are 36, 34 and 10 values &mdash; the right order of magnitude. <strong>We are not proposing a mapping</strong>, because which segment means what is a fact about your chart, not ours. We are saying this is where they most plausibly land.</dd>
+        <dt>One real lead</dt><dd>Strip the <code>C</code> from your live cost centres and <strong>19 of the 64 are numerically identical to a GP segment-3 value</strong>:
+          <div class="ev" style="margin-top:.4rem">C1100 Sales                    = GP seg3 1100
+C3100 Talent Management        = GP seg3 3100
+C6110 Product &amp; Technology     = GP seg3 6110
+C6120 Data                     = GP seg3 6120
+C6130 Engineering              = GP seg3 6130
+... 14 more, 16 of them in the 6xxx band</div>
+          <span class="sub" style="margin-top:.4rem"><strong>How much to read into that, stated honestly.</strong> A uniform model says 4.5 matches were expected, which would make this 4.2&times; chance. But your codes cluster in the 6xxx band and GP populates that band 19%, so the band-aware expectation is <strong>8.2</strong> and the ratio is <strong>2.3&times;</strong> &mdash; suggestive, not conclusive, on nineteen data points. The strongest part is that band alone: 16 of your 32 6xxx codes match.</span>
+        </dd>
+        <dt>Why we cannot settle it</dt><dd><strong>Great Plains&rsquo; segment descriptions are not in our Bronze layer.</strong> We can see that GP uses segment-3 value <code>6120</code> and that you call <code>C6120</code> &ldquo;Data&rdquo;; we cannot see what GP calls <code>6120</code>. So we cannot tell a designed correspondence from a numbering convention both systems happen to share. Raised as <strong>BRZ-18</strong>.</dd>
+        <dt>Which sharpens the ask</dt><dd>If those 19 are the same cost centre, the 710-to-64 mapping starts with 19 free rows and a pattern to follow rather than from nothing. <strong>Please check the list</strong> &mdash; it is a confirmable question, unlike &ldquo;which worktag type does each segment become&rdquo;.</dd>
+        <dt>A question</dt><dd>The <code>zUKG_</code> family exists and is retired. If our UKG-sourced journal lines are expected to carry cost centres, do they use the new <code>C</code> codes like everything else &mdash; we assume yes &mdash; or is the retired family there for a reason we have not understood?</dd>
+        <dt>Ask</dt><dd>Three things. <strong>(1)</strong> The mapping from GP segment 4 to your 135 accounts &mdash; 855 values, and it is a finance decision, not a lookup. <strong>(2)</strong> Which worktag type each remaining segment becomes, and against the <strong>64 live</strong> cost centres rather than the full 666. <strong>(3)</strong> Confirmation that GP's cost structure genuinely has not been mapped, rather than having been mapped somewhere we cannot see &mdash; because if that work exists, none of (1) or (2) should be started.</dd>
+        <dt>Done when</dt><dd>A segment-4 crosswalk, and a decision per remaining segment.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">WDJ-9</span><h3>The company crosswalk &mdash; eleven codes, and we think we know nine</h3><span class="pill w">Found 7 Sep &middot; nearly done</span></div>
+      <dl>
+        <dt>The check</dt><dd>The same one as <span class="mono">WDJ-8</span>, with a much happier answer. Our vault holds <strong>11 organisations</strong>; you hold 82 companies, about 20 of them in the Americas, which is where our US ledger belongs. Exact code overlap is <strong>zero</strong> &mdash; ours are Great Plains database names, yours are <code>US1xx</code>. But unlike the ledger accounts, <strong>this is a confirmation exercise, not a design decision.</strong></dd>
+        <dt>What we propose</dt><dd>Inferred from name similarity, and we would rather show our working than send you eleven blanks:
+          <div class="ev" style="margin-top:.4rem">confident
+  GGI    -> US100  Guidant Global Inc
+  CER    -> US102  Corporate Employment Resources Inc
+  CSGH   -> US010  Corporate Services Group Holding Inc
+  BRPLM  -> US103  Barpellam, Inc.              (our only UKG company)
+
+five SPVs against your five Funding LLCs -- the SET matches, the pairing is a guess
+  CESPV  -> US800  CER Funding LLC
+  GUSPV  -> US801  Guidant Global Funding LLC
+  BPSPV  -> US802  BarPellam Funding LLC
+  INSPV  -> US803  Impellam NA Funding LLC
+  GLSPV  -> US804  Guidant Group Funding LLC
+
+no idea
+  BARM   -> Bartech something? CA100 or MX110
+  CSS    -> ?</div>
+        </dd>
+        <dt>Why we guess</dt><dd>Great Plains keeps company names in <code>SY01500</code>, and that table is <strong>not in our Bronze layer</strong> &mdash; we hold 20 GP tables and it is not among them. So we can see the database codes and not the names behind them. We are not asking for the table; confirming eleven pairings is quicker than landing a feed.</dd>
+        <dt>Ask</dt><dd>Correct the list. Nine proposals and two blanks &mdash; and please check the five SPV pairings rather than nodding at the block, since a set that matches is not the same as five pairs that do.</dd>
+        <dt>Worth noting</dt><dd>Your 82 companies span 16 jurisdictions and our GP ledger is US-only. So most of your list is not in scope for <em>this</em> export, and is very much in scope for the legal-entity register &mdash; see <code>docs/legal_entity_questions.html</code>.</dd>
+        <dt>Done when</dt><dd>Eleven confirmed pairings, or the ones we have wrong.</dd>
+      </dl>
+    </article>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">WDJ-10</span><h3>Is a cost centre global, or does the same code mean something different per region?</h3><span class="pill b">Business question</span></div>
+      <dl>
+        <dt>Why we ask</dt><dd>Workday is <strong>one global tenant</strong>. Our Data Vault is <strong>four regional lakes</strong> &mdash; Western Europe, UK South, US North Central, Australia East. So a piece of global reference data has to mean the same thing in all four, or be scoped so it cannot be confused.</dd>
+        <dt>What your tenant already answers</dt><dd>The <em>structure</em> looks global, and clearly so:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>64 live cost centres, one list, no regional marker on any of them.</strong> The only name containing &ldquo;Region&rdquo; is <code>C4200 Regional Marketing</code>, which is a function called that, not a region.</li>
+            <li><strong>Geography is a separate dimension.</strong> <code>Region_Reference_ID</code> carries 99 entries &mdash; <code>REGION-Americas</code>, <code>REGION-APAC</code>, <code>REGION-Europe</code>, <code>REGION-UK_&amp;_Ireland</code> &mdash; and the custom organisations carry NA, APAC, UK&amp;I, DACH, Benelux, Iberia, Nordics, CEE and the Baltics.</li>
+          </ul>
+        </dd>
+        <dt>So the question is narrower</dt><dd>Not &ldquo;is the list global&rdquo; &mdash; it evidently is. <strong>Does a cost centre carry the same meaning everywhere?</strong> Is <code>C6130 Engineering</code> one cost centre that four regions all charge to, or four regional engineering functions sharing a code?</dd>
+        <dt>Why it matters to us, precisely</dt><dd>Our hub keys are hashed from business keys. If the meaning is global, the key is the code and one cost centre is one row in all four lakes &mdash; which is what makes our cross-region conformance check compare like with like. <strong>If the meaning is regional and we key on the code alone, two different cost centres collapse into one row, silently.</strong> Nothing would fail; the numbers would simply be wrong at every level above.</dd>
+        <dt>We have made this mistake&rsquo;s twin before</dt><dd>It is the same shape as the <code>buyer</code> column in our VMS feeds, which carried three different things under one name and read as one. That took a fortnight to model out. <strong>Getting this wrong is cheap to do and expensive to find</strong>, which is why it is a question rather than an assumption.</dd>
+        <dt>Ask</dt><dd>One sentence from finance: a cost centre means the same thing group-wide, or it does not. If it does not, tell us what scopes it &mdash; company, region, or something else &mdash; and we will key on the pair.</dd>
+        <dt>Done when</dt><dd>Confirmation either way. Both answers are workable; only the silence is not.</dd>
+      
+        <dt>ANSWERED 8 Sep &mdash; CLOSED. Cost centres are global, and this closes a silent defect</dt><dd>Amy Keser, with Alex in group finance, and she states high confidence because she worked on the design: <strong>a cost centre is globally governed reference data with one consistent business meaning</strong>. It represents a business function, ownership structure or cost accountability and <strong>must not mean different things by region</strong>. Regional, legal-entity and management reporting are served by <em>separate dimensions</em> &mdash; Legal Entity, Region, Company, Business Unit, Worktags &mdash; never by reusing a cost centre code with a second meaning. Exceptions go through separate organisational structures.
+          <br><br><strong>This closes the question at exactly the condition we wrote down.</strong> The rule recorded in the source design was: <em>a global dimension may be keyed on its code alone only once someone has confirmed the code means one thing group-wide.</em> That confirmation now exists, with a name and a reason attached, so <strong>cost centre keys on the code</strong>.
+          <br><br><strong>What it retires is a defect that would never have announced itself.</strong> Had cost centres been regional and we keyed on the code alone, two of them would have collapsed into one hub row, every gate would have stayed green, and the only symptom would have been totals that were quietly wrong one level up. That is the <code>buyer</code> defect with a different column name, and it is now off the table rather than merely unobserved.</dd>
+      </dl>
+    </article>
+
+    <article class="task r">
+      <div class="task-top"><span class="id">WDJ-7</span><h3>Journal source names</h3><span class="pill r">Small</span></div>
+      <dl>
+        <dt>The sheet says</dt><dd><em>&ldquo;Create one journal source per source system.&rdquo;</em></dd>
+        <dt>What we have</dt><dd>Every vault row already carries its originating system, so the value is derivable rather than mapped. We just need the agreed spelling.</dd>
+        <dt>And we have now looked</dt><dd><strong>135 journal sources exist in <code>headfirst3</code>, and none of them is Great Plains or UKG.</strong> The nearest are <code>EXTERNAL_CONSOLIDATION_DATA</code> and <code>Conversion</code>, plus eleven <code>Payroll_*</code> sources for Workday&rsquo;s own payroll. So this is not a lookup after all &mdash; <strong>two sources need creating</strong>, which is configuration and therefore yours.</dd>
+        <dt>Ask</dt><dd>Create an Accounting Journal Source for each feed, or tell us to reuse <code>EXTERNAL_CONSOLIDATION_DATA</code> for both &mdash; and say which, because &ldquo;one source per source system&rdquo; is your sheet&rsquo;s own instruction and we would rather not quietly collapse it to one.</dd>
+        <dt>Done when</dt><dd>Two source ids, whether newly created or an instruction to share one.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section>
+    <h2>Where each piece will live</h2>
+    <p class="closing">
+      Asked because it came up: which of this belongs in the business vault and which in Gold.
+      The short answer is that almost nothing needs new structure &mdash; the raw vault already
+      holds the journal in Workday&rsquo;s own shape.
+    </p>
+    <div class="tbl" style="margin-top:1.25rem">
+      <table class="status">
+        <thead><tr><th>Layer</th><th>What goes there</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Raw vault<span class="sub">already built</span></td>
+            <td><code>hub_accounting_journal</code>, <code>hub_organisation</code>, <code>hub_ledger_account</code>, <code>hub_pay_period</code>, <code>nhl_journal_line</code>, <code>nhl_general_journal_line</code> (+ closed year), <code>sat_accounting_journal_header</code>, <code>msat_journal_line_worktag</code>, <code>msat_journal_line_external_code</code></td>
+            <td>One header, many lines, many worktags per line &mdash; hub+satellite, link, multi-active satellite. The same nesting Workday&rsquo;s XSD describes.</td>
+          </tr>
+          <tr>
+            <td>Business vault<span class="sub">computed satellites</span></td>
+            <td>Line ordering for UKG (<span class="mono">WDJ-4</span>); the <code>reference</code>&nbsp;+&nbsp;<code>userdefined1</code> memo rule</td>
+            <td>Both are <strong>derived and reusable</strong>. A rule that lives in export SQL is a rule the next consumer re-invents differently.</td>
+          </tr>
+          <tr>
+            <td>Reference data<span class="sub">platform-owned, read by join</span></td>
+            <td>The Workday reference-type enumeration; the company and ledger-account crosswalks (<span class="mono">WDJ-5</span>)</td>
+            <td><strong>Supplied, not derived.</strong> A crosswalk somebody maintains is governed configuration &mdash; the accelerator consumes it and never creates it.</td>
+          </tr>
+          <tr>
+            <td>Gold<span class="sub">the export itself</span></td>
+            <td>Header, lines and worktags projected into the load format; constants applied; filtered to what the use case needs</td>
+            <td>This is the only genuinely use-case-specific piece, and it is a projection. <strong>Nothing structural.</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note good" style="margin-top:1.5rem">
+      <h3>The part that needs no work</h3>
+      <p>
+        <code>msat_journal_line_worktag</code> was modelled from the Workday XSD before this
+        worksheet existed: one row per line and worktag type, with the XSD&rsquo;s own
+        constraint &mdash; <em>&ldquo;only one worktag for each type is allowed for each
+        document line&rdquo;</em> &mdash; expressed as the satellite&rsquo;s key and enforced as
+        a data-quality expectation rather than assumed. <code>WorktagsReferenceID</code> is the
+        hardest field on the Line section and it is the one that needs the least thought.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What we are not asking for</h2>
+    <p class="closing">
+      The 25 fields answered <strong>No</strong> need nothing from anyone &mdash; they are
+      Workday features HFIG does not use (ledger amounts, quantities, reversals, book codes,
+      control totals, spend-report exclusion). The 6 marked <strong>TBD</strong> are noted and
+      not blocking; the two that would change the model if they turned into Yes are
+      <code>IncludeTaxLines</code>, which pulls in all of <span class="mono">WDJ-6</span>, and
+      <code>LineCompanyReferenceID</code>, which would mean a line can belong to a different
+      company from its header.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      Analysis of the <code>Journal</code> tab against the finance domain of the HFIG Data
+      Vault, 6&ndash;7 September 2026. Field counts are from the workbook; vault bindings are from
+      <code>metadata/entities/</code> and are gated on every build.
+    </p>
+    <p>
+      Related: <code>docs/bronze_layer_work_requests.html</code> (<span class="mono">WDJ-3</span>
+      is <strong>BRZ-17</strong> there) &middot; <code>diagram/</code> for the finance domain as
+      a picture &middot; Workday <em>Get_References</em>, Integrations v46.2, which
+      <span class="mono">WDJ-5</span> and possibly <span class="mono">WDJ-2</span> both turn on.
+    </p>
+  </footer>
+
+</div>

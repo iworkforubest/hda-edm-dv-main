@@ -1,0 +1,646 @@
+bundle:
+  name: hfig-dv-accelerator
+
+# ---------------------------------------------------------------------------
+# WORKSPACE TOPOLOGY -- 4 lakes x 2 environments = 8 deploy workspaces. The estate
+# has NINE: the EU "Datalakehouse-Global" workspace below receives Gold from all four
+# lakes via Delta Sharing. This bundle declares 9 targets -- those 8, plus `dev`.
+#
+#   lake   code   PROD workspace              TDS workspace                  EEA
+#   ----   ----   -------------------------   ---------------------------   -----
+#   EU     weu    "Datalake"  (! alias)      db-weu-datalakehouse-tds       yes
+#   UK     uks    db-uks-datalakehouse        db-uks-datalakehouse-tds       adequacy
+#   US     usnc   db-usnc-datalakehouse       db-usnc-datalakehouse-tds      NO
+#   APAC   aue    db-aue-datalakehouse        db-aue-datalakehouse-tds       NO
+#
+#   EU also hosts a "Datalakehouse-Global" workspace, which receives Gold from all
+#   four lakes via Delta Sharing. It is not a deploy target for this bundle.
+#
+#   (!) EU prod is an OLDER workspace still named "Datalake". All 8 exist. The target
+#       is named `weu` for consistency; preflight matches on host, not name. Because it
+#       predates this estate it may contain catalogs, schemas, jobs and possibly legacy
+#       Hive tables that this bundle did not create. See DEPLOY.md Phase 0d.
+#
+# METASTORES -- CORRECTION TO AN EARLIER ASSUMPTION IN THIS FILE:
+#   An account may have only ONE Unity Catalog metastore PER REGION. So this is
+#   4 metastores, not 8 -- and the PROD and TDS workspaces in a region SHARE one:
+#
+#       West Europe metastore     <- "Datalake" (prod)  AND  db-weu-datalakehouse-tds
+#       UK South metastore        <- db-uks-datalakehouse AND ...-tds
+#       North Central US metastore
+#       Australia East metastore
+#
+#   Consequence: hfig_weu and hfig_weu_tds are catalogs in the SAME metastore and are
+#   therefore visible from BOTH workspaces by default. Separate catalogs are not
+#   isolation. Production data would be queryable from the TDS workspace.
+#
+#   Isolation must be configured explicitly with catalog binding: set the catalog's
+#   isolation mode to ISOLATED and bind it to the workspaces permitted to see it.
+#   This is a REQUIRED step, not a hardening extra -- see governance/apply_masks.sql.
+#
+# TDS is one workspace serving test, dev and staging. Target names mirror the
+# workspace names exactly, so a target can never be mistaken for another resource.
+#
+# ONE artifact set, deployed 8 times. Region and environment are NOT inputs to the
+# model: the same commit produces byte-identical keys everywhere. Structural change
+# replicates by DEPLOY. There is no runtime DDL replication -- that would breach
+# residency and produce eight divergent estates within a quarter.
+#
+# PROMOTION ORDER is by environment, then by region. Never region-first.
+#   1. usnc_tds  (the development environment; first build, all gates)
+#   2. weu_tds, uks_tds, aue_tds
+#   3. conformance gate across all four TDS workspaces, baseline usnc_tds
+#   4. usnc, then weu, uks, aue -- each preceded by prod-vs-tds conformance
+#
+# TDS-to-PROD promotion pipelines are deliberately not designed yet.
+#
+# ---------------------------------------------------------------------------
+# RESIDENCY -- this is why there are four lakes and not one.
+#
+# weu (Netherlands) and uks are covered for EU/UK personal data; intra-EEA movement
+# is not a restricted transfer, and UK adequacy currently holds.
+#
+# usnc and aue are OUTSIDE the EEA. Moving EU personal data there needs a transfer
+# mechanism. This binds the model, not just the infrastructure:
+#
+#   * A hash key derived from a personal identifier (NI number, tax reference) is
+#     PSEUDONYMISED personal data, not anonymous -- it is re-identifiable by anyone
+#     holding the source. So a registry that resolves the same worker across weu and
+#     aue is itself a cross-border transfer of personal data.
+#   * Consequence: cross-region identity resolution is a governed decision, not a
+#     join. Do not build a global registry on the assumption that hash keys are
+#     "just technical". Take it to WISE intake and the AI Council.
+#   * Byte-identical keys per region remain correct and necessary -- what is governed
+#     is whether keys from two lakes may be brought together, and where.
+# ---------------------------------------------------------------------------
+
+variables:
+  # --- Workspace hosts. COMMITTED DELIBERATELY.
+  #
+  # A workspace URL is an identifier, not a credential. Committing it is the point:
+  # with 8 similarly-named workspaces the target -> lake mapping is the single most
+  # dangerous thing to get wrong, and putting it in the bundle makes it reviewable in
+  # a pull request rather than passed ad hoc on someone's command line.
+  #
+  # Credentials never appear here. Authentication comes from CLI profiles.
+  # No trailing slashes: the CLI treats a trailing slash inconsistently.
+  #
+  # checks/preflight_target.py asserts the profile you are authenticated to actually
+  # matches the target you are deploying. Run it before every deploy.
+
+  weu_prod_host:
+    description: >-
+      EU PRODUCTION -- workspace 4750792675027163.
+      NOTE THE ALIAS: this workspace is named "Datalake", not db-weu-datalakehouse.
+      It is an older workspace that serves as EU prod. The target is still called
+      `weu` for consistency with the other three lakes; preflight matches on HOST, not
+      on name, so the alias is safe. Recorded here so nobody "corrects" the mapping.
+      Being pre-existing, it may hold catalogs, schemas and jobs this bundle did not
+      create -- see DEPLOY.md Phase 0d before deploying.
+    default: https://adb-4750792675027163.3.azuredatabricks.net
+  weu_tds_host:
+    description: db-weu-datalakehouse-tds (West Europe, TDS) -- workspace 7405615198748199
+    default: https://adb-7405615198748199.19.azuredatabricks.net
+
+  uks_prod_host:
+    description: db-uks-datalakehouse (UK South, PROD) -- workspace 585699997116621
+    default: https://adb-585699997116621.1.azuredatabricks.net
+  uks_tds_host:
+    description: db-uks-datalakehouse-tds (UK South, TDS) -- workspace 718050136221554
+    default: https://adb-718050136221554.14.azuredatabricks.net
+
+  usnc_prod_host:
+    description: db-usnc-datalakehouse (North Central US, PROD) -- workspace 1543126086586625
+    default: https://adb-1543126086586625.5.azuredatabricks.net
+  usnc_tds_host:
+    description: db-usnc-datalakehouse-tds (North Central US, TDS) -- workspace 2593897084138079
+    default: https://adb-2593897084138079.19.azuredatabricks.net
+
+  aue_prod_host:
+    description: db-aue-datalakehouse (Australia East, PROD) -- workspace 270953068323345
+    default: https://adb-270953068323345.5.azuredatabricks.net
+  aue_tds_host:
+    description: db-aue-datalakehouse-tds (Australia East, TDS) -- workspace 2093214595152673
+    default: https://adb-2093214595152673.13.azuredatabricks.net
+
+  service_principal:
+    description: Service principal that production jobs run as.
+    default: ""
+
+  # DEF-46: the group that reads the vault, per environment.
+  #
+  # apply_masks.sql used to hard-code `hfig_data_engineering`, which exists nowhere in
+  # this estate -- so every GRANT in the file was addressed to nobody, and because it was
+  # a constant in SQL rather than a setting, that only surfaced when someone tried to run
+  # it. Reader groups are environment-specific, so this belongs beside the catalogs.
+  #
+  # There is deliberately NO default. A wrong-but-plausible default is how a grant lands
+  # on the wrong principal quietly; an unset one fails at configuration time, naming the
+  # target that is missing it.
+  vault_privileged_group:
+    description: >-
+      The ONE account group permitted to read vault tables directly, alongside the
+      pipeline principal. Receives USE SCHEMA and per-table SELECT on the raw and
+      business vaults. Must exist in the workspace's account and be set per target.
+
+      THIS IS NOT A CONSUMER GROUP, and setting it to one breaks the posture decided
+      26 Aug 2026: the raw vault is not consumer-readable at all, and the business vault
+      only through the gold catalog, never directly. A vault grant hands over the
+      unmasked __materialization_* backing tables along with the masked table, so a
+      consumer group here silently defeats every column mask (DEF-40). It was called
+      vault_reader_group until that decision, which is exactly the reading it invited.
+      checks/schema_grant_check.py --allow-table-select asserts the live grants match.
+    default: ""
+  sql_warehouse_id:
+    description: Serverless SQL warehouse for the governance and conformance tasks.
+    default: ""
+
+  # --- model placement
+  #
+  # THREE CATALOGS, NOT THREE SCHEMAS. The estate places each medallion layer in
+  # its own catalog: 0N_<lake>_<layer>_<domain>_<env>. PROD carries no _dev suffix.
+  bronze_catalog:
+    description: >-
+      Region-local BRONZE catalog. One catalog per lake, with one SCHEMA PER
+      SOURCE SYSTEM inside it -- not a bronze schema in a shared catalog. Each
+      source appears twice: <source>_raw is the append-only dump of files from
+      storage, and <source> has Auto CDC and physical PII masking applied.
+      THE VAULT READS <source>_raw -- see spec decision D3. Hashing a
+      physically-masked identifier would stop business keys joining across
+      lakes, and hash_parity_check.py cannot detect that.
+  catalog:
+    description: >-
+      Region-local SILVER catalog -- the vault's write target. Contains
+      ${vault_schema}, ${business_vault_schema}, ${governance_schema} and
+      ${control_schema}.
+      CONFIRM against `databricks catalogs list` before first deploy.
+  gold_catalog:
+    description: >-
+      Region-local GOLD catalog. Schemas are per project. Gold generation is
+      not in this repo's scope; this exists so governance can grant on it.
+  # WHERE GOLD TABLES LIVE. The repo has named a gold CATALOG since the start and has
+  # never named a schema in it, because nothing was built there. The planned schemas
+  # are reference_data, master_data, wd_fin_export, governance and control; wd_fin_export
+  # is where export tables go. Gold's generated control DDL already writes to
+  # ${control_schema}, so it agrees with that list and needs no change. The authority for
+  # this list is now src/accelerator/gold_layout.SCHEMAS; this comment must agree with it.
+  gold_export_schema:
+    description: >-
+      Schema inside the gold catalog that holds export tables. No default: a
+      wrong-but-plausible default is how a table lands in the wrong schema quietly,
+      and an unset one fails at configuration time naming the target that lacks it.
+  gold_export_volume:
+    description: >-
+      UC Volume path the Workday export writes its CSV file set to, for Snaplogic to
+      collect. No default: a wrong-but-plausible default is how a file lands somewhere
+      nobody is watching, and an unset one fails at configuration time naming the target.
+      Spelled out per target rather than composed from ${gold_catalog}, the same way
+      expectations_table is, because a path assembled from three variables reads as
+      correct in every target and is checkable in none.
+  vault_schema:
+    description: >-
+      Raw Vault schema. Hubs, links, NHLs and satellites loaded straight from
+      Bronze. Loaded by the FIRST of the two vault pipelines.
+    default: raw_vault
+  business_vault_schema:
+    description: >-
+      Business Vault schema. Computed satellites, and later PIT and bridge tables.
+      Loaded by a SECOND pipeline that runs after the Raw Vault and reads its output --
+      an SDP pipeline targets one schema, so the two layers cannot share a pipeline.
+    default: business_vault
+  governance_schema:
+    default: governance
+  control_schema:
+    description: >-
+      Schema holding load control and the load audit: the approval manifest, the DQ
+      expectation reference, and the aud_* tables recording what each writer did.
+      Separate from governance, which holds masks and grants only. Nobody reads it
+      directly -- it is inside the Phase 6STOP posture like the vault schemas are.
+    default: control
+  expectations_table:
+    description: >-
+      UC-managed data quality expectations (governed config, not code). Lives in
+      ${control_schema}, NOT ${governance_schema}: governance holds masks and grants,
+      control holds load control and the audit, and governance/control_objects.sql
+      creates ref_dq_expectation there. Fully qualified per target because the catalog
+      differs per lake.
+  domains:
+    description: Comma-separated domain filter; empty means the whole model
+    default: ""
+  active_sources:
+    description: >-
+      Comma-separated list of the source bindings that actually LOAD in this lake
+      (parent spec decision D5). Every lake DECLARES the whole model, but a source is
+      only present in Bronze in some of them, and a flow reading an absent table fails
+      the pipeline at DEFINITION time -- taking every other flow with it. The generator
+      therefore emits create_streaming_table() for every declared binding and
+      append_flow() only for the ones named here, so an inactive binding produces an
+      EMPTY table rather than a missing one and the inventory stays identical across
+      regions. An entry is either a bare source name (GP_US -- every binding carrying
+      that name) or entity/SOURCE (journal_line/UKG_US -- exactly that binding), because
+      one source name is not uniformly real: UKG_US names a real table on the finance
+      hubs and a placeholder on the deferred satellites. EMPTY MEANS EVERY BINDING IS
+      ACTIVE, so a target that sets nothing behaves exactly as it did before D5 was
+      implemented. An entry matching no binding is REFUSED at pipeline start, not
+      ignored -- a typo here would otherwise drop a source silently.
+      ADDITIVE ONLY: entries are UNIONed and there is no exclusion form, so a bare source
+      name re-activates EVERY binding carrying it -- writing UKG_US here instead of the
+      five qualified entries below would silently re-activate the four placeholder
+      bindings those entries exist to leave out, and the pipeline would fail at
+      definition time. Use the qualified form for any source name that is not uniformly
+      real. verify_repo.py cross-checks the resolved set against the bindings whose
+      bronze_table is in 01_usnc_bronze_dev, which covers the usnc targets only; a lake
+      with a different bronze catalog is not yet covered by that guard.
+    default: ""
+  notification_email:
+    default: data-platform-alerts@headfirst.example
+
+  # DEF-43: WHERE THE DEPLOYED CODE LIVES, AND WHO MAY REWRITE IT.
+  #
+  # The bundle root holds src/pipelines/silver_vault.py and everything in checks/, and
+  # the pipeline EXECUTES that code under its run-as identity. So write access to this
+  # path is the right to change what the vault runs -- a shorter route into the masked
+  # financial data than the one DEF-40 closed.
+  #
+  # Measured 25 Aug 2026 on /Shared/.bundle/hfig-dv-accelerator/usnc_tds:
+  #
+  #     users    CAN_MANAGE   inherited=True      <- every workspace user
+  #     admins   CAN_MANAGE   inherited=True
+  #
+  # INHERITED IS THE PROBLEM. It comes from /Shared and cannot be revoked on a child, so
+  # declaring bundle `permissions:` does NOT fix it -- that only ADDS holders, and on the
+  # resources it would WIDEN a job ACL that is currently just its owner plus admins.
+  #
+  # The fix is to stop deploying under /Shared. A restricted top-level folder needs a
+  # workspace admin (`mkdirs /hfig-platform` is denied to data_platform_operations), so
+  # this stays a variable until that folder exists: see docs/platform_team_requests.html (PLT-3).
+  # When it does, change the default here ONCE and every target moves with it.
+  bundle_root_prefix:
+    description: >-
+      Workspace folder the bundle deploys under. /Shared is world-writable by
+      inheritance; change this to a restricted folder once one exists.
+    default: /Workspace/Shared
+
+include:
+  - resources/*.yml
+
+targets:
+  # ===================================================================== EU / weu
+  weu_tds:
+    mode: production
+    workspace:
+      host: https://adb-7405615198748199.19.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_weu_bronze_dev
+      catalog:        02_weu_silver_edm_dev
+      gold_catalog:   03_weu_gold_edm_dev
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_weu_gold_edm_dev/wd_fin_export/customer_invoice
+      expectations_table: 02_weu_silver_edm_dev.control.ref_dq_expectation
+
+  # EU PRODUCTION. Workspace is the legacy "Datalake" (4750792675027163).
+  # It shares the West Europe metastore with weu_tds, so catalog binding is required
+  # before this holds production data. See governance/apply_masks.sql.
+  weu:
+    mode: production
+    workspace:
+      host: https://adb-4750792675027163.3.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_weu_bronze
+      catalog:        02_weu_silver_edm
+      gold_catalog:   03_weu_gold_edm
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_weu_gold_edm/wd_fin_export/customer_invoice
+      expectations_table: 02_weu_silver_edm.control.ref_dq_expectation
+    run_as:
+      service_principal_name: ${var.service_principal}
+
+  # Individual developer work. mode: development prefixes resources and pauses
+  # schedules, so two engineers cannot collide in the shared TDS workspace.
+  dev:
+    # THE BRONZE CONFORMANCE DASHBOARD IS DECLARED PER TARGET, not in
+    # resources/quality_dashboard.yml alongside the silver one, and the reason is a deploy
+    # failure rather than a preference. Its artefact is emitted only for targets that have
+    # committed a source contract (tools/emit_source_contract.configured_targets -- a lake
+    # that has not declared its Bronze has nothing to conform to). A globally-declared
+    # resource interpolating ${bundle.target} into file_path would therefore point at a file
+    # that does not exist for the other seven targets, and every deploy to them would fail on
+    # a missing artefact.
+    #
+    # So it is declared exactly where its artefact exists. Adding a source contract for a new
+    # target means adding this block for that target too.
+    resources:
+      dashboards:
+        quality_bronze:
+          display_name: "Bronze conformance -- ${bundle.target}"
+          # ./dashboards, NOT ../dashboards. A relative path in resources/*.yml resolves
+          # from THAT file's directory, but one here resolves from the bundle root -- so
+          # the `../` that is correct in quality_dashboard.yml escapes the sync root from
+          # here and validate refuses it: "is not contained in sync root path".
+          file_path: ./dashboards/quality_bronze_${bundle.target}.lvdash.json
+          parent_path: ${workspace.root_path}/dashboards
+          warehouse_id: ${var.sql_warehouse_id}
+          # SAME GATE AS THE SILVER DASHBOARD, same reason: DEF-43 leaves the deployment
+          # folder writable by all workspace users, and an embedded-credentials dashboard
+          # runs as the PUBLISHER, who holds the privileged group. A user could repoint a
+          # dataset and read masked data with no grant. tests/test_accelerator.py fails the
+          # build on any value but a bare false.
+          embed_credentials: false
+          dataset_catalog: ${var.catalog}
+          dataset_schema: ${var.control_schema}
+    mode: development
+    workspace:
+      host: https://adb-2593897084138079.19.azuredatabricks.net
+    variables:
+      bronze_catalog: 01_usnc_bronze_dev
+      catalog:        02_usnc_silver_edm_dev
+      gold_catalog:   03_usnc_gold_edm_dev
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_usnc_gold_edm_dev/wd_fin_export/customer_invoice
+      expectations_table: 02_usnc_silver_edm_dev.control.ref_dq_expectation
+      # CHANGED 23 Sep 2026 from us_tds_data_engineer, and changed because the lake
+      # said so rather than because anyone told us.
+      #
+      # PLT-4 asked Platform to grant per-table SELECT to "the engineering scope group
+      # corresponding to us_tds_data_engineer", and asked them to tell us its name so
+      # assert_no_broad_grant could allow it. They granted it (SR-324918) and did not
+      # send the name -- but a grant names its own grantee, so we read it out instead:
+      #
+      #   SELECT grantee, privilege_type, count(*)
+      #   FROM 02_usnc_silver_edm_dev.information_schema.table_privileges
+      #   WHERE table_schema IN ('raw_vault','business_vault','control')
+      #   -> scope_tds_edm_vault_read   SELECT   52     (the ONLY grantee)
+      #
+      # BOTH names resolve -- is_account_group_member returns true for each -- so this
+      # is not a correction of a broken value. us_tds_data_engineer is the ROLE group
+      # that holds people; scope_tds_edm_vault_read is the SCOPE group that holds the
+      # grants, and it is the one actually on the tables.
+      #
+      # This variable does two jobs, which is why the wrong value is worse than it
+      # looks: assert_no_broad_grant ALLOWS this name, and apply_governance GRANTS to
+      # it. Left as the role group, the gate would fail the build on Platform's
+      # correct grant, and our own apply would add a SECOND grantee to the same tables.
+      vault_privileged_group: scope_tds_edm_vault_read
+      # ACTIVE SOURCES (D5). Only Dynamics GP and UKG are in this lake's Bronze.
+      # GP_US / GP_US_HIST / GP_CUSTOMER / GP_VENDOR are bare names: every binding
+      # carrying them reads a real great_plains_raw table. GP_CUSTOMER (29 Sep) names
+      # three -- the hub_client binding over rm00101 and the two satellites over
+      # rm00101/rm00102 -- and GP_VENDOR names two, the hub_supplier binding over
+      # pm00200 and its details satellite. All five are real, which is what makes the
+      # bare form safe here.
+      #
+      # UKG_US is qualified per entity because it is NOT uniformly real -- it names
+      # 01_usnc_bronze_dev.ukg_raw.gl on the four finance hubs and the payroll journal,
+      # but a placeholder hfig_usnc.bronze.* table on sat_accounting_journal_header,
+      # msat_journal_line_worktag, msat_journal_line_external_code and
+      # nhl_payroll_detail, all of which 3a defers with the satellites (no _raw source
+      # carries a CDC flag and antijoin was disproved). Everything not named here is
+      # declared, created empty, and loads nothing.
+      active_sources: >-
+        GP_US,GP_US_HIST,GP_CUSTOMER,GP_VENDOR,
+        accounting_journal/UKG_US,ledger_account/UKG_US,operating_company/UKG_US,
+        pay_period/UKG_US,journal_line/UKG_US,
+        job_request/BULLHORN_EU,job_request_details/BULLHORN_EU,
+        job_request/FIELDGLASS_US,
+        invoice/FIELDGLASS_US,supplier/FIELDGLASS_US,
+        client/FIELDGLASS_US,worker/FIELDGLASS_US,
+        invoice_line/FIELDGLASS_US,invoice_line_details/FIELDGLASS_US,
+        invoice_header/FIELDGLASS_US,
+        legal_entity/HUBSPOT,legal_entity_profile/HUBSPOT,
+        client_legal_entity_hierarchy/HUBSPOT,
+        client_legal_entity_hierarchy_effectivity/HUBSPOT
+
+  # ===================================================================== UK / uks
+  uks_tds:
+    mode: production
+    workspace:
+      host: https://adb-718050136221554.14.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_uks_bronze_dev
+      catalog:        02_uks_silver_edm_dev
+      gold_catalog:   03_uks_gold_edm_dev
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_uks_gold_edm_dev/wd_fin_export/customer_invoice
+      expectations_table: 02_uks_silver_edm_dev.control.ref_dq_expectation
+
+  uks:
+    mode: production
+    workspace:
+      host: https://adb-585699997116621.1.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_uks_bronze
+      catalog:        02_uks_silver_edm
+      gold_catalog:   03_uks_gold_edm
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_uks_gold_edm/wd_fin_export/customer_invoice
+      expectations_table: 02_uks_silver_edm.control.ref_dq_expectation
+    run_as:
+      service_principal_name: ${var.service_principal}
+
+  # ===================================================================== US / usnc
+  # OUTSIDE THE EEA -- see the residency note at the top of this file.
+  # First build. usnc_tds is the development environment for this project and the
+  # conformance baseline other TDS workspaces must match. Every gate in DEPLOY.md
+  # Phase 5 must pass here before anything else.
+  usnc_tds:
+    # THE BRONZE CONFORMANCE DASHBOARD IS DECLARED PER TARGET, not in
+    # resources/quality_dashboard.yml alongside the silver one, and the reason is a deploy
+    # failure rather than a preference. Its artefact is emitted only for targets that have
+    # committed a source contract (tools/emit_source_contract.configured_targets -- a lake
+    # that has not declared its Bronze has nothing to conform to). A globally-declared
+    # resource interpolating ${bundle.target} into file_path would therefore point at a file
+    # that does not exist for the other seven targets, and every deploy to them would fail on
+    # a missing artefact.
+    #
+    # So it is declared exactly where its artefact exists. Adding a source contract for a new
+    # target means adding this block for that target too.
+    resources:
+      dashboards:
+        quality_bronze:
+          display_name: "Bronze conformance -- ${bundle.target}"
+          # ./dashboards, NOT ../dashboards. A relative path in resources/*.yml resolves
+          # from THAT file's directory, but one here resolves from the bundle root -- so
+          # the `../` that is correct in quality_dashboard.yml escapes the sync root from
+          # here and validate refuses it: "is not contained in sync root path".
+          file_path: ./dashboards/quality_bronze_${bundle.target}.lvdash.json
+          parent_path: ${workspace.root_path}/dashboards
+          warehouse_id: ${var.sql_warehouse_id}
+          # SAME GATE AS THE SILVER DASHBOARD, same reason: DEF-43 leaves the deployment
+          # folder writable by all workspace users, and an embedded-credentials dashboard
+          # runs as the PUBLISHER, who holds the privileged group. A user could repoint a
+          # dataset and read masked data with no grant. tests/test_accelerator.py fails the
+          # build on any value but a bare false.
+          embed_credentials: false
+          dataset_catalog: ${var.catalog}
+          dataset_schema: ${var.control_schema}
+    mode: production
+    default: true
+    workspace:
+      host: https://adb-2593897084138079.19.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_usnc_bronze_dev
+      catalog:        02_usnc_silver_edm_dev
+      gold_catalog:   03_usnc_gold_edm_dev
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_usnc_gold_edm_dev/wd_fin_export/customer_invoice
+      expectations_table: 02_usnc_silver_edm_dev.control.ref_dq_expectation
+      # CHANGED 23 Sep 2026 from us_tds_data_engineer, and changed because the lake
+      # said so rather than because anyone told us.
+      #
+      # PLT-4 asked Platform to grant per-table SELECT to "the engineering scope group
+      # corresponding to us_tds_data_engineer", and asked them to tell us its name so
+      # assert_no_broad_grant could allow it. They granted it (SR-324918) and did not
+      # send the name -- but a grant names its own grantee, so we read it out instead:
+      #
+      #   SELECT grantee, privilege_type, count(*)
+      #   FROM 02_usnc_silver_edm_dev.information_schema.table_privileges
+      #   WHERE table_schema IN ('raw_vault','business_vault','control')
+      #   -> scope_tds_edm_vault_read   SELECT   52     (the ONLY grantee)
+      #
+      # BOTH names resolve -- is_account_group_member returns true for each -- so this
+      # is not a correction of a broken value. us_tds_data_engineer is the ROLE group
+      # that holds people; scope_tds_edm_vault_read is the SCOPE group that holds the
+      # grants, and it is the one actually on the tables.
+      #
+      # This variable does two jobs, which is why the wrong value is worse than it
+      # looks: assert_no_broad_grant ALLOWS this name, and apply_governance GRANTS to
+      # it. Left as the role group, the gate would fail the build on Platform's
+      # correct grant, and our own apply would add a SECOND grantee to the same tables.
+      vault_privileged_group: scope_tds_edm_vault_read
+      # Read from the workspace 27 Aug 2026 via `aitools get-default-warehouse`.
+      sql_warehouse_id: c7e665f6d5b96d55
+      # ACTIVE SOURCES (D5). Only Dynamics GP and UKG are in this lake's Bronze.
+      # GP_US / GP_US_HIST / GP_CUSTOMER / GP_VENDOR are bare names: every binding
+      # carrying them reads a real great_plains_raw table. GP_CUSTOMER (29 Sep) names
+      # three -- the hub_client binding over rm00101 and the two satellites over
+      # rm00101/rm00102 -- and GP_VENDOR names two, the hub_supplier binding over
+      # pm00200 and its details satellite. All five are real, which is what makes the
+      # bare form safe here.
+      #
+      # UKG_US is qualified per entity because it is NOT uniformly real -- it names
+      # 01_usnc_bronze_dev.ukg_raw.gl on the four finance hubs and the payroll journal,
+      # but a placeholder hfig_usnc.bronze.* table on sat_accounting_journal_header,
+      # msat_journal_line_worktag, msat_journal_line_external_code and
+      # nhl_payroll_detail, all of which 3a defers with the satellites (no _raw source
+      # carries a CDC flag and antijoin was disproved). Everything not named here is
+      # declared, created empty, and loads nothing.
+      # PLT-1's second half. `Data Platform US Terraform TDS`, confirmed against the
+      # workspace's own service-principal list on 28 September -- the same identity that
+      # OWNS 02_usnc_silver_edm_dev.control and that the platform team placed in
+      # scope_unmask_currency_values. Per-target, not global: each region has its own TDS
+      # principal, so one value cannot serve them all.
+      service_principal: 7732b208-8366-4aef-af09-60e9dec9cf86
+      active_sources: >-
+        GP_US,GP_US_HIST,GP_CUSTOMER,GP_VENDOR,
+        accounting_journal/UKG_US,ledger_account/UKG_US,operating_company/UKG_US,
+        pay_period/UKG_US,journal_line/UKG_US,
+        job_request/BULLHORN_EU,job_request_details/BULLHORN_EU,
+        job_request/FIELDGLASS_US,
+        invoice/FIELDGLASS_US,supplier/FIELDGLASS_US,
+        client/FIELDGLASS_US,worker/FIELDGLASS_US,
+        invoice_line/FIELDGLASS_US,invoice_line_details/FIELDGLASS_US,
+        invoice_header/FIELDGLASS_US,
+        legal_entity/HUBSPOT,legal_entity_profile/HUBSPOT,
+        client_legal_entity_hierarchy/HUBSPOT,
+        client_legal_entity_hierarchy_effectivity/HUBSPOT
+
+    # NO COMPUTED SATELLITE IS ACTIVE HERE, AND ONE CANNOT BE YET.
+    #
+    # invoice_line_gie/BUSINESS_VAULT_GIE was declared active on 26 September to give the
+    # Ameren GIE path its input, and switching it on is what revealed that the input
+    # cannot be produced at all: THE FACTORY HAS NO WAY TO COMPUTE A csat PAYLOAD.
+    # _projection() names the declared columns and _project() selects them off the parent
+    # frame; nothing evaluates an expression. invoice_line_gie declares eleven payload
+    # columns and nhl_invoice_line provides NONE of them -- they are the AME rules, and
+    # src/accelerator/invoice_rules.py holds them as pure functions that only checks/
+    # imports. No factory module references it.
+    #
+    # It looked survivable because csat_job_request_custom_promoted has a table and a
+    # staging log. That proves nothing: under D5 create_streaming_table() is emitted for
+    # every declared binding while append_flow() is emitted only for ACTIVE ones, so
+    # those are empty shells. silver_vault.py:100 says it outright -- "nobody had met it
+    # because no such csat is active yet". invoice_line_gie was the first, and meeting it
+    # is the finding.
+    #
+    # Held back rather than left silent: verify_repo's _COMPUTED_HELD_BACK now carries it
+    # with this reason, so a csat whose parent is active while it is not still has to be
+    # explained. Switch it on in the change that implements the computation, not before.
+
+    # A COMPUTED SATELLITE IS DECLARED HERE LIKE ANY OTHER BINDING, and the 26 September
+    # run is why that is worth a comment. csat_invoice_line_gie was absent from a
+    # 29/29-SUCCESS load because this list did not name it: load_satellites_business
+    # reported "every satellite is inactive in this lake" and exited 0, which is the
+    # loader doing exactly what it was told.
+    #
+    # It is tempting to make a csat's activity FOLLOW ITS PARENT and skip the
+    # declaration -- invoice_line/FIELDGLASS_US is active, so why declare the satellite
+    # computed from it? Because a computed satellite is a DECISION, not a consequence:
+    # csat_payroll_line_classification's parent is payroll_detail, which is ghost-only
+    # here, and csat_job_request_custom_promoted's parent IS active while the satellite
+    # itself has never been declared for this lake. Inferring activity would switch both
+    # on silently. The same reasoning as vault_privileged_group below: a
+    # wrong-but-plausible default is worse than an omission that fails loudly.
+    #
+    # WHAT IT DID NOT DO IS FAIL LOUDLY, and that is the real gap -- see DEF-54 in
+    # OPEN_ITEMS. A satellite whose PARENT is active while the satellite is not is a
+    # combination worth a warning, because it is far more often an oversight than a
+    # decision. job_request_custom_promoted/BUSINESS_VAULT is in exactly that state and
+    # is deliberately NOT switched on here: it is a question for Adrian, not something
+    # to infer while fixing Ameren.
+
+    # RUN_AS -- the second half of PLT-1, added once Michael granted the
+    # servicePrincipal.user role on 25 September. Production targets have always
+    # declared this; the _tds targets never did, so the job ran as whoever pressed the
+    # button and failed on schemas the service principal owns.
+    run_as:
+      service_principal_name: ${var.service_principal}
+
+  usnc:
+    mode: production
+    workspace:
+      host: https://adb-1543126086586625.5.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_usnc_bronze
+      catalog:        02_usnc_silver_edm
+      gold_catalog:   03_usnc_gold_edm
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_usnc_gold_edm/wd_fin_export/customer_invoice
+      expectations_table: 02_usnc_silver_edm.control.ref_dq_expectation
+    run_as:
+      service_principal_name: ${var.service_principal}
+
+  # =================================================================== APAC / aue
+  # OUTSIDE THE EEA -- see the residency note at the top of this file.
+  aue_tds:
+    mode: production
+    workspace:
+      host: https://adb-2093214595152673.13.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_aue_bronze_dev
+      catalog:        02_aue_silver_edm_dev
+      gold_catalog:   03_aue_gold_edm_dev
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_aue_gold_edm_dev/wd_fin_export/customer_invoice
+      expectations_table: 02_aue_silver_edm_dev.control.ref_dq_expectation
+
+  aue:
+    mode: production
+    workspace:
+      host: https://adb-270953068323345.5.azuredatabricks.net
+      root_path: ${var.bundle_root_prefix}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      bronze_catalog: 01_aue_bronze
+      catalog:        02_aue_silver_edm
+      gold_catalog:   03_aue_gold_edm
+      gold_export_schema: wd_fin_export
+      gold_export_volume: /Volumes/03_aue_gold_edm/wd_fin_export/customer_invoice
+      expectations_table: 02_aue_silver_edm.control.ref_dq_expectation
+    run_as:
+      service_principal_name: ${var.service_principal}

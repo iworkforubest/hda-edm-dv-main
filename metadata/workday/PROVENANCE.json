@@ -1,0 +1,31 @@
+{
+  "recorded": "2026-09-27",
+  "source": "/home/adi/Downloads/DCDD files (supplied by Adrian Turcu, 27 Sep 2026; authored by Logan)",
+  "note": "Binary and XML inputs are committed VERBATIM. Nothing here is edited in place: a corrected DCDD arrives as a new file with a new digest, and this record is what proves which bytes a mapping was derived from.",
+  "files": {
+    "dcdd/Import_Accounting_Journal_DCDD.xlsx": {
+      "bytes": 41554,
+      "sha256": "7934ae63e320af6ad340dfe92d8fbfe15261df159dce16739e170b264ec315dc"
+    },
+    "dcdd/Submit_Customer_DCDD.xlsx": {
+      "bytes": 81154,
+      "sha256": "841f7ddf6387c709a6c9dacf985a47e90fb81ca41641b897a0b20163bdb0beb2"
+    },
+    "dcdd/Submit_Customer_Invoice_DCDD.xlsx": {
+      "bytes": 90470,
+      "sha256": "f6b74c3413cb23c7752491036bbe6ef54335e17e4b807a448663838c1fd9325e"
+    },
+    "dcdd/Submit_Supplier_DCDD.xlsx": {
+      "bytes": 92329,
+      "sha256": "8170c98f45a9e8dd487ba5c62419d3d069de832e009754222fb259be207f7ee9"
+    },
+    "dcdd/Submit_Supplier_Invoice_DCDD.xlsx": {
+      "bytes": 63942,
+      "sha256": "6dbc4042a914729d1b7e5051fd089381489af1831e41e163ea17a829545393f1"
+    },
+    "templates/Submit_Customer_Invoice_Request_GP.xml": {
+      "bytes": 8914,
+      "sha256": "90d555d5c4d812fb1b8eb6299fe884714c8ce5cf6df3f85ff83aa3ec16f6fce4"
+    }
+  }
+}

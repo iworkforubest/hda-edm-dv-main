@@ -1,0 +1,17 @@
+{
+  "_why": "The PDF is not byte-reproducible (wkhtmltopdf stamps /CreationDate), so verify_repo gates it through this digest instead. If it fails, re-run tools/render_erd.py -- the PDF is stale, not this file.",
+  "accelerator_version": "0.2.0",
+  "html_sha256": "4a2bd2b8ad711e99ceb9bfa800c1de300a71dea5a431823efc1a5e38fcd87df9",
+  "pdf_page_chars": [
+    2593,
+    1566,
+    1436,
+    1212,
+    1221,
+    676,
+    1649,
+    3288,
+    5269
+  ],
+  "pdf_table_names": 49
+}

@@ -1,0 +1,93 @@
+# GREAT PLAINS CUSTOMER ADDRESSES, 29 September 2026 -- MULTI-ACTIVE BY NATURE.
+#
+# rm00102 holds one row per (customer, address code): a bill-to, a ship-to, a remit-to,
+# a primary. All of them are current at once, which is exactly what a multi-active
+# satellite is for. Modelling this as an ordinary sat would force a choice of which
+# address is THE address, and that choice belongs to whoever is writing the invoice, not
+# to the raw vault.
+#
+# mas_key IS adrscode -- THE SOURCE'S OWN SUB-KEY, NOT A GENERATED SEQUENCE. GP mints the
+# address code and GP keeps it stable; a row number assigned at load breaks the moment the
+# source re-delivers its rows in a different order, and the breakage is silent because
+# every row still loads.
+#
+# THE ADDRESS KEY NEEDS NO input_db SCOPE, AND IT IS MEASURED -- not inherited from the
+# parent's ruling:
+#
+#     great_plains_raw.rm00102:  1,910 rows
+#                                  505 distinct (input_db, custnmbr, adrscode)
+#                                  505 distinct (custnmbr, adrscode)
+#
+# The two counts are EQUAL, so no (customer, address code) pair means two different
+# addresses in two company databases. The source rows carry an input_db and it is simply
+# not discriminating here. Adding it to the key anyway would split one customer's address
+# book across as many satellite rows as there are books it appears in, and the parent hub
+# -- which is not scoped either -- would then have one row pointing at several.
+#
+# 1,910 rows over 505 address slots is ~3.8 versions each, the same delivery-over-delivery
+# shape the customer master has, so this is versioned too and declares no dedup_by.
+#
+# NO MASK: an address is personal-adjacent but this is a COMPANY's registered address book
+# out of a receivables ledger, not a person's home address, and sensitivity stays
+# `internal` alongside the rest of the GP customer master. `cntcprsn` is a named contact
+# at the customer, which is why that judgement is worth stating rather than assuming --
+# if the roster ever carries private individuals as customers this declaration is the
+# thing to revisit, and a mask here would then need the loader's ALTER path after a CTAS.
+#
+# THE SOURCE NAME MATCHES hub_client's GP_CUSTOMER BINDING because hub_client is
+# literal-keyed and spec.parent_key_components composes this satellite's foreign key from
+# the HUB's binding of the same name -- literal folded in. Reading rm00102 under a name
+# the hub does not carry is refused, rather than producing a key that omits the literal
+# and never joins.
+name: client_address
+kind: msat
+domain: party
+parents: [client]
+sensitivity: internal
+mas_key: [adrscode]
+
+payload:
+  - adrscode
+  - address1
+  - address2
+  - city
+  - country
+  - phone1
+  - cntcprsn
+
+descriptions:
+  adrscode: >-
+    GP's address code -- BILL TO, SHIP TO, PRIMARY and the like. The multi-active sub-key:
+    a customer holds several of these at once and none of them supersedes the others.
+  address1: >-
+    First line of the address as GP holds it. Unparsed.
+  address2: >-
+    Second line of the address as GP holds it. Unparsed, and frequently empty.
+  city: >-
+    The city as GP holds it. Not reconciled against any reference list.
+  country: >-
+    The country as GP holds it -- a free-text name, not an ISO code. Unlike
+    sat_legal_entity_details.jurisdiction, nothing normalises this, so it is carried
+    verbatim and any consumer wanting ISO must map it.
+  phone1: >-
+    The first of GP's phone numbers for this address slot.
+  cntcprsn: >-
+    The named contact person at the customer for this address slot. A person's name at a
+    company, recorded because the receivables process uses it; if the customer roster ever
+    carries private individuals, this column is the reason to revisit the entity's
+    sensitivity.
+
+sources:
+  - name: GP_CUSTOMER
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.rm00102
+    parent_keys:
+      client: [custnmbr]
+    payload:
+      - adrscode
+      - address1
+      - address2
+      - city
+      - country
+      - phone1
+      - cntcprsn
+    applied_dts_column: dex_row_ts

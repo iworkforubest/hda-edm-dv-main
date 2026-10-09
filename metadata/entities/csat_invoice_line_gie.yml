@@ -1,0 +1,165 @@
+# THE DERIVED HALF OF THE GIE OUTPUT. Applies AME003, AME004, AME005, AME007, AME008
+# (selection only), AME009, AME011, AME012 and AME013 -- the rules that are genuine
+# derivations. The logic itself is src/accelerator/invoice_rules.py so it can be unit
+# tested; this satellite is where the results are stored.
+#
+# AME002 AND AME006 ARE NOT HERE, AND THAT IS THE DESIGN.
+# Invoice Date and Line Number appear on a document sent to a customer. A satellite
+# is recomputed; anything recomputed can change. If a re-run changed either value the
+# customer's copy would no longer match ours and NOTHING WOULD FAIL -- every load
+# succeeds, every gate stays green, and the first symptom is a dispute. They are
+# issued once into control.ctl_invoice_issuance instead. See the spec's "Issued
+# values must be frozen" section.
+#
+# ONE COLUMN EACH FOR task_number/expenditure_type/expenditure_organization, NOT THREE.
+# nhl_invoice_line carries nine per-module columns (task_code_ts/_es/_mi,
+# expenditure_type_ts/_es/_mi, expenditure_organization_ts/_es/_mi) because the raw
+# vault must not decide which of Fieldglass's three modules (Time Sheet, Expense
+# Sheet, Miscellaneous Invoice) populated a line -- see nhl_invoice_line.yml. That
+# decision is exactly what AME011/AME012/AME013 make: invoice_rules.module_value picks
+# the one populated module's value, once per attribute, and invoice_rules.task_number
+# then strips the pipe/parenthesis off the task code. This satellite stores the
+# SELECTED single value per attribute, because by the time a row lands here the
+# selection has already happened. Nine columns in, three out is not a dropped
+# column -- it is the rule's output.
+name: invoice_line_gie
+kind: csat
+domain: pay_bill
+parents: [invoice_line]
+sensitivity: financial
+masks:
+  amount: governance.mask_money
+  invoice_amount: governance.mask_money
+payload:
+  - description
+  - line_description
+  - line_type
+  - amount
+  - invoice_amount
+  - accounting_date
+  - project_number
+  - task_number
+  - expenditure_type
+  - expenditure_organization
+  - rule_version
+descriptions:
+  description: AME004 -- invoice id, worker as Last First, week-ending and line ref, pipe delimited.
+  line_description: AME005 -- the same without the invoice id.
+  line_type: AME007 -- TAX where the source type is Tax, otherwise ITEM.
+  amount: >-
+    AME008 -- the line amount for an ITEM line, being the CLIENT amount:
+    invoice_line_item_amount_client from the raw vault, which is the supplier cost plus
+    that line's MSP margin. Not the supplier figure. Tax is aggregated onto the final TAX
+    line and all lines sum to the invoice gross. Named `amount` because Ameren's template
+    names the column `Amount`; the thirteen gold field names are the customer's contract
+    and are not ours to rename. Masked by governance.mask_money.
+  invoice_amount: >-
+    AME003 -- the invoice gross, repeated on every line of the invoice, from
+    sat_invoice_header.gross_invoice_amount. The reconciliation target.
+    A DIFFERENT GRAIN FROM `amount` AND FROM THE RAW VAULT'S LINE COLUMN: this is the
+    whole invoice's value on every line, which is what Ameren's template asks for and
+    what AME008 checks the lines against. The raw vault's per-line client amount is
+    called invoice_line_item_amount_client precisely so that these two cannot be
+    confused by a projection -- Spark resolves identifiers case-insensitively, so one
+    name for two grains is either an AMBIGUOUS_REFERENCE or, worse, a silent pick.
+    Masked by governance.mask_money.
+  accounting_date: AME009 -- from the week-ending date. See the open question on its format.
+  project_number: AME010 -- the source project code, unchanged.
+  task_number: >-
+    AME011 -- the value after the pipe in the module's task code, trailing parenthesis
+    removed. A code with no pipe yields the whole code rather than a blank.
+  expenditure_type: AME012 -- the expenditure type belonging to the line's module.
+  expenditure_organization: AME013 -- the expenditure organization belonging to the line's module.
+  rule_version: >-
+    The version of src/accelerator/invoice_rules.py that produced this row. Present so a
+    rule change is visible in the data rather than only in git history.
+
+sources:
+  # BUSINESS VAULT -- this satellite's input is the vault (nhl_invoice_line, Task 3),
+  # not a feed, exactly like csat_payroll_line_classification's own BUSINESS_VAULT
+  # binding. rec_src must say so truthfully, which is what the binding name records.
+  #
+  # NOT NAMED PLAIN 'BUSINESS_VAULT'. Its parent, nhl_invoice_line, is an NHL, so
+  # spec.hash_key_columns reconstructs invoice_line_hk from ALL FOUR of its own
+  # parents' business-key components (invoice, supplier, worker, organisation) plus
+  # its transaction_key -- not just from invoice_line's own key. organisation is
+  # hub_organisation, which is AUTHORED and reached under a key_literals reference_type
+  # that spec.parent_key_components looks up by an EXACT MATCH on this binding's own
+  # NAME against one of hub_organisation's bindings (see spec.py's
+  # parent_key_components docstring). hub_organisation's existing 'BUSINESS_VAULT'
+  # binding already carries a literal -- Organization_Reference_ID -- but that one
+  # belongs to csat_payroll_line_classification's UKG-sourced organisation reference,
+  # not this satellite's Fieldglass-sourced one (Fieldglass_Buyer_Code). One binding
+  # name can only carry one key_literals value, so reusing 'BUSINESS_VAULT' here would
+  # silently hash organisation_hk under the WRONG reference_type -- a well-formed
+  # BINARY(32) that would never equal nhl_invoice_line's own organisation_hk, and
+  # nothing would raise: hash_key_columns only counts columns, it does not compare
+  # values. Measured directly (see the equality check in tests/test_accelerator.py
+  # this task adds, mirroring the payroll one) before writing this binding: naming it
+  # 'BUSINESS_VAULT' instead of 'BUSINESS_VAULT_GIE' produces a DIFFERENT hash for
+  # invoice_line_hk than nhl_invoice_line's own loader builds.
+  #
+  # So this binding is named 'BUSINESS_VAULT_GIE' -- the same suffix convention
+  # GP_US_HIST already uses for "the same family, a different binding" -- and
+  # hub_organisation.yml carries a matching 'BUSINESS_VAULT_GIE' entry with the
+  # Fieldglass literal. tools/emit_source_contract.py excludes the whole
+  # BUSINESS_VAULT* family from the Bronze contract by PREFIX now, not exact
+  # equality, for exactly this reason -- see its is_business_vault_binding().
+  - name: BUSINESS_VAULT_GIE
+    key_scope: FIELDGLASS_US
+    # EXEMPT, BECAUSE THIS SATELLITE IS NOT DELIVERED -- it is RECOMPUTED. A freshness SLA
+    # asks "how long before a feed that stopped arriving should worry us", and nothing
+    # arrives here: this reads nhl_invoice_line and re-derives every run. The freshness
+    # that matters is its PARENT's, invoice_line/FIELDGLASS_US at 168 hours, and asserting
+    # a second number against the same underlying data would either duplicate that one or
+    # quietly contradict it.
+    #
+    # 0 rather than absent, because the check that demanded this says the two are not the
+    # same thing and only one is a decision. This is the decision.
+    freshness_sla_hours: 0
+    # DEF-58: WHERE THE ELEVEN PAYLOAD COLUMNS ACTUALLY COME FROM. nhl_invoice_line
+    # provides NONE of them by name, so without a conform profile every one of them is
+    # projected from a source column that does not exist -- UNRESOLVED_COLUMN at staging,
+    # invisible to every offline suite. The profile is fieldglass_us_invoice_gie in
+    # metadata/source_unions.yml, and its expressions are held equal to
+    # checks/ame_parity_check.py's SQL templates by tests/test_accelerator.py.
+    #
+    # IT CLOSES FIVE OF THE ELEVEN, AND THE OTHER SIX ARE NOT AN OVERSIGHT.
+    # line_type, task_number, expenditure_type, expenditure_organization and
+    # rule_version are computable from this table. description, line_description,
+    # amount, invoice_amount, accounting_date and project_number are not -- four
+    # because their inputs are not columns of nhl_invoice_line (the worker's name and
+    # the invoice id survive only as BINARY(32) hash keys, the client line amount and
+    # Project_Code are not in invoice_line's payload at all), and two because
+    # src/accelerator/invoice_rules.py has no function for the rule (AME003 and AME009)
+    # and inventing one is how a wrong number reaches a customer invoice. The full
+    # reasoning is on the profile itself, and the exact list is asserted in
+    # tests/test_accelerator.py so it cannot quietly widen.
+    conform: fieldglass_us_invoice_gie
+    bronze_table: 02_usnc_silver_edm_dev.raw_vault.nhl_invoice_line
+    parent_keys:
+      invoice: [buyer_tenant, invoice_id]
+      supplier: [buyer_tenant, supplier_code]
+      worker: [worker_id]
+      client: [buyer_tenant]
+    # SAME REASON AS nhl_invoice_line's, but these two are COMPUTED rather than read: this
+    # satellite's input is the vault, and `amount` and `invoice_amount` are produced by
+    # src/accelerator/invoice_rules.py, not carried from a source column. DECIMAL(18,2)
+    # declares what the rules are to produce, so the two grains Ameren's template calls by
+    # one name -- the LINE's amount and the INVOICE's total repeated on every line (AME003)
+    # -- are at least the same type, and both mask under governance.mask_money.
+    cast:
+      amount: DECIMAL(18,2)
+      invoice_amount: DECIMAL(18,2)
+    payload:
+      - description
+      - line_description
+      - line_type
+      - amount
+      - invoice_amount
+      - accounting_date
+      - project_number
+      - task_number
+      - expenditure_type
+      - expenditure_organization
+      - rule_version

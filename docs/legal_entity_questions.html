@@ -1,0 +1,442 @@
+<title>Legal Entity Questions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2F5D8C; --accent-soft:#E8EEF6;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#7FB0DD; --accent-soft:#1B2632;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#7FB0DD; --accent-soft:#1B2632;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Questions for Business &amp; Legal &middot; Data &amp; AI</p>
+    <h1>Which companies are we, and who owns whom?</h1>
+    <p class="lede">
+      Eight questions. None of them is a data question &mdash; every one is a fact about the
+      group that only Business and Legal hold, and the data model is finished and waiting on
+      them. The modelling is done and merged; it currently loads nothing, because a company
+      register is not something engineering can derive.
+    </p>
+    <p class="meta">
+      <span>Raised 5 September 2026 &middot; updated and re-sent 7 September</span>
+      <span>From <code>data_platform_operations</code></span>
+      <span>Worksheet: <code>docs/legal_entity_roster_worksheet.csv</code></span>
+      <span>Design: <code>docs/legal_entity_design.md</code></span>
+    </p>
+  </header>
+
+  <div class="note">
+    <h3>Since this was written: the register may already exist, and so may the hierarchy</h3>
+    <p>
+      <strong>Retrieved from the Workday implementation tenant on 6 September: 82 companies,
+      each with a code and a registered-style name, across 16 jurisdictions.</strong> The
+      worksheet we sent you has 24 rows and asks you to fill four identifying columns; not
+      one of the 96 cells is filled, and Workday appears to hold most of the answer already.
+    </p>
+    <div class="ev">UK011  Impellam Group Limited          NL010  HeadFirst Global BV
+UK103  Guidant Global UK Limited       BE100  ProUnity NV (Belgium)
+UK104  Lorien Resourcing Limited       IE100  Irish Recruitment Consultants Limited
+AU100  Comensura Pty Ltd               US103  Barpellam, Inc.</div>
+    <p>
+      <strong>This does not answer the questions below, and we are not withdrawing them.</strong>
+      Three reasons, and each is a question for you rather than a caveat we can settle:
+    </p>
+    <ul class="plain">
+      <li>A Workday <strong>Company</strong> is a financial reporting entity. It is usually
+        one legal entity, and it is not guaranteed to be — <span class="mono">LEG-2</span>
+        is exactly that question.</li>
+      <li>The values came from an <strong>implementation tenant</strong>. Configured
+        reference IDs usually migrate to production, and <em>usually</em> is not something
+        we will build a key on.</li>
+      <li>It supplies a code and a name. It does <strong>not</strong> supply a company
+        registration number — which is <span class="mono">LEG-1</span>&rsquo;s second
+        option.</li>
+    </ul>
+    <p>
+      <strong>And a correction to our own first reading, made 7 September.</strong> We told you
+      Workday held nothing about ownership. It appears to hold a good deal: alongside the 82
+      companies sit <strong>30 consolidation groups</strong>, each named for a holding company.
+    </p>
+    <div class="ev">All Headfirst Global Plc Consolidated     Impellam Group Limited Consolidated
+HeadFirst Global BV Consolidated         Impellam Holdings Limited Consolidated
+HFBG Holding BV Consolidated             Impellam UK Limited Consolidated
+Guidant Global Holding Corporation ...   Corporate Services Group Holding Inc ...
+Star Apple Holding BV Consolidated       Staffing MS Holding BV Consolidated
+... and 20 more</div>
+    <p>
+      A consolidation group is how Workday rolls companies up for reporting, so <strong>the
+      membership of those 30 groups is an ownership hierarchy</strong> — the thing
+      <span class="mono">LEG-3</span> through <span class="mono">LEG-6</span> exist to
+      establish.
+    </p>
+    <p>
+      <strong>We have tried to read it, and we are one permission away.</strong> The call that
+      returns the membership is <code>Get_Organizations</code>, and on 7 September it answered:
+    </p>
+    <div class="ev">SOAP-ENV:Server.processingError | The task submitted is not authorized.</div>
+    <p>
+      That is a <em>permission</em> refusal rather than a broken request — a deliberately
+      malformed request to the same service comes back as a validation error instead, so
+      Workday accepted ours and then declined it. The integration user we hold is cleared for
+      the reference lists and not for organisations. <strong>Asked of the Workday team as
+      WDJ-5; if it is granted, LEG-3 to LEG-6 may need nothing from you at all.</strong>
+    </p>
+    <p>
+      <strong>Which makes one of those names a question in itself.</strong>
+      <code>All Headfirst Global Plc Consolidated</code> reads like an apex, and
+      <code>Impellam Group Limited Consolidated</code> sits beside it as a peer. Whether one
+      already contains the other is exactly what we cannot see — and it is the same
+      structure the coming brand unification has to produce. If Workday already models it,
+      that is a considerably better starting point than a spreadsheet.
+    </p>
+    <p>
+      What it changes is <span class="mono">LEG-1</span>, <span class="mono">LEG-7</span> and
+      now possibly <span class="mono">LEG-3</span>&ndash;<span class="mono">LEG-6</span>, and
+      all of them for the better. See the notes on each below. <strong>Before anyone fills in
+      the worksheet, it is worth confirming what Workday already holds</strong> &mdash; we
+      would rather you did not hand-write 96 cells we can retrieve.
+    </p>
+  </div>
+
+  <div class="note warn">
+    <h3>There is a deadline, and it is not ours</h3>
+    <p>
+      <strong>Impellam Group and HeadFirst Group unify under a new brand in the coming
+      weeks.</strong> The model has been built so that a rebrand costs one new company row,
+      two ownership rows and two dates &mdash; no key changes, no reload, and every historical
+      figure still rolls up the way it did when it was recorded.
+    </p>
+    <p>
+      That only holds if the register exists <em>before</em> the rebrand. Built afterwards, the
+      same change means reconstructing which company owned what on which date, from feeds that
+      only ever carried a display name. <strong>LEG-1 and LEG-7 are the two that cannot slip.</strong>
+    </p>
+  </div>
+
+  <section>
+    <h2>Where this stands</h2>
+    <div class="strip">
+      <div class="stat p3"><span class="n">24</span><span class="l">entity candidates</span></div>
+      <div class="stat p1"><span class="n">0</span><span class="l">with a registry answer</span></div>
+      <div class="stat p3"><span class="n">23</span><span class="l">ownership edges needed</span></div>
+      <div class="stat p2"><span class="n">8</span><span class="l">questions open</span></div>
+    </div>
+    <p class="closing" style="margin-top:1.25rem">
+      What we already worked out, so nobody redoes it: <strong>24 entity candidates</strong>
+      derived from the 28 domains supplied, each with a confirmed group and jurisdiction &mdash;
+      HeadFirst in <code>BE</code> and <code>NL</code>, Impellam in <code>AU</code>,
+      <code>GB</code>, <code>IE</code> and <code>US</code>. That is as far as domains reach.
+      A brand and a country narrow the search to one register and one company; they do not
+      name it.
+    </p>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Decide first &mdash; everything else waits on these</h2>
+      <span class="why">Neither is a lookup. Both are choices with consequences that are expensive to reverse.</span>
+    </div>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">LEG-1</span><h3>What identifies a legal entity, permanently?</h3><span class="pill b">Blocks everything</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Choose one of two, and tell us which:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>(a)</strong> HFIG assigns a code per company &mdash; ours to define, ours to keep unique.</li>
+            <li><strong>(b)</strong> The identifier is the pair <strong>(jurisdiction, company number)</strong> &mdash; externally verifiable, and already unique by construction.</li>
+          </ul>
+        </dd>
+        <dt>Why it matters</dt><dd>This value is <strong>hashed into every key in the vault</strong> that touches a legal entity. Changing it later is not an edit; it is a re-key of the whole family, and every historical row is stranded behind the old value.</dd>
+        <dt>The trap</dt><dd><strong>It must not be the company&rsquo;s name.</strong> That is exactly the defect this work exists to fix &mdash; see the note below.</dd>
+        <dt>A third option, found 6 September</dt><dd><strong>(c) Workday&rsquo;s <code>Company_Reference_ID</code></strong> &mdash; <code>UK011</code>, <code>NL010</code>, <code>AU100</code>. It already exists for 82 companies, it is one column, it carries a jurisdiction prefix, and it survives a rebrand exactly as (a) would. Its weakness is that it makes Workday the system of record for company identity, which is a governance decision rather than a technical one.</dd>
+        <dt>Our lean</dt><dd>Now <strong>(c)</strong>, where a Workday company really is one legal entity. It is (a) without the work of assigning codes ourselves, and without a second register to keep in step. Failing that, <strong>(b)</strong>: a registration number never changes when a company rebrands, and a rebrand is what is coming. It makes the key two columns instead of one, so it is a decision rather than a detail.</dd>
+        <dt>Done when</dt><dd>One sentence naming (a) or (b).</dd>
+      
+        <dt>Answered 8 Sep &mdash; option (a), and it neutralises our objection to (c)</dt><dd>Amy: legal entities are <strong>master data in the Global Data Catalogue</strong>, which owns the permanent identifier and governs creation, change and retirement. The sample record shows <code>HF-UK-001</code> &mdash; so this is <strong>option (a)</strong>, an HFIG-assigned code, with Workday&rsquo;s <code>UK011</code> kept alongside as a <em>system reference</em> rather than as the identity. <strong>That is a better answer than (c) and it dissolves the objection we raised against it</strong>: Workday stops being the system of record for company identity while we keep the crosswalk.
+  <br><br><strong>One question back, and it is WDJ-2 in a different costume.</strong> <code>HF-<u>UK</u>-001</code> carries a jurisdiction inside a permanent identifier. Amy&rsquo;s own answer requires the ID to survive the whole transition and &ldquo;retain historical reporting integrity&rdquo;. If <code>UK</code> is the <em>current</em> jurisdiction, re-domiciliation forces a choice between changing a permanent ID and leaving it asserting something false. If it is a <strong>minting namespace</strong> fixed at creation and never revisited, it is sound &mdash; but that has to be stated, because the two readings look identical until the first entity moves. <strong>A permanent external identifier must not be derived from an attribute that can change</strong> &mdash; the same argument that corrected <span class="mono">WDJ-2</span>.</dd>
+      </dl>
+    </article>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">LEG-7</span><h3>Who owns the register, and where does it live?</h3><span class="pill b">Blocks everything</span></div>
+      <dl>
+        <dt>Ask</dt><dd>A named owner, and an agreed home the vault can read on a schedule &mdash; a maintained table, a file on a known path, or an export from whatever system already holds this.</dd>
+        <dt>Why it matters</dt><dd>A spreadsheet answered once decays from the day it is filled in. Companies are incorporated, renamed, redomiciled and struck off; each is a change the vault must see. An unowned register is worse than none, because people trust it.</dd>
+        <dt>Also needed</dt><dd>Does something already hold this &mdash; a statutory register, a group structure chart, a Companies House export? We would rather read an existing source than create a second one.</dd>
+        <dt>And it may be answered</dt><dd><strong>Workday.</strong> We can retrieve the company list on a schedule through its Reference Service, which makes the &ldquo;maintained, with an owner, in a place a job can read&rdquo; problem somebody else&rsquo;s solved problem rather than a new spreadsheet. <strong>If Workday is the system of record for company identity, say so and this question closes.</strong> What Workday does <em>not</em> hold is the ownership hierarchy, so <span class="mono">LEG-3</span> onwards still need an owner.</dd>
+        <dt>Done when</dt><dd>A name, and a location we can point a job at.</dd>
+      
+        <dt>Answered 8 Sep &mdash; CBO Office owns it, CPTO implements it</dt><dd>Amy: ownership of the register sits with the <strong>CBO Office</strong>. Create, modify, merge, retire and dissolve decisions may originate in SLT, Board, Finance or Legal, but CBO governs the end-to-end process and holds the approvals, controls and evidence. <strong>CPTO implements approved changes and does not own the structure</strong>, and all downstream systems including Workday consume the approved structure from the governed source. Amy is building a framework for how requests and changes move business &rarr; CBO &rarr; CPTO as part of the BRD. <strong>This is the cleanest answer in the set</strong>: it names an owner, separates the decision from the implementation, and gives us a route for change requests that does not depend on knowing who to ask.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <div class="note">
+    <h3>Why the name cannot be the identifier &mdash; the evidence, in one column</h3>
+    <p>
+      Every VMS feed carries an account-holder name in a column called <code>buyer</code>.
+      Measured across the estate, that one column holds three different kinds of thing:
+    </p>
+    <div class="ev">Albertsons Companies, Inc     the client, current name
+Dignity Health          a SUPERSEDED client name, still delivered years on
+Guidant Global, Inc.    one of OURS -- Guidant runs the programme, so holds
+                        the account
+BorgWarner              SAME feed as Guidant -- the company that acquired
+                        Delphi Technologies</div>
+    <p>
+      One feed, three identities, none stable. That is why the register is keyed on something
+      that does not move, and why the registered name is recorded as an <em>attribute</em>
+      &mdash; so that when it changes, we get a new version rather than a new company.
+    </p>
+  </div>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>The register itself</h2>
+      <span class="why">The filling-in. Mechanical once LEG-1 is answered, and it is the bulk of the work.</span>
+    </div>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">LEG-2</span><h3>Four facts per company, for 24 candidates</h3><span class="pill w">The bulk</span></div>
+      <dl>
+        <dt>Ask</dt><dd>For every row of <code>legal_entity_roster_worksheet.csv</code>:</dd>
+        <dt>Columns</dt><dd>
+          <ul class="plain">
+            <li><strong>registered_name</strong> &mdash; as registered, not as traded. &ldquo;Lorien&rdquo; is a brand; the company behind it has a longer name.</li>
+            <li><strong>company_number</strong> &mdash; the registration number in its jurisdiction.</li>
+            <li><strong>jurisdiction</strong> &mdash; already filled in for all 24; confirm rather than re-derive.</li>
+            <li><strong>registered_status</strong> &mdash; active, dormant, dissolved. Recorded, never filtered: a dissolved company still owns history.</li>
+          </ul>
+        </dd>
+        <dt>Why four</dt><dd>These are exactly the attributes the vault can receive. Anything else has nowhere to go today, so please tell us before adding a column rather than after.</dd>
+        <dt>Done when</dt><dd>24 rows with all four filled, or a row marked as not a company with a reason.</dd>
+      
+        <dt>Answered 8 Sep &mdash; four attributes accepted, more required, and the sample is an image</dt><dd>Amy: the four proposed (Registered Name, Registration Number, Jurisdiction, Status) &ldquo;can form part of the core dataset&rdquo;, but legal entity governance, ownership, finance alignment, novation planning and lifecycle management need more. Authoritative sources should be exhausted before anyone is asked to fill a cell by hand, and the entity list should be validated against the future-state strategy <em>before</em> population begins. <strong>The catalogue is business-owned and explicitly not constrained by the vault design</strong>, which we accept &mdash; it moves where the decision is taken, not whether it has to be taken.
+  <br><br><strong>Worth knowing about the file:</strong> the &ldquo;Sample Legal Entity Master Data&rdquo; tab holds a <strong>pasted image, not cells</strong> (<code>A1:A1</code>; the structure is <code>xl/media/image1.png</code>). Anyone opening it expecting a populated worksheet will read it as empty. The structure it shows is transcribed in <code>docs/legal_entity_master_data_review.html</code> so it is searchable and quotable.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">LEG-3</span><h3>Who owns whom &mdash; 23 ownership edges</h3><span class="pill w">The bulk</span></div>
+      <dl>
+        <dt>Ask</dt><dd>One row per ownership relationship, <strong>not</strong> one per company &mdash; the shape differs from the worksheet:</dd>
+        <dt>Columns</dt><dd><code>parent</code>, <code>child</code>, <code>effective_from</code>, <code>relationship_status</code></dd>
+        <dt>Why dated</dt><dd>So that &ldquo;who owned this in March&rdquo; and &ldquo;who owns it today&rdquo; are both answerable from one table. An edge that ends is a new row saying so, never an edit &mdash; which is what makes the history trustworthy.</dd>
+        <dt>Note</dt><dd>23, not 24: the group parent has no parent. After the rebrand it will have one, and that is two more rows rather than a restructure.</dd>
+        <dt>Done when</dt><dd>23 edges with dates.</dd>
+      
+        <dt>Answered 8 Sep &mdash; agreed in principle, and the sample contradicts the prose</dt><dd>Amy agrees ownership is held <strong>separately from the master record and effective dated</strong>, supporting parent, subsidiary, ownership percentage, effective dates and status &mdash; and not limited to the 24-entity view.
+  <br><br><strong>The mockup does the opposite.</strong> It puts <code>Parent Legal Entity</code> and <code>Ultimate Parent</code> on the entity record as plain attributes, which cannot carry ownership history &mdash; and an ownership-transfer date is in Amy&rsquo;s own <span class="mono">LEG-8</span> list of real-world effective dates. <code>Ultimate Parent</code> is also derivable from the parent chain, so storing it invites drift between the two. <strong>The prose is right and the mockup is a simplification</strong>; the question for Monday is only which one the BRD will carry.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">LEG-8</span><h3>What date is <code>effective_from</code>?</h3><span class="pill w">Cheap now</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Confirm it is the date the change <em>took effect in the world</em> &mdash; the incorporation, the rename, the transfer &mdash; and not the date somebody typed it in.</dd>
+        <dt>Why we ask explicitly</dt><dd>Four days ago the same question went unasked on another feed and cost a week. All four candidate timestamps turned out to be unusable, and the answer became a request to another team. A maintained register has no such excuse: whoever records the change knows when it took effect.</dd>
+        <dt>If unknown</dt><dd>Say so per row rather than supplying the load date. A missing date we can handle; a wrong one silently mis-dates every figure that rolls up through it.</dd>
+        <dt>Done when</dt><dd>One sentence, plus per-row exceptions if any.</dd>
+      
+        <dt>Answered 8 Sep &mdash; real-world legal date, and blank beats a default</dt><dd>Amy: Effective From is <strong>the date the change became legally effective in the real world</strong> &mdash; incorporation, legal rename, ownership transfer, merger, dissolution &mdash; and explicitly <strong>not</strong> the date a record was entered or loaded. Where it is unknown the field <strong>stays blank or is flagged for investigation rather than defaulting to a load date</strong>, because &ldquo;historical integrity is more important than completeness where evidence is unavailable&rdquo;.
+  <br><br><strong>That is the two-clock rule stated by the business in its own words</strong>, and it matches what the vault already does: <code>applied_dts</code> is the business-effective date and <code>load_dts</code> is ours. The instruction not to default a missing value is the part worth holding on to &mdash; a defaulted date is indistinguishable from a known one once it is stored.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Scope and shape</h2>
+      <span class="why">Answers that change what gets built, rather than what gets filled in.</span>
+    </div>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">LEG-4</span><h3>Are these the right 24?</h3><span class="pill w">Scope</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Two checks on the candidate list.</dd>
+        <dt>Check one</dt><dd>Three brands are confirmed Impellam but appear nowhere on the group&rsquo;s own operating-company page: <code>barpellam</code>&nbsp;(GB), <code>irishrecruitment</code>&nbsp;(IE), <code>staffingms</code>&nbsp;(US). Are they companies, dormant names, or trading names of something already listed? Each is a different answer for the ownership tree.</dd>
+        <dt>Check two</dt><dd>A candidate is one brand in one country. <strong>That may still be several companies</strong> &mdash; a holding company and a trading company, or one per legal purpose. If so the register is larger than 24 and we would rather know now.</dd>
+        <dt>Done when</dt><dd>A yes, or a corrected list.</dd>
+      
+        <dt>Answered 8 Sep &mdash; the 24 are not assumed complete, and the roster is Amy&rsquo;s action</dt><dd>Amy: the list must be validated against the Legal Entity Unification programme, future-state trading entity design and statutory registrations. <strong>Trading brand, operating brand, legal entity and finance reporting entity are not necessarily 1:1</strong> &mdash; <code>Barpellam</code>, <code>Irish Recruitment</code> and <code>Staffing MS</code> are named as needing that test specifically. The catalogue should hold the complete population including dormant, holding, employing and reporting entities, with future-state entities identified separately from current-state. <strong>This answers our question by refusing its premise, which is the right answer</strong> &mdash; we asked &ldquo;are these the right 24?&rdquo; and the answer is that the number is an output of work not yet done.</dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">LEG-5</span><h3>Does a company play more than one role?</h3><span class="pill w">Shape</span></div>
+      <dl>
+        <dt>Ask</dt><dd>The model records <strong>ownership</strong>. Is there a second relationship we also need &mdash; most likely &ldquo;operates the programme for&rdquo;, which is how Guidant Global relates to Delphi Technologies?</dd>
+        <dt>Why it changes the build</dt><dd>If yes, it is a separate structure rather than a column, so that a question about ownership cannot accidentally return operating relationships too. That is a small addition, made once, and awkward to retrofit.</dd>
+        <dt>Done when</dt><dd>Either &ldquo;ownership only&rdquo;, or a named second relationship and what it means.</dd>
+      
+        <dt>Answered 8 Sep &mdash; two relationships, not one</dt><dd>Amy: <strong>legal ownership and contractual relationship are different edges.</strong> Impellam PLC may own Guidant Global, but Guidant Global is the trading entity and solely holds the contracts with clients, workers and suppliers. A global client may contract with different trading entities across jurisdictions, and <strong>each individual contract links to exactly one trading legal entity</strong>.
+  <br><br>That is two links in the model, which is what we would have wanted structurally &mdash; ownership parent-to-subsidiary, and a separate contractual edge from trading entity to client, worker and supplier. <strong>Nothing here forces a change to the vault; it forces the catalogue to supply both edges rather than one.</strong></dd>
+      </dl>
+    </article>
+
+    <article class="task w">
+      <div class="task-top"><span class="id">LEG-6</span><h3>How does a company tie back to finance?</h3><span class="pill w">Shape</span></div>
+      <dl>
+        <dt>Ask</dt><dd>The rule mapping a legal entity to its customer records in Dynamics GP (<code>RM00101</code>, keyed on <code>custnmbr</code> within a company database).</dd>
+        <dt>Why it is not a lookup</dt><dd>It is measurably not one-to-one. The <code>bayer</code> feed already corresponds to at least two GP customers, <code>BAYCL</code> and <code>BAYP</code>. So the mapping is either one-to-many, or it needs a rule deciding which customer a given row belongs to &mdash; and that rule is a business decision, not a join.</dd>
+        <dt>Done when</dt><dd>A stated rule. &ldquo;One legal entity, many customers&rdquo; is a complete answer if that is the truth.</dd>
+      
+        <dt>Answered 8 Sep &mdash; GP&rsquo;s customer structure is not the model, and is under review</dt><dd>Amy: the current GP customer structure <strong>must not be assumed to represent the legal or contractual structure</strong>. Some clients are a single GP customer record for operational simplicity only. The model needs <strong>one trading legal entity to many customer records</strong>, with customer records treated as supporting reference data that may be restructured without changing the underlying legal entity relationship. <strong>Amy and the North America finance team will review the GP customer structure</strong> and design the future-state hierarchy for Workday migration &mdash; so this is now an owned action rather than an open question.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section>
+    <h2>What happens when you answer</h2>
+    <div class="tbl">
+      <table class="status">
+        <thead><tr><th>Answer</th><th>What it unblocks</th><th class="who">Then owned by</th></tr></thead>
+        <tbody>
+          <tr><td>LEG-1 &middot; the identifier</td><td>The company register can be created at all. Until then every other answer has nowhere to be stored.</td><td class="who us">us &mdash; one line</td></tr>
+          <tr><td>LEG-7 &middot; owner and home</td><td>A scheduled read, so the register stays true instead of being right once.</td><td class="who us">us &mdash; a job</td></tr>
+          <tr><td>LEG-2 &middot; the four facts</td><td>Company names and numbers become queryable, and every rename is kept as history rather than overwriting the last one.</td><td class="who ok">already built</td></tr>
+          <tr><td>LEG-3 &middot; the edges</td><td>Roll-ups by group, and &ldquo;who owned this in March&rdquo;. This is what makes the rebrand a two-row change.</td><td class="who ok">already built</td></tr>
+          <tr><td>LEG-4/5/6 &middot; scope and shape</td><td>Confirms the build is the right shape before the register is filled in rather than after.</td><td class="who us">us &mdash; small</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="closing" style="margin-top:1.25rem">
+      Everything in the &ldquo;already built&rdquo; rows is merged, tested and gated today. It
+      loads nothing and will keep loading nothing until LEG-1 and LEG-7 are answered &mdash;
+      which is the correct state for a model with no register behind it, and not a state worth
+      leaving alone for long.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      Raised by the HFIG Data Vault accelerator. The candidate list, its evidence and the
+      empty columns are in <code>docs/legal_entity_roster_worksheet.csv</code>; the reasoning
+      behind the model is in <code>docs/legal_entity_design.md</code>. Every figure on this
+      page is measured, not estimated.
+    </p>
+    <p>
+      Sibling document: <code>docs/bronze_layer_work_requests.html</code>, the same shape of
+      asks addressed to the Bronze team.
+    </p>
+  </footer>
+
+</div>

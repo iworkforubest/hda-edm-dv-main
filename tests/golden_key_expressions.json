@@ -1,0 +1,642 @@
+{
+  "rulebook_version": "1.0.0",
+  "keys": [
+    {
+      "entity": "accounting_journal",
+      "kind": "hub",
+      "binding": "GP_US",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('GP_Journal_Entry' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(openyear AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(jrnentry AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "accounting_journal",
+      "kind": "hub",
+      "binding": "GP_US_HIST",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('GP_Journal_Entry' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(hstyear AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(jrnentry AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "accounting_journal",
+      "kind": "hub",
+      "binding": "UKG_US",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('UKG_Batch_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(batchid AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "accounting_journal_header",
+      "kind": "sat",
+      "binding": "UKG_US",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('UKG_Batch_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(journal_external_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_contracting_entity",
+      "kind": "link",
+      "binding": "CLIENT_PORTAL",
+      "column": "client_contracting_entity_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(client_legal_entity_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(contracting_legal_entity_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_contracting_entity",
+      "kind": "link",
+      "binding": "CLIENT_PORTAL",
+      "column": "client_legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(client_legal_entity_code AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "client_contracting_entity",
+      "kind": "link",
+      "binding": "CLIENT_PORTAL",
+      "column": "contracting_legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(contracting_legal_entity_code AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "client_contracting_entity_effectivity",
+      "kind": "esat",
+      "binding": "CLIENT_PORTAL",
+      "column": "client_contracting_entity_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(client_legal_entity_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(contracting_legal_entity_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_job_request",
+      "kind": "link",
+      "binding": "STRIIVE_EU",
+      "column": "client_job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('Portal_Client_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(client_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_job_request",
+      "kind": "link",
+      "binding": "STRIIVE_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_job_request",
+      "kind": "link",
+      "binding": "STRIIVE_EU",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Portal_Client_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(client_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_legal_entity_hierarchy",
+      "kind": "hal",
+      "binding": "HUBSPOT",
+      "column": "child_legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(child_legal_entity_code AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "client_legal_entity_hierarchy",
+      "kind": "hal",
+      "binding": "HUBSPOT",
+      "column": "client_legal_entity_hierarchy_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'HUBSPOT', COALESCE(NULLIF(UPPER(TRIM(CAST(parent_legal_entity_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(child_legal_entity_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "client_legal_entity_hierarchy",
+      "kind": "hal",
+      "binding": "HUBSPOT",
+      "column": "parent_legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(parent_legal_entity_code AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "client_legal_entity_hierarchy_effectivity",
+      "kind": "esat",
+      "binding": "HUBSPOT",
+      "column": "client_legal_entity_hierarchy_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'HUBSPOT', COALESCE(NULLIF(UPPER(TRIM(CAST(parent_legal_entity_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(child_legal_entity_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "consolidation_group",
+      "kind": "hub",
+      "binding": "WORKDAY",
+      "column": "consolidation_group_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "consolidation_hierarchy",
+      "kind": "hal",
+      "binding": "WORKDAY",
+      "column": "child_consolidation_group_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "consolidation_hierarchy",
+      "kind": "hal",
+      "binding": "WORKDAY",
+      "column": "consolidation_hierarchy_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(superior AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "consolidation_hierarchy",
+      "kind": "hal",
+      "binding": "WORKDAY",
+      "column": "parent_consolidation_group_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(superior AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "consolidation_hierarchy_effectivity",
+      "kind": "esat",
+      "binding": "WORKDAY",
+      "column": "consolidation_hierarchy_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(superior AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line",
+      "kind": "nhl",
+      "binding": "GP_US",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('GP_Journal_Entry' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(openyear AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(jrnentry AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line",
+      "kind": "nhl",
+      "binding": "GP_US",
+      "column": "general_journal_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('GP_Journal_Entry' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(openyear AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(jrnentry AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(actindx AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(seqnumbr AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line",
+      "kind": "nhl",
+      "binding": "GP_US",
+      "column": "ledger_account_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(actindx AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line",
+      "kind": "nhl",
+      "binding": "GP_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line_closed_year",
+      "kind": "nhl",
+      "binding": "GP_US_HIST",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('GP_Journal_Entry' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(hstyear AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(jrnentry AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line_closed_year",
+      "kind": "nhl",
+      "binding": "GP_US_HIST",
+      "column": "general_journal_line_closed_year_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('GP_Journal_Entry' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(hstyear AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(jrnentry AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(actindx AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(seqnumbr AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line_closed_year",
+      "kind": "nhl",
+      "binding": "GP_US_HIST",
+      "column": "ledger_account_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(actindx AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "general_journal_line_closed_year",
+      "kind": "nhl",
+      "binding": "GP_US_HIST",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice",
+      "kind": "hub",
+      "binding": "FIELDGLASS_US",
+      "column": "invoice_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(invoice_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_header",
+      "kind": "sat",
+      "binding": "FIELDGLASS_US",
+      "column": "invoice_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(invoice_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line",
+      "kind": "nhl",
+      "binding": "FIELDGLASS_US",
+      "column": "invoice_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(invoice_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line",
+      "kind": "nhl",
+      "binding": "FIELDGLASS_US",
+      "column": "invoice_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(invoice_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(supplier_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(worker_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Fieldglass_Buyer_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(line_reference AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line",
+      "kind": "nhl",
+      "binding": "FIELDGLASS_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Fieldglass_Buyer_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line",
+      "kind": "nhl",
+      "binding": "FIELDGLASS_US",
+      "column": "supplier_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(supplier_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line",
+      "kind": "nhl",
+      "binding": "FIELDGLASS_US",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line_details",
+      "kind": "sat",
+      "binding": "FIELDGLASS_US",
+      "column": "invoice_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(invoice_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(supplier_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(worker_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Fieldglass_Buyer_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(line_reference AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "invoice_line_gie",
+      "kind": "csat",
+      "binding": "BUSINESS_VAULT_GIE",
+      "column": "invoice_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(invoice_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(supplier_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(worker_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Fieldglass_Buyer_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(line_reference AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request",
+      "kind": "hub",
+      "binding": "BULLHORN_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'BULLHORN_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(joborderid AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request",
+      "kind": "hub",
+      "binding": "FIELDGLASS_US",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(job_posting_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request",
+      "kind": "hub",
+      "binding": "PROUNITY_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'PROUNITY_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(request_ref AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request",
+      "kind": "hub",
+      "binding": "STRIIVE_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_commercials",
+      "kind": "sat",
+      "binding": "STRIIVE_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_custom_field",
+      "kind": "msat",
+      "binding": "FIELDGLASS_US",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(job_posting_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_custom_promoted",
+      "kind": "csat",
+      "binding": "BUSINESS_VAULT",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(job_posting_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_details",
+      "kind": "sat",
+      "binding": "BULLHORN_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'BULLHORN_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(joborderid AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_details",
+      "kind": "sat",
+      "binding": "FIELDGLASS_US",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(job_posting_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_details",
+      "kind": "sat",
+      "binding": "PROUNITY_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'PROUNITY_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(request_ref AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "job_request_details",
+      "kind": "sat",
+      "binding": "STRIIVE_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "accounting_journal_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('UKG_Batch_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(batchid AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "journal_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST('UKG_Batch_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(batchid AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(account AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodstartdate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodenddate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(userdefined1 AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "ledger_account_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(account AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "pay_period_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodstartdate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodenddate AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line_external_code",
+      "kind": "msat",
+      "binding": "UKG_US",
+      "column": "journal_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST('UKG_Batch_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(batchid AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(account AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodstartdate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodenddate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(userdefined1 AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "journal_line_worktag",
+      "kind": "msat",
+      "binding": "UKG_US",
+      "column": "journal_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST('UKG_Batch_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(batchid AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(account AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodstartdate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodenddate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(userdefined1 AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "ledger_account",
+      "kind": "hub",
+      "binding": "GP_US",
+      "column": "ledger_account_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(actindx AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "ledger_account",
+      "kind": "hub",
+      "binding": "UKG_US",
+      "column": "ledger_account_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(account AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "legal_entity",
+      "kind": "hub",
+      "binding": "HUBSPOT",
+      "column": "legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(hs_object_id AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "legal_entity_consolidation",
+      "kind": "link",
+      "binding": "WORKDAY",
+      "column": "consolidation_group_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(group_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "legal_entity_consolidation",
+      "kind": "link",
+      "binding": "WORKDAY",
+      "column": "legal_entity_consolidation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(member_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(group_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "legal_entity_consolidation",
+      "kind": "link",
+      "binding": "WORKDAY",
+      "column": "legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(member_reference_id AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "legal_entity_consolidation_effectivity",
+      "kind": "esat",
+      "binding": "WORKDAY",
+      "column": "legal_entity_consolidation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'WORKDAY', COALESCE(NULLIF(UPPER(TRIM(CAST(member_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(group_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "legal_entity_details",
+      "kind": "sat",
+      "binding": "CLIENT_PORTAL",
+      "column": "legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(legal_entity_code AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "legal_entity_profile",
+      "kind": "sat",
+      "binding": "HUBSPOT",
+      "column": "legal_entity_hk",
+      "expression": "UNHEX(SHA2(COALESCE(NULLIF(UPPER(TRIM(CAST(hs_object_id AS STRING))), ''), '^^'), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "BUSINESS_VAULT",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "BUSINESS_VAULT_GIE",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Fieldglass_Buyer_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "CLIENT_PORTAL",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Portal_Client_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(client_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "FIELDGLASS_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Fieldglass_Buyer_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "GP_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "GP_US_HIST",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(input_db AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "STRIIVE_EU",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Portal_Client_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(client_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "organisation",
+      "kind": "hub",
+      "binding": "UKG_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "pay_period",
+      "kind": "hub",
+      "binding": "UKG_US",
+      "column": "pay_period_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodstartdate AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payperiodenddate AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "payroll_detail",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "payroll_detail",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "pay_period_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(pay_period_start_date AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(pay_period_end_date AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "payroll_detail",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "payroll_detail_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(pay_period_start_date AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(pay_period_end_date AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payroll_register_reference AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(line_sequence AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "payroll_detail",
+      "kind": "nhl",
+      "binding": "UKG_US",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "payroll_line_classification",
+      "kind": "csat",
+      "binding": "BUSINESS_VAULT",
+      "column": "payroll_detail_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Organization_Reference_ID' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(company_reference_id AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(pay_period_start_date AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(pay_period_end_date AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(payroll_register_reference AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(line_sequence AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "supplier",
+      "kind": "hub",
+      "binding": "FIELDGLASS_US",
+      "column": "supplier_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(buyer_tenant AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(supplier_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "timesheet_line",
+      "kind": "nhl",
+      "binding": "STRIIVE_EU",
+      "column": "job_request_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(job_reference AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "timesheet_line",
+      "kind": "nhl",
+      "binding": "STRIIVE_EU",
+      "column": "organisation_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST('Portal_Client_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(client_code AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "timesheet_line",
+      "kind": "nhl",
+      "binding": "STRIIVE_EU",
+      "column": "timesheet_line_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_ref AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('NOT_APPLICABLE' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(job_reference AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST('Portal_Client_Code' AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(client_code AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(timesheet_reference AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(line_no AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "timesheet_line",
+      "kind": "nhl",
+      "binding": "STRIIVE_EU",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_ref AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "wd_reference",
+      "kind": "hub",
+      "binding": "WORKDAY",
+      "column": "wd_reference_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id_type AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "wd_reference_effectivity",
+      "kind": "esat",
+      "binding": "WORKDAY",
+      "column": "wd_reference_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id_type AS STRING))), ''), '^^'), COALESCE(NULLIF(UPPER(TRIM(CAST(reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "worker",
+      "kind": "hub",
+      "binding": "FIELDGLASS_US",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'FIELDGLASS_US', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "worker",
+      "kind": "hub",
+      "binding": "HR_EU",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'HR_EU', COALESCE(NULLIF(UPPER(TRIM(CAST(employee_number AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "worker",
+      "kind": "hub",
+      "binding": "STRIIVE_EU",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_ref AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "worker",
+      "kind": "hub",
+      "binding": "UKG_US",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'UKG_US', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_reference_id AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "worker_skills",
+      "kind": "msat",
+      "binding": "HR_EU",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'HR_EU', COALESCE(NULLIF(UPPER(TRIM(CAST(employee_number AS STRING))), ''), '^^')), 256))"
+    },
+    {
+      "entity": "worker_skills",
+      "kind": "msat",
+      "binding": "STRIIVE_EU",
+      "column": "worker_hk",
+      "expression": "UNHEX(SHA2(CONCAT_WS('||', 'STRIIVE_EU', COALESCE(NULLIF(UPPER(TRIM(CAST(worker_ref AS STRING))), ''), '^^')), 256))"
+    }
+  ]
+}

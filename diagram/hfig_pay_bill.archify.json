@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HFIG Data Vault — pay_bill",
+    "subtitle": "Generated from metadata/entities/. Never hand-authored.",
+    "viewBox": [
+      1024,
+      640
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [
+      188,
+      108
+    ],
+    "cols": 3,
+    "gapX": 96,
+    "gapY": 28,
+    "cellW": 152,
+    "cellH": 68
+  },
+  "components": [
+    {
+      "id": "hub_client",
+      "type": "external",
+      "label": "client",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 0,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_invoice",
+      "type": "database",
+      "label": "invoice",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 1,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_job_request",
+      "type": "external",
+      "label": "job_request",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 2,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_supplier",
+      "type": "external",
+      "label": "supplier",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 3,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_worker",
+      "type": "external",
+      "label": "worker",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 4,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "sat_invoice_header_fieldglass_us",
+      "type": "database",
+      "label": "invoice_header",
+      "sublabel": "sat · fieldglass_us",
+      "tag": "financial",
+      "col": 1,
+      "row": 0,
+      "size": [
+        123,
+        68
+      ]
+    },
+    {
+      "id": "nhl_invoice_line",
+      "type": "database",
+      "label": "invoice_line",
+      "sublabel": "nhl",
+      "tag": "internal",
+      "col": 1,
+      "row": 1,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_timesheet_line",
+      "type": "database",
+      "label": "timesheet_line",
+      "sublabel": "nhl",
+      "tag": "financial",
+      "col": 1,
+      "row": 2,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "csat_invoice_line_gie",
+      "type": "database",
+      "label": "invoice_line_gie",
+      "sublabel": "csat",
+      "tag": "financial",
+      "col": 2,
+      "row": 0,
+      "size": [
+        126,
+        68
+      ]
+    },
+    {
+      "id": "sat_invoice_line_details_fieldglass_us",
+      "type": "database",
+      "label": "invoice_line_details",
+      "sublabel": "sat · fieldglass_us",
+      "tag": "financial",
+      "col": 2,
+      "row": 1,
+      "size": [
+        152,
+        68
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "hub_invoice",
+      "to": "sat_invoice_header_fieldglass_us"
+    },
+    {
+      "from": "hub_client",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "hub_invoice",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "hub_supplier",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "hub_worker",
+      "to": "nhl_invoice_line"
+    },
+    {
+      "from": "nhl_invoice_line",
+      "to": "sat_invoice_line_details_fieldglass_us"
+    },
+    {
+      "from": "nhl_invoice_line",
+      "to": "csat_invoice_line_gie"
+    },
+    {
+      "from": "hub_client",
+      "to": "nhl_timesheet_line"
+    },
+    {
+      "from": "hub_job_request",
+      "to": "nhl_timesheet_line"
+    },
+    {
+      "from": "hub_worker",
+      "to": "nhl_timesheet_line"
+    }
+  ]
+}

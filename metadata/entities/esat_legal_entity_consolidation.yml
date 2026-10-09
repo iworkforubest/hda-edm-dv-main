@@ -1,0 +1,32 @@
+# WHEN EACH COMPANY'S MEMBERSHIP WAS IN FORCE, driven on the company.
+#
+# For any legal entity, at most one consolidation-group membership is open at a time. This
+# is the invariant that makes "which group did this company roll into in March" answerable,
+# and it is the one Workday's current-state retrieval cannot reconstruct backwards -- so it
+# is established at first load and accrues from there.
+name: legal_entity_consolidation_effectivity
+kind: esat
+domain: reference
+sensitivity: internal
+
+parents: [legal_entity_consolidation]
+payload: [relationship_status]
+driving_key: legal_entity_hk
+
+notes: >
+  Effectivity of each company/group membership edge, driven on the company. Closing and
+  opening are both inserts, so a restructure never rewrites history.
+
+descriptions:
+  relationship_status: >-
+    Whether this membership is in force. A membership that ends is delivered as a new row
+    saying so, never an update.
+
+sources:
+  - name: WORKDAY
+    bronze_table: PLACEHOLDER.reference.wd_organization_membership
+    parent_keys:
+      legal_entity: [member_reference_id]
+      consolidation_group: [group_reference_id]
+    payload: [relationship_status]
+    applied_dts_column: effective_from

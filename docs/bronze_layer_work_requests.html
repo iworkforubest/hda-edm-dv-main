@@ -1,0 +1,913 @@
+<title>Bronze Layer Work Requests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#A8541F; --accent-soft:#F6EDE6;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#D98A56; --accent-soft:#2A211B;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#D98A56; --accent-soft:#2A211B;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+/* header */
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+/* summary strip */
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+/* tiers */
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+/* task card */
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+/* note */
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+/* status table */
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+
+  /* ---- ADDED 1 Sep: implementer-facing summary and collapsed history ---------
+     The page was written to JUSTIFY the asks and does that well, but a colleague
+     implementing them had to read 2,810 words to learn their queue. These two
+     additions put the action first and move the reasoning behind a disclosure,
+     without deleting a single measured fact. */
+  table.queue { width: 100%; border-collapse: collapse; margin: 0; font-size: 0.9rem; }
+  table.queue th, table.queue td {
+    text-align: left; vertical-align: top; padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--rule, #d8dee7);
+  }
+  table.queue th { font-weight: 600; font-size: 0.78rem; text-transform: uppercase;
+                   letter-spacing: 0.07em; color: var(--muted, #5c6779); }
+  table.queue td.k { white-space: nowrap; font-weight: 600; }
+  table.queue tr.done td { opacity: 0.55; }
+  details.history { margin-top: 0.5rem; }
+  details.history > summary {
+    cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    color: var(--accent, #2f5d8c); padding: 0.2rem 0;
+  }
+  details.history > div { padding-top: 0.4rem; }
+</style>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">HFIG EDM · Data Vault Accelerator</span>
+  <h1>Bronze Layer Work Requests</h1>
+  <p class="lede"><strong>Implementing these? Read the table below and stop there.</strong> It carries every ask, what &ldquo;done&rdquo; means, and what each one blocks &mdash; one screen, no reading order. The sections after it are the same asks with the evidence behind them, for anyone who wants to check our working; where that record got long it is folded away behind a link rather than in your way.</p>
+  <p class="lede">Eighteen ids, from inspecting <code>01_usnc_bronze_dev</code> against the Data Vault model. Each is evidenced from the live workspace or the interface inventory &mdash; none is speculative. Priority reflects what each one blocks downstream, not how hard it is. <strong>Four are questions we need answered in writing, not code.</strong></p>
+  <div class="meta">
+    <span>24 Aug 2026 &middot; revised 7 Sep &middot; BRZ-16, 17, 18 added since 26 Aug</span><span>Workspace db-usnc-datalakehouse-tds</span><span>Source: sub-project 3 design spec</span>
+  </div>
+</header>
+
+<section class="strip">
+  <div class="stat p1"><span class="n">18</span><span class="l">asks in total</span></div>
+  <div class="stat p2"><span class="n">1</span><span class="l">blocks everything</span></div>
+  <div class="stat p3"><span class="n">4</span><span class="l">answers, no build</span></div>
+  <div class="stat"><span class="n">1</span><span class="l">Withdrawn 26 Aug</span></div>
+  <div class="stat"><span class="n">47</span><span class="l">Bronze schemas</span></div>
+</section>
+
+<section class="tier">
+  <div class="tier-head"><h2>What to do, at a glance</h2><span class="why">The whole queue on one
+    screen. Detail for each is below, under its own id.</span></div>
+  <table class="queue">
+    <thead>
+      <tr><th>Id</th><th>Do this</th><th>Done when</th><th>Blocks</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">BRZ-1</td>
+          <td>Turn on Change Data Feed for the <code>_raw</code> tables the vault reads.</td>
+          <td><code>delta.enableChangeDataFeed = true</code> on each.</td>
+          <td>Every satellite load after the first</td></tr>
+      <tr><td class="k">BRZ-12</td>
+          <td>Write one <code>ctl_delivery_manifest</code> row per batch with a
+            <code>delivered_count</code> you assert. <strong>No column added to any
+            <code>_raw</code> table</strong> &mdash; the stamp is no longer asked for, and the
+            schema and tables already exist with your service principal able to write them.</td>
+          <td>Each batch writes one manifest row with a count you stand behind.</td>
+          <td>Loop-1 reconciliation</td></tr>
+      <tr><td class="k">BRZ-14</td>
+          <td><strong>The <code>_backfill</code> ingestion path infers column types per file;
+            the live path always lands <code>STRING</code>.</strong> Result: the same column has
+            two types in the same tenant's two tables, across <strong>nine</strong> Fieldglass
+            table families &mdash; and it is <strong>losing data now</strong>. One measured
+            example: <strong>556 truncated ZIP codes</strong>.</td>
+          <td>Backfill lands the same types as live, and the affected tables are reloaded.</td>
+          <td>Every consumer of a <code>_backfill</code> table, us included</td></tr>
+      <tr><td class="k">BRZ-15</td>
+          <td>Add a <strong>modification timestamp or <code>revision</code></strong> to the
+            Fieldglass job-posting feed. You already carry <code>revision</code> on
+            <strong>62</strong> <code>io_worker</code> tables; the job-posting tables have
+            neither it nor any other column that moves when a posting changes &mdash; we
+            measured all four candidates.</td>
+          <td>One column on <code>io_distributed_jobposting_*</code>, or a written &ldquo;not
+            available&rdquo;.</td>
+          <td>The Fieldglass job-request SATELLITE (the hub is already live)</td></tr>
+      <tr><td class="k">BRZ-16</td>
+          <td><strong>What do these 113 columns mean?</strong> Not a build &mdash; a
+            sentence each, or a pointer to whoever knows. They are the columns your feeds
+            deliver that carry no description anywhere in our model, and we will not invent
+            one: a guess reads exactly like a fact once it is published.</td>
+          <td>A sentence per column, or &ldquo;ask X&rdquo;. Partial is welcome and useful.</td>
+          <td>Every consumer of the catalog, and any agent reading it</td></tr>
+      <tr><td class="k">BRZ-17</td>
+          <td><strong>Three tables the Workday journal export needs.</strong> A journal
+            <strong>header</strong> record per journal, plus the <strong>worktag</strong> and
+            <strong>external code</strong> detail per line. The vault has all three modelled
+            and gated against placeholder names that do not exist &mdash; so five of the
+            twenty fields Workday needs have no source, and the header section of the export
+            is almost entirely one of them.</td>
+          <td>Three fully-qualified table names we can repoint bindings to.</td>
+          <td>The Workday journal export &mdash; header, worktags and external codes</td></tr>
+      <tr><td class="k">BRZ-18</td>
+          <td><strong>Great Plains' account segment descriptions.</strong> We hold
+            <code>gl00100</code>, which gives the segment <em>values</em> of every account
+            combination, and nothing that says what a segment value MEANS. So we can see
+            that GP uses segment-3 code <code>6120</code> and cannot see what GP calls it.</td>
+          <td>A table carrying, per segment number and value, its description.</td>
+          <td>The GP → Workday cost-centre mapping (WDJ-8): 710 values onto 64</td></tr>
+      <tr><td class="k">BRZ-13</td>
+          <td><span class="pill b">Reduced 4 Sep</span> <strong>We built the view.</strong> No
+            longer an ask for work &mdash; what is left is <strong>four answers</strong>: the
+            <code>_backfill</code> precedence rule (the same one BRZ-4 asks for), whether the
+            client-owned family is in scope, whether custom fields exist anywhere, and whether
+            <code>io_distributed_jobposting</code> is the right family for a job request.</td>
+          <td>Four written answers. No build.</td>
+          <td>The whole Fieldglass domain</td></tr>
+      <tr><td class="k">BRZ-3</td>
+          <td>Tell us whether a re-delivered row is expected, and who de-duplicates.</td>
+          <td>A written answer. No code change if the answer is &ldquo;you do&rdquo;.</td>
+          <td>Journal + payroll binding</td></tr>
+      <tr><td class="k">BRZ-4</td>
+          <td>Define which wins when a base and a <code>_backfill</code> table both hold a row.</td>
+          <td>A stated precedence rule.</td>
+          <td>Journal domain</td></tr>
+      <tr><td class="k">BRZ-5</td>
+          <td>Confirm what <code>input_db</code> identifies &mdash; company, entity, or database.</td>
+          <td>A written answer.</td>
+          <td>Organisation hub</td></tr>
+      <tr><td class="k">BRZ-6</td>
+          <td>State the history boundary per feed: how far back the data goes.</td>
+          <td>A date, or &ldquo;all of it&rdquo;, per feed.</td>
+          <td>Closed-year journal</td></tr>
+      <tr><td class="k">BRZ-10</td>
+          <td>Type the date columns, or publish the string format they use.</td>
+          <td>Either a real date/timestamp type, or a documented format per column.</td>
+          <td>Date parsing across feeds</td></tr>
+      <tr><td class="k">BRZ-8</td>
+          <td>Source a payroll detail feed.</td>
+          <td>A feed lands in bronze and we can bind it.</td>
+          <td>Payroll domain, first masked satellite</td></tr>
+      <tr><td class="k">BRZ-7</td>
+          <td>Confirm whether Coupa is planned for bronze, and land it if so.</td>
+          <td>A yes/no. If yes, a feed.</td>
+          <td>Nothing yet &mdash; coverage gap</td></tr>
+      <tr><td class="k">BRZ-9</td>
+          <td>Say what the eleven empty schemas are for.</td>
+          <td>A written answer, or they are dropped.</td>
+          <td>Nothing &mdash; hygiene</td></tr>
+      <tr><td class="k">BRZ-11</td>
+          <td>Decide whether <code>ukg_raw.gl</code> is still needed.</td>
+          <td>A written answer.</td>
+          <td>Nothing &mdash; hygiene</td></tr>
+      <tr class="done"><td class="k">BRZ-2</td>
+          <td><strong>Nothing. Withdrawn 26 Aug</strong> &mdash; please do not build a buyer id.
+            The client mapping is ours. One business decision remains, owned by David
+            Willson.</td>
+          <td>&mdash;</td>
+          <td>&mdash;</td></tr>
+    </tbody>
+  </table>
+  <p class="notep"><strong>Four of these are questions, not code.</strong> BRZ-3, 4, 5 and 9 are
+    answered in writing and cost you nothing to build. BRZ-1 and BRZ-12 are the two that carry
+    real implementation work, and BRZ-1 blocks the most.</p>
+</section>
+
+<section class="tier">
+  <div class="tier-head"><h2>Priority 1</h2><span class="why">Nothing in the vault can be built correctly until these land.</span></div>
+
+  <article class="task b">
+    <div class="task-top"><span class="id">BRZ-14</span><h3><code>_backfill</code> tables infer
+      their column types; the live tables do not</h3><span class="pill r">Losing data now</span>
+      <span class="pill w">Added 4 Sep</span></div>
+    <dl>
+      <dt>Ask</dt><dd><strong>Land the same column types on the <code>_backfill</code> path as on
+        the live path, and reload the tables already written.</strong> We are not asking for a
+        conformance layer or a schema change &mdash; only that a column arrive as the same type
+        in a tenant's backfill table as in its live table.</dd>
+
+      <dt>Why this is yours and why it is urgent</dt><dd>This is not a vault problem and fixing
+        it does not depend on anything we do. <strong>It is happening inside Bronze, to Bronze's
+        data, and every consumer of a <code>_backfill</code> table inherits it.</strong> We found
+        it because a union across tenants would not type cleanly, but the loss is already
+        written and it is not recoverable by casting after the fact &mdash; the digits are
+        gone.</dd>
+
+      <dt>Evidence <span class="pill b">measured 4 Sep, 01_usnc_bronze_dev</span></dt><dd>
+        <strong>The correlation is exact.</strong> Across all 58
+        <code>io_distributed_jobposting</code> tables &mdash; 30 live plus 28
+        <code>_backfill</code>, so 30 tenants, not 58 &mdash; 15 columns carry two
+        different types. Counting every instance: <code>DOUBLE</code> appears
+        <strong>153 times and every one is in a <code>_backfill</code> table</strong>. Live
+        tables are <code>STRING</code> in all <strong>330</strong> instances. Not one live table
+        is typed <code>DOUBLE</code>.
+        <br><br>
+        <strong>It is estate-wide, not a job-posting quirk.</strong> Nine table families across
+        <code>fieldglass_raw</code> and <code>fieldglass_client_owned_raw</code> have
+        <code>DOUBLE</code>-typed columns, and in every family it is only the backfill tables:
+        <code>io_worker</code> 33 columns, <code>io_distributed</code> 15,
+        <code>io_timesheet</code> 15, <code>io_jobposting</code> 13, <code>co_worker</code> 12,
+        <code>co_timesheet</code> 8, <code>co_jobposting</code> 5,
+        <code>co_distributed</code> 5, <code>io_jobseeker</code> 4.
+        <code>io_worker</code> being the worst is the least comfortable part &mdash; worker data
+        is the personal-data domain.
+        <br><br>
+        <strong>Measured loss, one table.</strong>
+        <code>io_distributed_jobposting_cencora_backfill.zip_postal_code</code> is
+        <code>DOUBLE</code> with <strong>12,491 non-null values</strong>, of which
+        <strong>556 are under five digits and 10 are under four</strong>. A US ZIP is five
+        digits, so those have lost at least one leading zero. A <code>DOUBLE</code> cannot
+        represent <code>00965</code>; it can only hold <code>965.0</code>. That is arithmetic,
+        not a formatting preference, and no cast recovers it.
+        <br><br>
+        <strong>A date in a float.</strong>
+        <code>io_distributed_jobposting_albertsons_co_backfill.job_posting_closed_date</code> is
+        <code>DOUBLE</code> while the same column is <code>STRING</code> in the other 57 tables.
+        <br><br>
+        <strong>The likely mechanism</strong>, for what it is worth: schema inference on a
+        column that was empty or all-numeric in the backfill file. It would explain
+        <code>close_comments</code> and <code>close_reason</code> &mdash; free-text columns
+        &mdash; arriving as <code>DOUBLE</code> in exactly one table each.</dd>
+
+      <dt>What it costs us, so you can weigh it</dt><dd>Less than it costs you. We can cast on
+        read, and will. But <strong>it makes BRZ-4 unanswerable as posed</strong>: that item asks
+        which row wins when a base and a <code>_backfill</code> table both hold one, and if the
+        two tables disagree about a column's TYPE then neither &ldquo;take the backfill&rdquo;
+        nor &ldquo;take the live&rdquo; is a complete answer &mdash; a cast has to be specified
+        either way, by someone. One fix here removes that question.</dd>
+
+      <dt>Done when</dt><dd>A column has the same type in a tenant's backfill table as in its
+        live table, and the tables already written with an inferred type are reloaded.</dd>
+    </dl>
+  </article>
+
+  <article class="task b">
+    <div class="task-top"><span class="id">BRZ-1</span><h3>Enable Change Data Feed on <code>_raw</code> tables</h3><span class="pill b">Blocks all loads</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Set <code>delta.enableChangeDataFeed = true</code> on <code>_raw</code> tables as part of the Auto CDC migration, not after it.</dd>
+      <dt>Why</dt><dd>Once <code>_raw</code> becomes an <code>APPLY CHANGES INTO</code> target it stops being append-only, so the vault loses its only streamable tier <strong>and</strong> the operation flag is consumed rather than emitted. Without a change stream the vault cannot tell a new row from a re-delivered one — every satellite re-appends every row on every run, and no existing gate objects.</dd>
+      <dt>Evidence</dt><dd>No <code>_raw</code> table carries a CDC operation column today. Columns are Auto Loader landing metadata only.</dd>
+      <dt>Done when</dt><dd><code>_change_type</code> is readable from <code>_raw</code> via <code>readChangeFeed</code>.</dd>
+      <dt>Cost</dt><dd>A table property. Cheap while the migration is being built, awkward to retrofit afterwards.</dd>
+    </dl>
+    <div class="ev">ukg_raw.gl      → company, batchid, paycheckdate, … , rescued_data, input_file_name, timestamp
+                  no operation column, no CDF properties</div>
+  </article>
+
+  <article class="task b">
+    <div class="task-top"><span class="id">BRZ-2</span><h3>Withdrawn &mdash; the client mapping is ours, not yours</h3><span class="pill w">Revised 26 Aug</span></div>
+    <dl>
+        <dt>Action for Bronze</dt><dd><strong>None. Please do not build a buyer id.</strong>
+          This request is withdrawn &mdash; the VMS does not hold a stable client id and cannot
+          be asked for one. The client mapping is ours to maintain.</dd>
+        <dt>One thing still open, and it is not yours</dt><dd>A business decision: when one VMS
+          tenant spans several GP customers, does a row belong to <em>one</em> finance customer
+          or to the tenant? <strong>Owner: David Willson.</strong> Nothing is needed from the
+          ingestion team either way.</dd>
+      
+        <dt>ANSWERED 8 Sep &mdash; CLOSED for the GP journal scope</dt><dd>Amy Keser: <strong>no business decision is required for the GP journal use case.</strong> VMS data enters 1Staff/GP for payroll and billing, where the client and finance customer relationships are already established; the resulting cost and sales journals pass through Databricks into Workday, so <strong>Bronze is not required to assign or reassign a client</strong>. Any client-mapping requirement should be assessed against the future-state operating model rather than today&rsquo;s structure.
+        <br><br><strong>Keep the scope in the sentence.</strong> The closure rests partly on Legal Entity Unification moving the group toward two trading brands with no intercompany activity &mdash; and Amy&rsquo;s own headline is that <strong>brand unification and legal entity unification are not the same thing</strong>, with legal entities remaining active and reportable until formally dissolved. The two statements are consistent only because this closure is scoped to the GP journal. Read without that scope it would look like a claim about how many legal entities exist, which it is not.</dd>
+      </dl>
+      <details class="history">
+        <summary>Why it was withdrawn, and what we measured &mdash; the full record</summary>
+        <div>
+        <dl>
+      <dt>Status</dt><dd><strong>This request is withdrawn. No change is needed to any VMS extract.</strong> It originally asked for a stable, non-display buyer identifier alongside the existing <code>buyer</code> column. That assumed the VMS holds one and is not sending it. It does not, and David Willson was right to push back: the <code>BuyerId</code> that exists is generated inside the reporting/dashboard SQL Server, not by the VMS, and within a single VMS tenant there is no client id at all because everything in that database belongs to one client.</dd>
+      <dt>What we found</dt><dd>Verified in <code>01_usnc_bronze_dev</code>: the VMS feeds are already <strong>one table per client</strong> &mdash; 158 in <code>fieldglass</code>, 61 in <code>beeline</code>, 37 in <code>vndly</code>, 14 in <code>fieldglass_client_owned</code>. In <strong>257 of 264</strong> tables <code>buyer</code> holds a single constant value, so the client identity is usually present twice over: in the table name and in that constant. <strong>Corrected 26 Aug:</strong> an earlier version of this said <em>every</em> table. Seven do not &mdash; and the exceptions matter, because they are exactly the cases a mapping has to resolve. What is missing throughout is a <em>stable code</em> that survives a rename, and no third party can supply that, because it is our notion of a client, not theirs.</dd>
+      <dt>Re-measured 4 Sep &mdash; two corrections to the numbers above, and one to the
+        worksheet</dt><dd><strong>The table counts in the paragraph above are no longer
+        comparable to a count taken today.</strong> Across the four VMS schemas there are now
+        <strong>534 objects, of which 264 are SDP <code>__materialization_*</code> twins</strong>
+        and six are <code>event_log_*</code> &mdash; pipeline internals, not feeds. A raw count
+        of a VMS schema has therefore roughly doubled since 26 August without a single new
+        client arriving, so anyone acting on &ldquo;158 in fieldglass&rdquo; should re-measure
+        excluding those prefixes first.
+        <br><br>
+        <strong>The client list itself is still right.</strong> 46 client slugs in
+        <code>docs/client_mapping_worksheet.csv</code> against <strong>49</strong> parseable in
+        Bronze &mdash; and the three extra (<code>dow_jones</code>, <code>everbank</code>,
+        <code>lyondellbasell</code>) have <strong>zero rows in every one of their nine
+        tables</strong>. They are provisioned, not delivering. The worksheet lists every client
+        that has data, which is what it was built from.
+        <br><br>
+        <strong>But two of its slugs were wrong, and are now fixed.</strong>
+        <code>feed_client_slug</code> is derived from the table name, and the parser that built
+        it split <code>io_..._jr_automation</code> as <code>automation</code> and
+        <code>io_..._waste_management</code> as <code>management</code> &mdash; visible only
+        because <code>buyer_in_data</code> reads &ldquo;JR Automation&rdquo; and &ldquo;Waste
+        Management&rdquo; beside them. Corrected in three rows, with the old value recorded in
+        the notes column.
+        <br><br>
+        <strong>Nothing regenerates or gates that file</strong>, which is why both went unseen
+        for ten days: measured 4 Sep, corrupting it fails no check, while every other generated
+        artefact in the repo (11 of 11 tested) fails one immediately. So when
+        <code>dow_jones</code> starts delivering, nothing will add it and nothing will notice.
+        That is ours to fix, not yours &mdash; it does not change this ask.</dd>
+      <dt>The concern still stands</dt><dd>Unchanged: <code>buyer</code> is a display name, so a cosmetic rename in the source system would re-key <strong>every job request, timesheet and worker assignment</strong> for that client. Only the remedy has moved.</dd>
+      <dt>Now ours to do</dt><dd>HFIG maintains a client reference mapping: <strong>feed identity &rarr; stable HFIG client code &rarr; the finance client</strong>. <strong>Started:</strong> <code>docs/client_mapping_worksheet.csv</code> holds all <strong>47 clients and 65 (feed, buyer) pairs</strong> found in the workspace, with the columns HFIG must fill left blank. Automated matching resolved all but <strong>five rows</strong>, which need a human because the feed name and the data genuinely disagree. The vault already supports a per-binding literal key part &mdash; the mechanism <code>reference_type: Portal_Client_Code</code> uses today &mdash; so once the mapping exists the bindings can be generated from it rather than hand-written.</dd>
+      <dt>Answered</dt><dd><strong>The client master is GP's <code>RM00101</code>.</strong> David Willson, 26 Aug: <em>&ldquo;For GP there is the Customer Master which is the RM00101 table.&rdquo;</em> Verified present and usable in <code>01_usnc_bronze_dev.great_plains_raw.rm00101</code> &mdash; 889 rows over <strong>345 distinct <code>custnmbr</code></strong> across four <code>input_db</code> companies, and VMS clients do appear in it. The worksheet's <code>finance_client__FILL</code> column now has a target, so the mapping has both sides.</dd>
+      <dt>Still open &mdash; and it is a BUSINESS decision before it is a modelling one</dt><dd><strong>It is not one-to-one, so somebody has to decide what a client IS before anyone can model the mapping.</strong> This was previously written up as a modelling decision on our side. That was putting the cart first: the model can express whichever answer the business gives, and cannot choose between them. The Fieldglass feed <code>bayer</code> corresponds to at least <em>two</em> GP customers, <code>BAYCL</code> (Bayer Climate) and <code>BAYP</code> (Bayer PR). A VMS tenant can be several finance customers, so either the mapping is feed &rarr; <em>set of</em> customers, or a rule decides which customer a given row belongs to. Two further observations: <code>custnmbr</code> is company-scoped, so the real key is almost certainly <code>(input_db, custnmbr)</code> &mdash; the same scoping <code>hub_organisation</code> already applies to GP journals; and the table re-delivers (<code>AIRLIQUIDE</code> twice, <code>BAYCL</code> three times), which is BRZ-3 rather than a data error. <strong>What we need decided, by whoever owns client reporting:</strong> when one VMS tenant spans several GP customers, is a job request, timesheet or worker assignment attributable to <em>one</em> finance customer or to the tenant as a whole? If one, what rule picks it &mdash; and is that rule stable enough to key a vault on, given a wrong answer re-keys every row for that client? The <code>bayer</code> case is the smallest real example: <code>BAYCL</code> (Bayer Climate) and <code>BAYP</code> (Bayer PR) are separate customers in <code>RM00101</code> and one Fieldglass feed. Until that is answered the 47-client worksheet cannot be completed and the client bindings cannot be generated. <strong>Owner: David Willson</strong> &mdash; assigned 30 Aug. They raised the correction that withdrew this request and identified <code>RM00101</code> as the client master, so the GP side of the question is already theirs. <strong>What is being asked of them is the decision, not the data:</strong> when one VMS tenant spans several GP customers, does a job request, timesheet or worker assignment belong to <em>one</em> finance customer or to the tenant as a whole &mdash; and if one, what rule picks it. <code>bayer</code> &rarr; <code>BAYCL</code> / <code>BAYP</code> is the smallest real case to answer it against. A wrong answer re-keys every row for that client, so the rule has to be stable enough to key a vault on.</dd>
+      <dt>Action for Bronze</dt><dd><strong>None.</strong> Please do not build a buyer id.</dd>
+    </dl>
+        </div>
+      </details>
+    <div class="ev">the rule, 257 of 264 tables:
+  fieldglass.io_distributed_jobposting_air_liquide   buyer = "Air Liquide"    1 distinct value
+  fieldglass.io_distributed_jobposting_duke_energy   buyer = "Duke Energy"    1 distinct value
+
+the seven exceptions, and they are three different problems:
+  beeline.io_distributed_jobposting_abm_industries   "ABM Industries" 17,803  +  "Amway"   578
+                                                     ^ two different clients in one feed
+  beeline.io_timesheet_sonesta_hotels                "Sonesta Hotels"  1,108  +  "SON"     481
+                                                     ^ one client, two spellings
+  fieldglass.io_timesheet_delphi_tech        "Guidant Global, Inc." 10,216  +  "BorgWarner" 70
+                                                     ^ an MSP feed, named after neither</div>
+  </article>
+</section>
+
+<section class="tier">
+  <div class="tier-head"><h2>Priority 2</h2><span class="why">Each blocks a specific domain from binding.</span></div>
+
+  <article class="task w">
+    <div class="task-top"><span class="id">BRZ-3</span><h3>Confirm re-delivery semantics and who de-duplicates</h3><span class="pill w">Decision needed</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Confirm that <code>_raw</code> receiving the same business rows across successive extracts is intended, and state whether collapsing them is bronze's responsibility or the consumer's.</dd>
+      <dt>Why</dt><dd>Roughly 1.8 copies of every business row are already present. Satellites would take duplicate versions on the <em>first</em> load; NHL-style tables would fail their uniqueness check outright. We can handle it downstream, but only if we know it is by design.</dd>
+      <dt>Evidence</dt><dd>Seven file deliveries; adding <code>input_file_name</code> recovers near-uniqueness, so the duplication is re-delivery rather than a finer grain.</dd>
+      <dt>Done when</dt><dd>A documented answer, and a rule if bronze owns it.</dd>
+    </dl>
+    <div class="ev">great_plains_raw.gl20000
+  rows                                          4,444,172
+  distinct (input_db, openyear, jrnentry, seqnumbr)  2,453,131
+  distinct input_file_name                              7
+  + input_file_name                             4,431,076   ← near-unique</div>
+  </article>
+
+  <article class="task w">
+    <div class="task-top"><span class="id">BRZ-4</span><h3>Define base vs <code>_backfill</code> precedence</h3><span class="pill w">Decision needed</span></div>
+    <dl>
+      <dt>Ask</dt><dd>State the rule for combining a base table with its <code>_backfill</code> twin — union, backfill-wins, base-wins, or disjoint by date.</dd>
+      <dt>Why</dt><dd>Both are needed for a complete picture, but they overlap. Loading both without a rule produces duplicate transaction lines.</dd>
+      <dt>Evidence</dt><dd>One timesheet table shares 1,670 identifiers with its backfill.</dd>
+      <dt>Done when</dt><dd>A stated rule that holds across all VMS feeds, not one worked out per table.</dd>
+    </dl>
+    <div class="ev">io_timesheet_air_liquide            5,440 rows
+io_timesheet_air_liquide_backfill  22,201 rows
+shared time_sheet_id values         1,670</div>
+  </article>
+
+  <article class="task w">
+    <div class="task-top"><span class="id">BRZ-5</span><h3>Confirm what <code>input_db</code> identifies</h3><span class="pill w">Blocks finance</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Confirm whether the 11 <code>input_db</code> values in <code>great_plains_raw</code> are Dynamics GP company databases, 1Staff Back Office databases, or a mix — and which legal entity each maps to.</dd>
+      <dt>Why</dt><dd>This is the candidate key for the organisation hub. The interface inventory records 1Staff Back Office as a GP-based application, so the two may share databases and the mapping cannot be inferred from the count.</dd>
+      <dt>Done when</dt><dd>A list of the 11 values against their legal entities.</dd>
+    </dl>
+  </article>
+
+  <article class="task w">
+    <div class="task-top"><span class="id">BRZ-6</span><h3>Establish the history boundary per feed</h3><span class="pill w">Scope clarity</span></div>
+    <dl>
+      <dt>Ask</dt><dd>State, per source, the earliest date the extract covers.</dd>
+      <dt>Why</dt><dd>The vault's value is history that cannot be reconstructed. If feeds start mid-life, satellite histories start mid-life too — and once loaded, people reasonably assume the vault has everything. Assignments run five to ten years; the extracts do not.</dd>
+      <dt>Evidence</dt><dd>The boundary is recorded as 1 Jan 2023, but the earliest timesheet start date observed in a backfill is 1 Jan 2024. The two do not agree.</dd>
+      <dt>Done when</dt><dd>A per-feed boundary we can publish alongside the model.</dd>
+    </dl>
+  </article>
+
+  <article class="task w">
+    <div class="task-top"><span class="id">BRZ-12</span><h3>Stamp a <code>manifest_id</code> on four feeds</h3><span class="pill w">Added 26 Aug</span></div>
+    <dl>
+        <dt>Ask <span class="pill w">Reduced 1 Sep</span></dt><dd><strong>One row per batch in <code>ctl_delivery_manifest</code>, carrying a <code>delivered_count</code> you assert.</strong> That is it. <strong>The <code>_manifest_id</code> stamp is no longer asked for</strong> &mdash; measured 1 September, all four bound feeds already carry <code>input_file_name</code>, which identifies a delivery on every row (3 files for <code>ukg_raw.gl</code>, 7 for <code>gl20000</code>, 5 for <code>joborders</code>), and our loader already uses it. We group on that instead, so you add no column to any table.</dd><dt>Why only you can supply it</dt><dd>Loop-1 asserts <strong>landed + (quarantined - superseded) = delivered</strong>. We can count what we landed and we can count what is sitting in your <code>_raw</code> tables &mdash; but both of those are <em>our read of your data</em>. What we cannot produce is an <strong>independent assertion of what you sent</strong>, and that is the only thing that makes the control worth running: it is what catches a delivery that never arrived, or a file truncated in transit. If we derived both sides ourselves the gate would compare our arithmetic with itself and prove nothing about the handoff.</dd><dt>Done when</dt><dd>Each batch you land writes one <code>ctl_delivery_manifest</code> row with a <code>delivered_count</code> you stand behind. No change to any <code>_raw</code> table.</dd>
+        <dt>Already done on our side <span class="pill b">31 Aug</span></dt><dd>The
+          <code>control</code> schema and its four tables now exist in
+          <code>01_usnc_bronze_dev</code>, and your service principal holds
+          <code>USE_SCHEMA</code> plus <code>SELECT</code> and <code>MODIFY</code> on each.
+          <strong>You do not need to create anything</strong> &mdash; only write the rows.</dd>
+      </dl>
+      <details class="history">
+        <summary>Evidence, what the delay costs, and one correction we made &mdash; the full record</summary>
+        <div>
+        <dl><dt>Evidence</dt><dd><code>nhl_general_journal_line</code> holds <strong>2,453,132 rows and zero non-null manifest ids</strong> &mdash; re-measured 27 Aug, unchanged. No active bronze feed stamps one today. <strong>Nine</strong> other bindings already declare the convention (eight as <code>_manifest_id</code>, Striive as <code>approval_manifest_id</code>), so the vault side is built and waiting. <em>Corrected 27 Aug: an earlier version said eleven.</em></dd><dt>What the wait now costs <span class="pill r">Stronger since 26 Aug</span></dt><dd>When this was raised, the consequence was that one control could not be evaluated. Since then we have built, reviewed and merged the mechanism that detects a rejected row, lets it be corrected, and re-lands it &mdash; a supersede ledger, a content digest that recognises the corrected row, and a gate that refuses a supersede record matching nothing. <strong>All of it is inert, waiting on this one column.</strong> The ask has moved from "a control cannot be evaluated" to "a finished piece of work cannot be switched on".</dd><dt>Withdrawn &mdash; this asked you for something that is ours <span class="pill w">Corrected 31 Aug</span></dt><dd>A block added here on 29 August said the three deduplicating feeds must <em>also</em> carry a count taken after deduplication. <strong>That was wrong, and it was asking you for a number you cannot compute.</strong> The deduplication key is our modelling choice &mdash; <code>(company, batchid, account, userdefined1)</code> for UKG &mdash; so asking a delivering system to count distinct values of a key we chose would couple your delivery to our internal model. <code>docs/loop1_control_table_request.html</code> had already stated the correct position on 27 August: &ldquo;the count it compares against has to be taken after our deduplication, which is ours to compute, not yours.&rdquo; <strong>The underlying fact still holds</strong> &mdash; for the three feeds that dedup on load, a stamped id alone does not switch loop-1 on, because a delivered count and a post-dedup landed count are different numbers by design. The second number is computed on our side from the staging log. Nothing further is needed from you beyond the id.</dd><dt>Note</dt><dd>This was never part of BRZ-1&ndash;11 &mdash; it emerged from building the loop-1 control, after this page was first written. Detail in <code>docs/loop1_control_table_request.html</code>.</dd></dl>
+        </div>
+      </details>
+  </article>
+
+  <article class="task">
+    <div class="task-top"><span class="id">BRZ-15</span><h3>The Fieldglass job-posting feed
+      has no clock</h3><span class="pill w">Added 5 Sep</span></div>
+    <dl>
+      <dt>Ask</dt><dd><strong>Add a modification timestamp &mdash; or the
+        <code>revision</code> column you already emit elsewhere &mdash; to
+        <code>io_distributed_jobposting_*</code>.</strong> If Fieldglass genuinely does not
+        expose one for postings, a written &ldquo;not available&rdquo; is a complete answer
+        and we will model around it.</dd>
+
+      <dt>Why we need it, in one sentence</dt><dd>A Data Vault satellite records <em>when the
+        source asserted a fact</em>, and every version needs a distinct value for that or the
+        history cannot be read back as of a date. We call it <code>applied_dts</code>, and it
+        is deliberately NOT the time we loaded the row &mdash; a delivery clock puts every
+        change in one batch at the same instant.</dd>
+
+      <dt>We measured all four candidates before asking <span class="pill b">5 Sep, 270,286
+        valid-key rows over 7,230 postings</span></dt><dd>
+        <table>
+          <thead><tr><th>Column</th><th>What the data says</th><th>Usable?</th></tr></thead>
+          <tbody>
+            <tr><td><code>job_posting_create_date</code></td>
+                <td><strong>1.0 distinct values per posting</strong> &mdash; constant, as you
+                  would expect from a creation date</td><td>No</td></tr>
+            <tr><td><code>uploaded</code></td>
+                <td><strong>1.0 distinct per posting</strong>, constant for all 7,230</td>
+                <td>No</td></tr>
+            <tr><td><code>job_posting_distribution_date</code></td>
+                <td><strong>42.4% null</strong></td><td>No</td></tr>
+            <tr><td><code>timestamp</code></td>
+                <td>The only column that moves at all &mdash; but of the <strong>1,127
+                  postings whose content actually changes</strong>, it is
+                  <strong>frozen for 562 of them (49.9%)</strong></td><td>No</td></tr>
+          </tbody>
+        </table>
+        <br>
+        That last row is the one that decides it. Half of all real changes would produce two
+        versions of a posting stamped with the same instant, which is not a history anyone can
+        query as of a date.</dd>
+
+      <dt>Why we think this is a feed gap rather than a Fieldglass limitation</dt><dd><strong>You
+        already carry <code>revision</code> on 62 <code>io_worker</code> tables</strong> in
+        <code>fieldglass_raw</code>, and <code>revision_num</code> on others. So the concept
+        exists in the extract; the job-posting tables simply do not include it. That is why
+        this is a short ask rather than a design discussion &mdash; and why &ldquo;not
+        available for postings&rdquo; is a perfectly plausible answer we would accept.</dd>
+
+      <dt>What it costs to wait &mdash; less than you might think</dt><dd><strong>The
+        Fieldglass HUB is already live.</strong> As of 4 September
+        <code>hub_job_request</code> holds 7,230 Fieldglass job requests across 30 tenants,
+        loaded through a union view over your per-tenant tables. What waits on this is only
+        the DESCRIPTIVE satellite &mdash; title, status, location, positions.
+        <br><br>
+        And it waits alongside BRZ-14 anyway: while backfill types are inconsistent we exclude
+        those tables, so Fieldglass HISTORY is not in the vault either. One answer to each and
+        both arrive in the same reload rather than two.</dd>
+
+      <dt>What we will do if the answer is no</dt><dd>Bind <code>timestamp</code> and
+        <strong>suppress the type-2 view for this satellite only</strong> &mdash; keeping
+        insert-only history and openly not offering an as-of-date answer, rather than offering
+        one that is wrong for half the postings. We would rather do that knowingly than
+        discover it later.</dd>
+
+      <dt>Done when</dt><dd>Either a column that changes when a posting changes, or a written
+        confirmation that Fieldglass does not expose one.</dd>
+    </dl>
+  </article>
+
+  <article class="task w">
+    <div class="task-top"><span class="id">BRZ-16</span><h3>What do these 113 columns mean?</h3><span class="pill w">Catalog quality</span></div>
+    <dl>
+      <dt>Ask</dt><dd>A plain sentence for each column below &mdash; what it holds, and any
+        caveat a new analyst would need. Or the name of whoever can say. <strong>Partial is
+        genuinely useful</strong>; this is not all-or-nothing.</dd>
+      <dt>Why</dt><dd>We describe every column we can from the model itself &mdash; the
+        technical columns, the hash keys, the foreign keys, and everything we compute
+        ourselves: <strong>267 of 409</strong>. These 113 are the ones whose meaning is a
+        fact about your source, and <strong>we will not invent them</strong>. A sentence
+        restating the column&rsquo;s own name reads as documentation, is indistinguishable
+        from the real thing later, and turns a visible gap into an invisible one &mdash; our
+        build rejects one if we try.</dd>
+      <dt>Where it goes</dt><dd>Straight into the published data contracts, the vault
+        diagram and the ontology, all generated from one source. It is also the
+        highest-return item in Databricks&rsquo; own Genie Ontology guidance, which we
+        assessed on 3 September.</dd>
+      <dt>Not asking for</dt><dd>Anything your feeds do not own. The business vault&rsquo;s
+        computed columns and the legal-entity roster are ours &mdash; already written, or
+        ours to answer.</dd>
+      <dt>Done when</dt><dd>Any subset comes back. We will thread whatever arrives.</dd>
+    </dl>
+    <div class="tbl">
+      <table class="status">
+        <thead><tr><th>Feed</th><th class="num">Columns</th><th>Names</th></tr></thead>
+        <tbody>
+          <tr><td class="k">UKG_US</td><td class="num">43</td><td><code>accounting_date</code> <code>adjustment_journal</code> <code>amount</code> <code>book_code</code> <code>code_name</code> <code>code_value</code> <code>company_reference_id</code> <code>control_total_amount</code> <code>create_reversal</code> <code>credit</code> <code>currency</code> <code>currencyid</code> <code>debit</code> <code>ee_er_indicator</code> <code>gl_account_as_asserted</code> <code>gross_amount</code> <code>hours</code> <code>is_balancing_worktag</code> <code>journal_entry_memo</code> <code>journal_number</code> <code>journal_source</code> <code>ledger_type</code> <code>line_sequence</code> <code>pay_check_date</code> <code>pay_check_reference</code> <code>pay_period_end_date</code> <code>pay_period_start_date</code> <code>paycheckdate</code> <code>payroll_code</code> <code>payroll_code_category</code> <code>payroll_register_reference</code> <code>rate</code> <code>reference</code> <code>reversal_date</code> <code>sourcedocument</code> <code>tax_authority_code</code> <code>taxable_amount</code> <code>transactiontype</code> <code>userdefined1</code> <code>work_state_code</code> <code>worktag_type</code> <code>worktag_value</code> <code>ytd_amount</code></td></tr>
+          <tr><td class="k">STRIIVE_EU</td><td class="num">25</td><td><code>amount</code> <code>charge_basis</code> <code>city</code> <code>closing_date</code> <code>contract_type</code> <code>country</code> <code>currency</code> <code>job_request_reference</code> <code>job_request_tenant</code> <code>job_title</code> <code>line_no</code> <code>pay_max</code> <code>pay_min</code> <code>positions</code> <code>proficiency</code> <code>rate</code> <code>skill_code</code> <code>status</code> <code>time_type</code> <code>timesheet_reference</code> <code>unit_type</code> <code>units</code> <code>verified_at</code> <code>week_ending</code> <code>worker_reference</code></td></tr>
+          <tr><td class="k">GP_US</td><td class="num">20</td><td><code>back_out_je</code> <code>correcting_je</code> <code>crdtamnt</code> <code>curncyid</code> <code>debitamt</code> <code>denxrate</code> <code>fiscal_year</code> <code>ledger_account_reference</code> <code>openyear</code> <code>orcrdamt</code> <code>ordbtamt</code> <code>organisation_reference_id</code> <code>original_je</code> <code>periodid</code> <code>reference_id</code> <code>reference_type</code> <code>seqnumbr</code> <code>trxsorce</code> <code>voided</code> <code>xchgrate</code></td></tr>
+          <tr><td class="k">GP_US_HIST</td><td class="num">15</td><td><code>back_out_je</code> <code>correcting_je</code> <code>crdtamnt</code> <code>curncyid</code> <code>debitamt</code> <code>denxrate</code> <code>hstyear</code> <code>orcrdamt</code> <code>ordbtamt</code> <code>original_je</code> <code>periodid</code> <code>seqnumbr</code> <code>trxsorce</code> <code>voided</code> <code>xchgrate</code></td></tr>
+          <tr><td class="k">FIELDGLASS_US</td><td class="num">12</td><td><code>application_close_date</code> <code>client_code</code> <code>custom_field_label</code> <code>custom_field_name</code> <code>custom_field_value</code> <code>declared_data_type</code> <code>posting_status</code> <code>posting_title</code> <code>quantity</code> <code>work_location_city</code> <code>work_location_country</code> <code>worker_type</code></td></tr>
+          <tr><td class="k">BULLHORN_EU</td><td class="num">7</td><td><code>city</code> <code>countrycode</code> <code>dateclosed</code> <code>employmenttype</code> <code>numopenings</code> <code>status</code> <code>title</code></td></tr>
+          <tr><td class="k">PROUNITY_EU</td><td class="num">7</td><td><code>engagement_type</code> <code>headcount</code> <code>location_city</code> <code>location_country</code> <code>request_state</code> <code>request_title</code> <code>valid_until</code></td></tr>
+          <tr><td class="k">HR_EU</td><td class="num">3</td><td><code>assessed_on</code> <code>competency_code</code> <code>level</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="task">
+    <div class="task-top"><span class="id">BRZ-17</span><h3>Three tables the Workday journal
+      export has no source for</h3><span class="pill w">Added 6 Sep</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Land three UKG tables in bronze, or tell us where the same content
+        already is:
+        <ul class="plain" style="margin-top:.4rem">
+          <li>a <strong>journal header</strong> record, one per journal, carrying company
+            reference, currency, ledger type, accounting date and entry memo;</li>
+          <li>the <strong>worktags</strong> per journal line &mdash; type and value;</li>
+          <li>the <strong>external codes</strong> per journal line &mdash; name and value.</li>
+        </ul>
+      </dd>
+      <dt>Why</dt><dd>All three entities are already modelled, gated and reviewed
+        &mdash; <code>sat_accounting_journal_header</code>,
+        <code>msat_journal_line_worktag</code> and
+        <code>msat_journal_line_external_code</code>. Each is bound to a
+        <strong>placeholder</strong> table name that does not exist, so each loads nothing.
+        <strong>Five of the twenty fields the Workday journal load needs come from the first
+        one</strong>, and a sixth from the second.</dd>
+      <dt>Why we will not derive the header</dt><dd>Some of it sits on the UKG GL line and
+        could be lifted from an arbitrary line of each journal. That would be right until the
+        day two lines of one journal disagree, and then wrong <em>silently</em> &mdash; which
+        is worse than missing. A header is a real record and should arrive as one.</dd>
+      <dt>Evidence</dt><dd>The bindings as they stand today:</dd>
+    </dl>
+    <div class="ev">sat_accounting_journal_header   -> hfig_usnc.bronze.ukg_journal_header
+msat_journal_line_worktag       -> hfig_usnc.bronze.ukg_journal_line_worktag
+msat_journal_line_external_code -> hfig_usnc.bronze.ukg_journal_line_external_code</div>
+    <dl style="margin-top:.9rem">
+      <dt>Context</dt><dd>Full field-by-field analysis in
+        <code>docs/workday_journal_export_analysis.html</code>, where this is
+        <span class="mono">WDJ-3</span>.</dd>
+      <dt>Done when</dt><dd>Three fully-qualified table names, or a written &ldquo;these do not
+        exist and are not planned&rdquo; &mdash; which is also an answer, and changes what we
+        tell the Workday programme.</dd>
+    </dl>
+  </article>
+
+  <article class="task">
+    <div class="task-top"><span class="id">BRZ-18</span><h3>What do Great Plains' account
+      segments mean?</h3><span class="pill w">Added 7 Sep</span></div>
+    <dl>
+      <dt>Ask</dt><dd>A table carrying, per segment number and value, its description &mdash;
+        GP's segment master. We hold <code>gl00100</code>, which is the account <em>index</em>:
+        it gives the segment values of every combination and no names for them.</dd>
+      <dt>Why</dt><dd>A GP account is five segments &mdash; <code>30-60-5600-606502-00</code>
+        &mdash; and Workday wants one ledger account plus worktags. Mapping the other segments
+        onto Workday's cost centres means knowing what they are. <strong>We can see GP uses
+        segment-3 value <code>6120</code>; we cannot see what GP calls it.</strong></dd>
+      <dt>The lead it would settle</dt><dd>Strip the <code>C</code> from Workday's 64 live
+        cost centres and <strong>19 are numerically identical to a GP segment-3 value</strong>
+        &mdash; <code>C1100 Sales</code> against GP <code>1100</code>, <code>C6130
+        Engineering</code> against <code>6130</code>. Band-aware, 8.2 matches were expected
+        and 19 observed: <strong>2.3&times;</strong>, suggestive on nineteen points and not
+        conclusive. Segment names would turn it into a yes or a no.</dd>
+      <dt>Scale</dt><dd>Segment cardinalities are <strong>36 &middot; 34 &middot; 710 &middot;
+        855 &middot; 11</strong>. Segment 4 is the natural account; the rest are the worktag
+        question.</dd>
+      <dt>Not urgent</dt><dd>It blocks nobody today. It becomes the difference between a
+        710-to-64 mapping done from names and one done from guesses, and that decision sits
+        with finance rather than with us.</dd>
+      <dt>Done when</dt><dd>A table we can bind, or a written &ldquo;the descriptions do not
+        exist outside the GP UI&rdquo; &mdash; which is also an answer, and changes what we
+        tell the Workday programme.</dd>
+    </dl>
+  </article>
+
+  <article class="task">
+    <div class="task-top"><span class="id">BRZ-13</span><h3>One view per Fieldglass entity,
+      unioning the per-tenant tables</h3><span class="pill w">Added 4 Sep</span></div>
+    <dl>
+      <dt>Ask <span class="pill b">Reduced 4 Sep &mdash; we built it</span></dt><dd><strong>This
+        no longer asks you to build anything.</strong> It asked for one view per Fieldglass
+        entity unioning the per-tenant tables. We have built it ourselves and it works, so what
+        remains is the <strong>four answers</strong> under &ldquo;what needs deciding&rdquo;
+        &mdash; none of which is a build.</dd>
+
+      <dt>What we built, so you can see what we assumed</dt><dd><code>metadata/source_unions.yml</code>
+        declares what to union and <code>checks/apply_source_unions.py</code> rebuilds the view
+        from <code>information_schema</code> on <em>every run</em> &mdash; so a newly onboarded
+        client is picked up automatically rather than silently missing, and the tenant list each
+        run used is recorded so the change is visible afterwards. It reads your tables and
+        creates nothing in your catalog.
+        <br><br>
+        We could do this because a <strong>union view over Delta tables is a valid streaming
+        source</strong> &mdash; measured on serverless: a streaming read of a two-tenant union
+        view resolved to one Delta source per underlying table and ran to completion. That was
+        the open technical question, and it is why this stopped being a dependency on you.</dd>
+
+      <dt>Evidence <span class="pill b">measured 4 Sep, 01_usnc_bronze_dev</span></dt><dd>
+        <strong>BRZ-2 already recorded the per-client shape on 26 August</strong> &mdash;
+        &ldquo;the VMS feeds are already one table per client&rdquo;. That is not a new finding
+        and this item does not claim it. What is new is the breakdown below, the type problem
+        (now BRZ-14) and the fact that a union view can be streamed from at all.
+        <br><br>
+        <strong>Corrected:</strong> an earlier version of this item said &ldquo;58 tenant
+        tables&rdquo;. 58 is the number of TABLES for one family; the tenants number
+        <strong>30</strong>. The two must not be conflated, because the difference is entirely
+        the <code>_backfill</code> twins and those are the ones BRZ-14 is about. Per family,
+        live / backfill:
+        <br><br>
+        <code>io_distributed_jobposting</code> 30/28 &middot;
+        <code>io_jobposting</code> 34/28 &middot;
+        <code>io_jobseeker</code> 30/28 &middot;
+        <code>io_timesheet</code> 34/28 &middot;
+        <code>io_worker</code> 34/28, plus five <code>co_*</code> families of 1&ndash;2 each.
+        <strong>168 live tables and 145 backfill</strong> across both Fieldglass schemas.
+        The non-raw <code>fieldglass</code> schema (157 objects) has the same per-tenant shape,
+        so no union exists anywhere today, in raw or conformed form.
+        <br><br>
+        <strong>The keys are uniform and that is the good news.</strong>
+        <code>buyer</code> and <code>job_posting_id</code> are present in
+        <strong>all 58</strong> tables &mdash; live and backfill alike &mdash; so a union
+        can be keyed reliably today whichever way the precedence question is answered.
+        <code>buyer</code> carries a real tenant value (<code>Air Liquide</code> in
+        <code>io_distributed_jobposting_air_liquide</code>).
+        <br><br>
+        <strong>The payload is not uniform.</strong> Column counts run <strong>48 to 52</strong>
+        across four groups (again over all 58, live and backfill): <strong>33</strong>
+        columns appear in every one and <strong>53</strong> in only some. Restricted to the 30
+        LIVE tables the picture is better than that number suggests &mdash; measured, no column
+        carries two types there, which is what lets our union need no casts. Fifteen more carry two different <em>types</em>, which
+        turned out to have a single cause and is now <strong>BRZ-14</strong> &mdash; it is a
+        data-loss problem in your layer rather than a union problem in ours, so it is stated
+        separately and does not block this item.
+        <br><br>
+        Also measured: <code>io_distributed_jobposting_air_liquide</code> holds
+        <strong>77 distinct <code>job_posting_id</code> in 3,779 rows</strong> &mdash; about
+        49&times; re-delivery, which makes BRZ-3's de-duplication question live for this feed
+        too.</dd>
+
+      <dt>What needs deciding &mdash; four answers, no build</dt><dd><ol>
+        <li><strong>The <code>_backfill</code> twins, and this is the one that costs us most.</strong>
+          BRZ-4 already asks for a precedence rule in the journal domain; the same rule is needed
+          here and one answer covers both. <strong>Until it is answered our union EXCLUDES
+          backfill</strong>, because every inconsistently-typed column in the estate is in a
+          backfill table (BRZ-14) &mdash; which means <strong>Fieldglass history is not in the
+          vault</strong>. Excluding it is what lets the union need no casts at all: the 30 live
+          tables are type-uniform, measured.</li>
+        <li><strong>Is <code>io_distributed_jobposting</code> the right family for a job
+          request?</strong> We chose it over <code>io_jobposting</code> because it carries 39
+          columns the other lacks &mdash; the posting, requisition and assignment distribution
+          columns, and the max requested/template bill rates &mdash; which exist because a
+          posting was distributed TO A SUPPLIER, which is what we are. The two share 43 columns.
+          <strong>If the intent is every buyer posting regardless of distribution, we have the
+          wrong one</strong>, and the fix on our side is one line. This is a question about your
+          feeds' meaning, not their shape.</li>
+        <li><strong><code>fieldglass_client_owned_raw</code></strong> (the <code>co_*</code>
+          tables, client-owned Fieldglass instances). Same view, a separate view, or out of
+          scope? They are Fieldglass postings for HFIG clients either way, so we would rather ask
+          than assume.</li>
+        <li><strong>Custom fields.</strong> We can find <strong>no</strong> custom-field table in
+          any Fieldglass schema. Our model declares a source for them. Do they exist anywhere, or
+          are the per-tenant extra columns above what &ldquo;custom fields&rdquo; means here?</li>
+      </ol></dd>
+
+      <dt>What we have already done <span class="pill b">4 Sep</span></dt><dd>
+        <code>hub_job_request</code> is now <code>key_style: tenant_scoped</code> with the tenant
+        as its first key position, so two clients' identical posting references cannot collide
+        into one hub row. That re-keys <strong>45,517 hub rows, 46,889 satellite rows and 45,517
+        staging-log rows</strong> &mdash; a truncate and reload on our side, scheduled with the
+        change rather than asked of you.
+        <br><br>
+        We also corrected two things of our own that this investigation exposed: the bindings
+        were named <strong>FIELDGLASS_EU</strong>, and there is no EU instance &mdash; the
+        instances are US, UK and APAC &mdash; and the key columns were recorded as
+        <code>buyer_code</code>/<code>posting_id</code> when they are <code>buyer</code> and
+        <code>job_posting_id</code>. Both were guesses made before anyone looked at your tables.
+        UK and APAC are deliberately not declared until their lakes' Fieldglass bronze is
+        confirmed.</dd>
+
+      <dt>Done when</dt><dd>Four answers. Nothing to build.</dd>
+    </dl>
+  </article>
+</section>
+
+<section class="tier">
+  <div class="tier-head"><h2>Priority 3</h2><span class="why">Coverage gaps and hygiene. None blocks the current build.</span></div>
+
+  <article class="task r">
+    <div class="task-top"><span class="id">BRZ-7</span><h3>Ingest Coupa</h3><span class="pill r">Coverage gap</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Confirm whether Coupa is planned for bronze, and land it if so.</dd>
+      <dt>Why</dt><dd>Coupa is one of four VMS platforms on the interface inventory, sending timesheet data through Middleware. Fieldglass, Beeline and VNDLY all have bronze schemas; Coupa has none. The model must declare all four regardless, so an absent feed means a permanently empty set of tables in every region.</dd>
+    
+        <dt>Done when</dt><dd>A yes or no on whether Coupa is planned. If yes, a feed lands in bronze.</dd>
+      </dl>
+  </article>
+
+  <article class="task r">
+    <div class="task-top"><span class="id">BRZ-8</span><h3>Source a payroll detail feed</h3><span class="pill r">Coverage gap</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Identify a feed carrying payroll at worker × pay period × code grain, from UKG, Ceridian and the contingent-worker payroll systems.</dd>
+      <dt>Why</dt><dd>Dynamics GP will never carry it — it receives a GL <em>posting</em>, which is aggregated across workers by construction. Without this grain, the reconciliation control that checks a per-worker figure has not been derived from an account-level total cannot run at all.</dd>
+      <dt>Note</dt><dd>Payroll is spread across eight systems by geography and worker type, so this is likely several feeds rather than one.</dd>
+    
+        <dt>Done when</dt><dd>A payroll detail feed lands in bronze and we can bind it.</dd>
+      </dl>
+  </article>
+
+  <article class="task r">
+    <div class="task-top"><span class="id">BRZ-9</span><h3>Confirm the intent of eleven empty schemas</h3><span class="pill r">Hygiene</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Confirm which of these are planned, dormant, or should be removed.</dd>
+      <dt>Why</dt><dd>An empty schema and a broken feed look identical from the outside. We would rather not model against something that is never going to arrive.</dd>
+    
+        <dt>Done when</dt><dd>A written answer on what they are for &mdash; or they are dropped.</dd>
+      </dl>
+    <div class="ev">prounity_raw · bullhorn_salesforce_raw · sap_fieldglass_raw · beeline_api_raw
+beeline_client_owned_raw · cnet_raw · topaz_raw · sun_raw · snaplogic_raw
+freshdesk_raw · test_raw</div>
+  </article>
+
+  <article class="task r">
+    <div class="task-top"><span class="id">BRZ-10</span><h3>Type the date columns, or publish the format contract</h3><span class="pill r">Data quality</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Deliver dates as typed columns, or publish a guaranteed string format.</dd>
+      <dt>Why</dt><dd>VMS dates arrive as strings in <code>MM/dd/yyyy</code> with inconsistent zero-padding. Any date entering a business key or a hashed payload becomes unstable under that inconsistency — the same value can hash two ways.</dd>
+      <dt>Evidence</dt><dd><code>12/8/2025</code> and <code>01/01/2024</code> in the same column.</dd>
+    
+        <dt>Done when</dt><dd>Either the columns carry a real date/timestamp type, or the string format is documented per column.</dd>
+      </dl>
+  </article>
+
+  <article class="task r">
+    <div class="task-top"><span class="id">BRZ-11</span><h3>Decide whether <code>ukg_raw.gl</code> is still needed</h3><span class="pill r">Hygiene</span></div>
+    <dl>
+      <dt>Ask</dt><dd>Confirm whether this feed is retained as a reconciliation cross-check or retired.</dd>
+      <dt>Why</dt><dd>It is the GL posting UKG sends into Dynamics GP. Since GP is the book of record for the ledger, the vault will source journals from GP directly. The UKG extract may still be worth keeping to verify that what GP received matches what UKG sent — but that is a deliberate choice, not a default.</dd>
+    
+        <dt>Done when</dt><dd>A written answer: still needed, or retire it.</dd>
+      </dl>
+  </article>
+</section>
+
+<section class="tier">
+  <div class="tier-head"><h2>Where this stands</h2><span class="why">Every outstanding dependency, and who holds it. 26 Aug 2026.</span></div>
+
+  <div class="tbl">
+    <table class="status">
+      <thead><tr><th>Item</th><th>Holder</th><th>What it blocks</th><th>State</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Change Data Feed on <code>_raw</code><span class="sub">BRZ-1</span></td>
+          <td class="who them">Bronze</td>
+          <td>Every satellite load after the first. Without a change stream we cannot tell a new row from a re-delivered one.</td>
+          <td>Open</td>
+        </tr>
+        <tr>
+          <td><code>manifest_id</code> on four feeds<span class="sub">BRZ-12</span></td>
+          <td class="who them">Bronze</td>
+          <td>Loop-1 reconciliation. No id, nothing to group by, so the control cannot be evaluated.</td>
+          <td>Request sent</td>
+        </tr>
+        <tr>
+          <td>A payroll detail feed<span class="sub">BRZ-8</span></td>
+          <td class="who them">Bronze</td>
+          <td>The payroll domain &mdash; and, incidentally, the first satellite carrying masked money columns.</td>
+          <td>Open</td>
+        </tr>
+        <tr>
+          <td>Client master to map VMS feeds to<span class="sub">BRZ-2</span></td>
+          <td class="who ok">Answered</td>
+          <td>The finance tie-back.</td>
+          <td><strong>Answered 26 Aug</strong> &mdash; GP's <code>RM00101</code>. <strong>The remaining question is a business one, not ours to settle:</strong> one VMS tenant can span several GP customers, so whoever owns client reporting must say whether a row belongs to one finance customer or to the tenant. See BRZ-2. <strong>Owner: David Willson</strong>, assigned 30 Aug.</td>
+        </tr>
+        <tr>
+          <td>Job-runner group, <code>/hfig-platform</code> folder</td>
+          <td class="who them">Platform admin</td>
+          <td>Scheduled unattended runs.</td>
+          <td>Request sent &mdash; separate page</td>
+        </tr>
+        <tr>
+          <td>Masked <code>_v1</code> verification</td>
+          <td class="who us">HFIG</td>
+          <td>Nothing today.</td>
+          <td>The view is built and passing on an unmasked satellite. It stays unverified under a live mask until a masked satellite has an active binding in this lake &mdash; which is why it trails BRZ-8.</td>
+        </tr>
+        <tr>
+          <td>Loader compute at scale</td>
+          <td class="who us">HFIG</td>
+          <td>Nothing today.</td>
+          <td>Deferred with an explicit trigger: re-measure at 30 runs. The loader scans the whole cumulative log each run, with no incremental predicate.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="closing">Three of the seven sit with Bronze, and BRZ-1 is the one that gates the rest. The two marked HFIG are ours and are not waiting on anyone &mdash; they are listed so the dependency chain reads honestly in one place, not as asks.</p>
+</section>
+
+<section class="note">
+  <h3>One thing we are not asking for</h3>
+  <p>We are <strong>not</strong> asking bronze to union the per-client VMS tables. Bronze staying one-to-one with its sources is the right contract, and consolidating client identity is the vault’s job. <strong>The per-client table layout is exactly what we need</strong> — the tenant IS the feed, which is why BRZ-2 has been withdrawn and the client mapping has become ours to build rather than yours to supply.</p>
+  <p>Similarly, the planned Databricks App writing spreadsheet data through Lakebase into the medallion is a genuine improvement on the current manual import path, and would give that data better provenance than any automated feed here — it can capture who asserted what, and when.</p>
+</section>
+
+<footer>
+  <p>Every figure above was measured against the live workspace &mdash; the original eleven asks on 24 August 2026, and the 26 August additions (BRZ-12's manifest counts, and the <code>RM00101</code> figures in BRZ-2) on that date &mdash; except where marked as sourced from the interface inventory. Queries can be re-run on request.</p>
+  <p>Questions to Adrian Turcu · full reasoning in the sub-project 3 design spec in the accelerator repository.</p>
+</footer>
+
+</div>

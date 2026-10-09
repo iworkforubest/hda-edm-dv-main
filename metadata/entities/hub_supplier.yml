@@ -1,0 +1,172 @@
+# PLACEHOLDER BRONZE TABLE, and the key column does not exist yet either.
+#
+# THIS HUB IS KEYED ON A CODE THAT NO FEED CARRIES, AND THAT IS THE POINT.
+# Measured 23 September 2026: zero supplier_code columns across all 302 tables in
+# 01_usnc_bronze_dev.fieldglass_raw. What we do receive is a NAME, in two columns
+# that disagree -- of 178,627 timesheet rows carrying a supplier, 178,617 have
+# `supplier` and `parent_supplier` naming the same company spelled differently
+# (Zempleo / Zempleo, Inc. -- Iconma, LLC / ICONMA LLC). Only ten rows name a
+# genuinely different company.
+#
+# So a name cannot be this hub's key: the same company arrives spelled two ways
+# within a single row. Binding to a code that has to be asked for fails loudly if
+# the feed lands without it. Binding to the name would load, and would be wrong.
+#
+# THE PLACEHOLDER CATALOG IS FAKE ON PURPOSE. Task 1 built the Fieldglass invoice
+# source union but deliberately did NOT declare it in metadata/source_unions.yml: a
+# declared union matching zero real tables makes checks/apply_source_unions.py return
+# 1 on every run, and that failure takes the LIVE fieldglass_us_job_posting load down
+# with it. Naming the real union view here
+# (02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_invoice) before it exists would be
+# exactly that mistake, moved from job_posting to invoice/supplier.
+#
+# So bronze_table below names a table in the fake `hfig_usnc.bronze` PLACEHOLDER
+# catalog -- the same convention sat_job_request_details.yml already uses for its own
+# not-yet-ready FIELDGLASS_US binding (hfig_usnc.bronze.PLACEHOLDER_fieldglass_us_job_posting),
+# and hub_legal_entity.yml's whole family uses (PLACEHOLDER.reference.legal_entity).
+# verify_repo's active-sources gate triggers on "reads 01_usnc_bronze_dev. => real =>
+# must be in active_sources"; a fake catalog never matches that prefix, so a
+# placeholder here cannot trip a gate meant for real bindings left out of
+# active_sources.
+#
+# REPOINT THIS AND DECLARE THE SOURCE UNION IN THE SAME CHANGE -- together with
+# hub_invoice.yml and the FIELDGLASS_US bindings on hub_organisation.yml and
+# hub_worker.yml. All four move from PLACEHOLDER to
+# 02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_invoice, and
+# metadata/source_unions.yml gains the Fieldglass invoice entry, in one commit. Landing
+# one half without the other reproduces the exact NO_TABLES landmine Task 1 avoided.
+#
+# =========================================================================================
+# `supplier_tenant` NOW HOLDS TWO POPULATIONS, AND THAT IS A RULING, NOT AN OVERSIGHT.
+# Adrian's decision, 29 September 2026.
+#
+# Until today this column held `AEE1` -- a Fieldglass BUYER, which is to say a CLIENT. The
+# GP_VENDOR binding below makes it also hold `CER`, `GGI`, `BARM`: OUR OWN OPERATING
+# COMPANIES. One column, two kinds of party. That is the exact shape that made
+# hub_organisation wrong, and it was split into two hubs this morning for it -- so the
+# resemblance has to be addressed rather than left for the next reader to notice.
+#
+# IT IS NOT THE SAME DEFECT, AND THE DIFFERENCE IS WHAT THE ROWS ARE.
+#
+#   hub_organisation's ROWS WERE THE PARTIES. Each row asserted "this is a party", and the
+#   hub therefore asserted that one client and eleven of Guidant's own companies were the
+#   SAME KIND OF THING. They are not, and no query could tell them apart without reading
+#   the reference type and knowing what it meant. That is a modelling error: the hub's own
+#   population was incoherent.
+#
+#   `supplier_tenant` IS A SCOPE QUALIFIER ON SOMEBODY ELSE'S IDENTITY. The row is a
+#   SUPPLIER. The tenant is not a party the hub records; it is the answer to "within whose
+#   books was this supplier code minted". Its only job is to stop Ameren's `A8AB` from
+#   colliding with CER's `0000032303`, and a heterogeneous scope does that perfectly well
+#   -- better, in fact, than a homogeneous one would, because the two namespaces genuinely
+#   are different namespaces. Nothing reads supplier_tenant as a party, nothing joins it to
+#   a party hub, and no consumer is misled about what a row IS.
+#
+# SO THE KEY IS RIGHT. What is wrong is the NAME: `supplier_tenant` reads as "client" to
+# anyone who has only ever seen Fieldglass data, and after this task it will not be.
+#
+# DOCUMENT, DO NOT RENAME -- and the reason is mechanical, not editorial. supplier_tenant
+# is a BUSINESS KEY POSITION: it is hashed into supplier_hk. Renaming it moves this hub's
+# key expression and re-keys every row already loaded, and that failure is SILENT -- every
+# stored row keeps the old digest, every new row gets the new one, and nothing joins while
+# both tables go on loading. A rename is a migration with a backfill, and it is not in this
+# migration's scope. Same decision, same reasoning, as hub_ledger_account.yml's and
+# hub_accounting_journal.yml's `organisation_reference_id`, which kept the retired word for
+# exactly this reason. If the name is ever changed, it is changed in a commit that does
+# nothing else.
+# =========================================================================================
+name: supplier
+kind: hub
+# VERSION 2 SINCE 29 SEPTEMBER 2026, AND IT IS A SHAPE CHANGE LIKE ANY OTHER. The split
+# added the GP_VENDOR binding below, which rebuilt this hub's staging log with a
+# different COLUMN ORDER -- system columns first, where hub_supplier_rev1 was created
+# with the business keys first. checks/load_hubs.py creates a table with
+# `AS SELECT * FROM <log> WHERE 1=0` and then INSERTs positionally, and
+# `CREATE TABLE IF NOT EXISTS` is a no-op on a table that already exists, so nothing
+# reconciled the two: the load handed batch_id's 'gen-20260929T152711Z-a11b9677' to
+# load_dts and failed with CAST_INVALID_INPUT.
+#
+# MEASURED on run 203395021913360, where 22 of 23 keyed tables loaded and this was the
+# only failure. Every other hub's log matches its table exactly; this is the only hub
+# whose BINDING SET changed, which is why it is the only one that drifted.
+#
+# The bump is the fix rather than making the loader name its columns: a new physical
+# table is created from the log and is aligned by construction. A loader that tolerated
+# shape drift would defeat the mechanism that exists to catch it. The runbook's §7.1
+# version table carries the matching row -- bumping here without amending it reds
+# tests/test_accelerator.py.
+version: 2
+domain: party
+key_style: tenant_scoped
+business_keys: [supplier_tenant, supplier_code]
+tenant_key: [supplier_tenant]
+sensitivity: internal
+sources:
+  # PLACEHOLDER, REPOINTED WITH THE SOURCE UNION (see header). key_columns are real --
+  # the union view carries buyer and supplier_code -- but the table itself does not
+  # exist yet, so it is named through the fake PLACEHOLDER catalog rather than the
+  # real one.
+  - name: FIELDGLASS_US
+    # READS THE BRONZE TABLE DIRECTLY, with the profile's filter and renames applied
+    # in the flow (conform:) instead of through a view. A masked entity reading a view
+    # cannot be built -- SDP reconciles the streaming plan against the declared schema
+    # at definition time and never finished. 25 September.
+    bronze_table: 01_usnc_bronze_dev.sap_fieldglass_raw.invoices
+    # GENERATION 2 since 28 September 2026. Bronze dropped and recreated this table
+    # (new Delta id 06b65224-ef33-44fb-beb5-6ca4892277fb), so the generation-1
+    # checkpoint names a Delta object that no longer exists and this flow fails at
+    # analysis with [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE]. See
+    # SourceBinding.stream_generation: a fresh checkpoint re-reads the source and
+    # APPENDS, and the duplicate staging rows dissolve at the hub anti-join.
+    stream_generation: 2
+    conform: fieldglass_us_invoice
+    # WEEKLY, per Amy's 22 September template: "Invoice frequency: Weekly", delivered
+    # Thursdays by sFTP. NOT an exemption -- a 0 here means a feed that legitimately never
+    # re-delivers, and this one is meant to.
+    #
+    # IT WILL REPORT A BREACH TODAY, AND THAT IS THE POINT. Measured 24 September: this
+    # feed has landed three times -- 5 rows on 8 Sep, 30 on 9 Sep, 1,172 on 11 Sep -- and
+    # nothing in the thirteen days since. So it is not yet the weekly feed the template
+    # describes. Declaring the real SLA makes that visible; exempting it would hide a
+    # silent feed behind a decision that looks deliberate.
+    freshness_sla_hours: 168
+    key_columns: [buyer_tenant, supplier_code]
+    dedup_by: [buyer_tenant, supplier_code]
+    dedup_order: [invoice_submit_date]
+    applied_dts_column: invoice_submit_date
+
+  # GREAT PLAINS VENDORS, 29 September 2026. pm00200 is GP's payables vendor master, and
+  # unlike the customer master it is NOT a shared list -- which this hub's existing shape
+  # already accommodates, so nothing new had to be invented. key_style is tenant_scoped and
+  # business_keys are [supplier_tenant, supplier_code]; key_columns: [input_db, vendorid]
+  # maps straight onto them. No key_literal, no new key shape.
+  #
+  # THE SCOPE IS LOAD-BEARING AND IT IS MEASURED:
+  #
+  #     great_plains_raw.pm00200:  32,606 rows
+  #                                15,665 distinct vendorid
+  #                                16,295 distinct (input_db, vendorid)
+  #
+  # 630 vendor ids appear in more than one operating company AND THEY ARE DIFFERENT
+  # COMPANIES. `0000032303` is "Premiere Credit of North America LLC" in CER, "WNL
+  # Technologies, LLC" in CSS and "McKim & Creed, Inc." in GGI. GP mints a vendor id inside
+  # ONE company database, exactly as it mints actindx and jrnentry -- these are per-company
+  # sequences, not global identifiers.
+  #
+  # KEYING ON vendorid ALONE MERGES 630 SETS OF UNRELATED SUPPLIERS, and the failure is
+  # silent in the worst way: it produces a SMALLER hub, not an error. Every join to those
+  # keys then fans out across three companies' invoices, and the totals stay plausible.
+  # Contrast rm00101's custnmbr, which is measured NOT to need the scope (see
+  # hub_client.yml) -- the two tables were measured separately and gave opposite answers.
+  - name: GP_VENDOR
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.pm00200
+    key_columns: [input_db, vendorid]
+    # dex_row_ts, the same delivery clock every GP binding in this model uses, and for the
+    # same measured reason: it is the finer of the two timestamps GP carries, so it
+    # separates versions the other would collapse.
+    applied_dts_column: dex_row_ts
+    # THE FULL KEY, both positions. Deduping on vendorid alone would delete roughly 630
+    # companies' worth of rows before they ever reached the hub -- the collapse, applied
+    # one stage earlier, where it is even harder to see.
+    dedup_by: [input_db, vendorid]
+    dedup_order: [dex_row_ts, input_file_name]

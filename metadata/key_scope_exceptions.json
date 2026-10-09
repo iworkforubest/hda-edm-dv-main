@@ -1,0 +1,51 @@
+{
+  "_why": [
+    "Foreign keys whose SOURCE SCOPE no binding of the parent ever produces, acknowledged.",
+    "A federated key prepends its source name as a literal, so the scope alone decides",
+    "joinability whatever columns follow. verify_repo fails on any such key NOT listed here,",
+    "and separately fails on any entry here that has STOPPED being an orphan -- so this file",
+    "can neither hide a new one nor outlive the reason for an old one.",
+    "",
+    "IT IS EMPTY, AND THAT IS THE POINT OF KEEPING IT. Five orphans existed on the morning of",
+    "4 September 2026 and all five are closed. An empty register is not a dead file: the gate",
+    "reads it on every run, so the day a sixth appears the build fails and whoever caused it",
+    "has to either fix the key or write down here why it cannot be fixed. Deleting the file",
+    "would delete the gate."
+  ],
+  "parent_not_yet_fed": {
+    "_why": [
+      "Empty. Held four keys where the child was keyed correctly for its feed but the parent",
+      "hub had no binding for that feed."
+    ]
+  },
+  "_closed_4_september_2026": [
+    "All five, in the order they were closed:",
+    "",
+    "1. csat_payroll_line_classification/BUSINESS_VAULT/payroll_detail_hk -- DEF-53. Hashed",
+    "   under its own binding name, which is not a source system. Fixed with key_scope:",
+    "   UKG_US, verified byte-identical to nhl_payroll_detail's own key.",
+    "",
+    "2. nhl_payroll_detail/UKG_US/worker_hk -- hub_worker had no UKG_US binding. Added one,",
+    "   reading the same payroll register the NHL reads. Purely additive: one new",
+    "   key_derivation entry, one digest moved, and the hub held only its ghost row.",
+    "",
+    "3-5. The three job_request keys. NOT a missing binding: hub_job_request had ONE business",
+    "   key position and those children hashed TWO, so a binding was rejected outright. Closed",
+    "   by making the hub key_style: tenant_scoped with the tenant as its first key position --",
+    "   because Fieldglass is multi-tenant (200+ US clients) and a posting reference is unique",
+    "   only within a tenant, so the old key would have merged two clients' postings into one",
+    "   hub row, silently. The three non-tenanted sources supply NOT_APPLICABLE for that",
+    "   position; FIELDGLASS_US fills both positions from columns.",
+    "",
+    "   That re-key cost 45,516 hub rows and 46,889 satellite rows, and it forced six",
+    "   hub-parented satellite bindings to declare parent_keys: without it they take factory's",
+    "   fallback, which hashes their own key_columns and knows nothing about the hub's literal,",
+    "   so every one of them would have become a NEW orphan. The gates caught all six.",
+    "",
+    "Also corrected in the same change: the bindings were named FIELDGLASS_EU. There is no",
+    "Fieldglass EU -- the instances are US, UK and APAC -- and because a source name is hashed",
+    "INTO a federated key, that name was part of the identity of every row they would have",
+    "loaded. UK and APAC are NOT declared: a binding to a source nobody has verified is the",
+    "mistake being corrected, not a pattern to repeat."
+  ]
+}

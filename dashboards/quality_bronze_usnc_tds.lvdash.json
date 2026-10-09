@@ -1,0 +1,471 @@
+{
+  "datasets": [
+    {
+      "displayName": "Conformance headline",
+      "name": "ds_conformance_summary",
+      "queryLines": [
+        "WITH ranked AS (\n",
+        "  SELECT *, row_number() OVER (\n",
+        "    PARTITION BY target, contract_table ORDER BY recorded_at DESC\n",
+        "  ) AS rn\n",
+        "  FROM 02_usnc_silver_edm_dev.control.ctl_source_conformance\n",
+        "),\n",
+        "latest AS (SELECT * FROM ranked WHERE rn = 1)\n",
+        "SELECT\n",
+        "  count(*) AS tables_measured,\n",
+        "  sum(CASE WHEN status = 'CONFORMANT' THEN 1 ELSE 0 END) AS tables_conformant,\n",
+        "  sum(CASE WHEN status <> 'CONFORMANT' THEN 1 ELSE 0 END) AS tables_not_conformant,\n",
+        "  count(DISTINCT target) AS targets_under_contract\n",
+        "FROM latest\n"
+      ]
+    },
+    {
+      "displayName": "Runs recorded",
+      "name": "ds_runs_recorded",
+      "queryLines": [
+        "SELECT\n",
+        "  count(DISTINCT job_run_id) AS runs_recorded,\n",
+        "  count(*) AS rows_recorded,\n",
+        "  max(recorded_at) AS last_recorded_at\n",
+        "FROM 02_usnc_silver_edm_dev.control.ctl_source_conformance\n"
+      ]
+    },
+    {
+      "displayName": "Conformance by contracted table, latest run",
+      "name": "ds_conformance_by_table",
+      "queryLines": [
+        "WITH ranked AS (\n",
+        "  SELECT *, row_number() OVER (\n",
+        "    PARTITION BY target, contract_table ORDER BY recorded_at DESC\n",
+        "  ) AS rn\n",
+        "  FROM 02_usnc_silver_edm_dev.control.ctl_source_conformance\n",
+        "),\n",
+        "latest AS (SELECT * FROM ranked WHERE rn = 1)\n",
+        "SELECT\n",
+        "  target,\n",
+        "  contract_table,\n",
+        "  status,\n",
+        "  missing_columns,\n",
+        "  lossy_casts,\n",
+        "  recorded_at\n",
+        "FROM latest\n",
+        "ORDER BY CASE WHEN status = 'CONFORMANT' THEN 1 ELSE 0 END, contract_table\n"
+      ]
+    },
+    {
+      "displayName": "Findings, in the gate's own words",
+      "name": "ds_findings",
+      "queryLines": [
+        "WITH ranked AS (\n",
+        "  SELECT *, row_number() OVER (\n",
+        "    PARTITION BY target, contract_table ORDER BY recorded_at DESC\n",
+        "  ) AS rn\n",
+        "  FROM 02_usnc_silver_edm_dev.control.ctl_source_conformance\n",
+        "),\n",
+        "latest AS (SELECT * FROM ranked WHERE rn = 1)\n",
+        "SELECT\n",
+        "  target,\n",
+        "  contract_table,\n",
+        "  finding\n",
+        "FROM latest\n",
+        "LATERAL VIEW explode(findings) f AS finding\n",
+        "ORDER BY contract_table, finding\n"
+      ]
+    },
+    {
+      "displayName": "Conformance by run",
+      "name": "ds_conformance_trend",
+      "queryLines": [
+        "SELECT\n",
+        "  job_run_id,\n",
+        "  target,\n",
+        "  min(recorded_at) AS recorded_at,\n",
+        "  count(*) AS denominator,\n",
+        "  sum(CASE WHEN status = 'CONFORMANT' THEN 1 ELSE 0 END) AS conformant,\n",
+        "  CASE WHEN denominator = 0 THEN NULL ELSE round(100.0 *\n",
+        "    sum(CASE WHEN status = 'CONFORMANT' THEN 1 ELSE 0 END) / count(*), 1) END AS conformant_rate\n",
+        "FROM 02_usnc_silver_edm_dev.control.ctl_source_conformance\n",
+        "GROUP BY job_run_id, target\n",
+        "ORDER BY recorded_at DESC\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "displayName": "Bronze conformance",
+      "layout": [
+        {
+          "position": {
+            "height": 3,
+            "width": 2,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "w_not_conformant",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_conformance_summary",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`tables_not_conformant`",
+                      "name": "tables_not_conformant"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "value": {
+                  "displayName": "Contracted tables NOT conformant",
+                  "fieldName": "tables_not_conformant"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 3,
+            "width": 2,
+            "x": 2,
+            "y": 0
+          },
+          "widget": {
+            "name": "w_measured",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_conformance_summary",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`tables_measured`",
+                      "name": "tables_measured"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "value": {
+                  "displayName": "Contracted tables measured",
+                  "fieldName": "tables_measured"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 3,
+            "width": 2,
+            "x": 4,
+            "y": 0
+          },
+          "widget": {
+            "name": "w_runs_recorded",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_runs_recorded",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`runs_recorded`",
+                      "name": "runs_recorded"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "value": {
+                  "displayName": "Runs recorded (0 means NOTHING is measured)",
+                  "fieldName": "runs_recorded"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 7,
+            "width": 6,
+            "x": 0,
+            "y": 3
+          },
+          "widget": {
+            "name": "w_by_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_conformance_by_table",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`target`",
+                      "name": "target"
+                    },
+                    {
+                      "expression": "`contract_table`",
+                      "name": "contract_table"
+                    },
+                    {
+                      "expression": "`status`",
+                      "name": "status"
+                    },
+                    {
+                      "expression": "`missing_columns`",
+                      "name": "missing_columns"
+                    },
+                    {
+                      "expression": "`lossy_casts`",
+                      "name": "lossy_casts"
+                    },
+                    {
+                      "expression": "`recorded_at`",
+                      "name": "recorded_at"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "target",
+                    "title": "target",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "contract_table",
+                    "title": "contract_table",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "status",
+                    "title": "status",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "missing_columns",
+                    "title": "missing_columns",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "lossy_casts",
+                    "title": "lossy_casts",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "recorded_at",
+                    "title": "recorded_at",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Conformance by contracted table, latest run"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 7,
+            "width": 6,
+            "x": 0,
+            "y": 10
+          },
+          "widget": {
+            "name": "w_findings",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_findings",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`target`",
+                      "name": "target"
+                    },
+                    {
+                      "expression": "`contract_table`",
+                      "name": "contract_table"
+                    },
+                    {
+                      "expression": "`finding`",
+                      "name": "finding"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "target",
+                    "title": "target",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "contract_table",
+                    "title": "contract_table",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "finding",
+                    "title": "finding",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Findings, in the gate's own words"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 17
+          },
+          "widget": {
+            "name": "w_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_conformance_trend",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`job_run_id`",
+                      "name": "job_run_id"
+                    },
+                    {
+                      "expression": "`target`",
+                      "name": "target"
+                    },
+                    {
+                      "expression": "`recorded_at`",
+                      "name": "recorded_at"
+                    },
+                    {
+                      "expression": "`denominator`",
+                      "name": "denominator"
+                    },
+                    {
+                      "expression": "`conformant`",
+                      "name": "conformant"
+                    },
+                    {
+                      "expression": "`conformant_rate`",
+                      "name": "conformant_rate"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "job_run_id",
+                    "title": "job_run_id",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "target",
+                    "title": "target",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "recorded_at",
+                    "title": "recorded_at",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "denominator",
+                    "title": "denominator",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "conformant",
+                    "title": "conformant",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "conformant_rate",
+                    "title": "conformant_rate",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Conformance by run"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        }
+      ],
+      "name": "page_bronze_conformance",
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

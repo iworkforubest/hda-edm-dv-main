@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HFIG Data Vault — payroll",
+    "subtitle": "Generated from metadata/entities/. Never hand-authored.",
+    "viewBox": [
+      909,
+      448
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [
+      60,
+      108
+    ],
+    "cols": 3,
+    "gapX": 96,
+    "gapY": 28,
+    "cellW": 199,
+    "cellH": 68
+  },
+  "components": [
+    {
+      "id": "hub_operating_company",
+      "type": "external",
+      "label": "operating_company",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 0,
+      "size": [
+        133,
+        68
+      ]
+    },
+    {
+      "id": "hub_pay_period",
+      "type": "database",
+      "label": "pay_period",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 1,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "hub_worker",
+      "type": "external",
+      "label": "worker",
+      "sublabel": "hub",
+      "tag": "internal",
+      "col": 0,
+      "row": 2,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_journal_line",
+      "type": "external",
+      "label": "journal_line",
+      "sublabel": "nhl",
+      "tag": "financial",
+      "col": 1,
+      "row": 0,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "nhl_payroll_detail",
+      "type": "database",
+      "label": "payroll_detail",
+      "sublabel": "nhl",
+      "tag": "restricted",
+      "col": 1,
+      "row": 1,
+      "size": [
+        120,
+        68
+      ]
+    },
+    {
+      "id": "csat_payroll_line_classification",
+      "type": "database",
+      "label": "payroll_line_classification",
+      "sublabel": "csat",
+      "tag": "financial",
+      "col": 2,
+      "row": 0,
+      "size": [
+        199,
+        68
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "hub_pay_period",
+      "to": "nhl_journal_line"
+    },
+    {
+      "from": "hub_operating_company",
+      "to": "nhl_payroll_detail"
+    },
+    {
+      "from": "hub_pay_period",
+      "to": "nhl_payroll_detail"
+    },
+    {
+      "from": "hub_worker",
+      "to": "nhl_payroll_detail"
+    },
+    {
+      "from": "nhl_payroll_detail",
+      "to": "csat_payroll_line_classification"
+    }
+  ]
+}

@@ -1,0 +1,552 @@
+<title>Manifest Ids On Four Feeds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --ground:      #f7f8fa;
+    --surface:     #ffffff;
+    --surface-alt: #eef1f5;
+    --ink:         #1c2230;
+    --ink-soft:    #38414f;
+    --muted:       #5c6779;
+    --rule:        #d8dee7;
+    --accent:      #2f5d8c;
+    --accent-soft: #e6edf5;
+    --signal:      #9c3b2e;
+    --signal-soft: #f7e9e6;
+    --decide:      #5b4b8a;
+    --decide-soft: #edeaf5;
+    --console-bg:  #1e2530;
+    --console-ink: #d7dde7;
+    --console-dim: #8592a5;
+
+    --sans:  "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono:  "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #12161d;
+      --surface:     #1a1f28;
+      --surface-alt: #222834;
+      --ink:         #e7ecf3;
+      --ink-soft:    #c3cbd7;
+      --muted:       #8d99aa;
+      --rule:        #2f3846;
+      --accent:      #7fb0dd;
+      --accent-soft: #1c2836;
+      --signal:      #e0897a;
+      --signal-soft: #2e1f1d;
+      --decide:      #a99ad4;
+      --decide-soft: #221d30;
+      --console-bg:  #0d1116;
+      --console-ink: #d7dde7;
+      --console-dim: #6f7c8f;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #12161d;
+    --surface:     #1a1f28;
+    --surface-alt: #222834;
+    --ink:         #e7ecf3;
+    --ink-soft:    #c3cbd7;
+    --muted:       #8d99aa;
+    --rule:        #2f3846;
+    --accent:      #7fb0dd;
+    --accent-soft: #1c2836;
+    --signal:      #e0897a;
+    --signal-soft: #2e1f1d;
+    --decide:      #a99ad4;
+    --decide-soft: #221d30;
+    --console-bg:  #0d1116;
+    --console-ink: #d7dde7;
+    --console-dim: #6f7c8f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4.5rem) clamp(1.1rem, 4vw, 2rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  .masthead { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst { margin: 0; font-size: 1.13rem; color: var(--ink-soft); max-width: 34rem; }
+
+  .meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 1.5rem;
+    margin: 0;
+    padding: 1.15rem 1.35rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    font-family: var(--sans);
+    font-size: 0.87rem;
+  }
+  .meta dt { color: var(--muted); font-weight: 500; }
+  .meta dd { margin: 0; }
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+
+  h2 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.28rem;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    margin: 0;
+    padding-bottom: 0.55rem;
+    border-bottom: 2px solid var(--rule);
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0.4rem 0 0;
+  }
+
+  p { margin: 0; max-width: 40rem; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface-alt);
+    padding: 0.1em 0.34em;
+    border-radius: 2px;
+    word-break: break-word;
+  }
+
+  /* -------- the identity this whole page exists to protect -------- */
+  .identity {
+    background: var(--console-bg);
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    padding: 1.6rem 1.3rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: clamp(0.95rem, 3.4vw, 1.3rem);
+    color: var(--console-ink);
+    letter-spacing: 0.02em;
+    overflow-x: auto;
+  }
+  .identity .op { color: var(--console-dim); }
+
+  /* ---------------- request cards, labelled by OWNER --------------- */
+  .req {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    background: var(--accent-soft);
+    padding: 1.3rem 1.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .req h2 { border: 0; padding: 0; font-size: 1.1rem; }
+
+  .owner {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    padding: 0.18rem 0.5rem;
+    align-self: flex-start;
+  }
+  .owner.bronze { color: var(--signal); }
+
+  /* --------------------- the trap: loudest thing ------------------- */
+  .trap {
+    background: var(--signal-soft);
+    border: 1px solid var(--signal);
+    border-left: 4px solid var(--signal);
+    border-radius: 3px;
+    padding: 1.25rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .trap .label {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--signal);
+  }
+
+  /* ------------- a question, which is not a task ------------------- */
+  .decide {
+    background: var(--decide-soft);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--decide);
+    border-radius: 3px;
+    padding: 1.3rem 1.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .decide h2 { border: 0; padding: 0; font-size: 1.1rem; color: var(--decide); }
+  .decide .label {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--decide);
+  }
+
+  /* ------------------ deliberately quiet: not blocking ------------- */
+  .quiet {
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    padding: 1.2rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    color: var(--ink-soft);
+  }
+  .quiet h2 {
+    border: 0;
+    padding: 0;
+    font-size: 1.02rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .quiet p { font-size: 0.96rem; }
+
+  /* ----------------------------- evidence -------------------------- */
+  .console, .sqlblock {
+    background: var(--console-bg);
+    border-radius: 4px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--console-ink);
+    border: 1px solid var(--rule);
+    white-space: pre;
+  }
+  .console .path { color: var(--console-dim); display: block; margin-bottom: 0.4rem; }
+  .console .bad  { color: #e0897a; font-weight: 500; }
+  .sqlblock .kw  { color: #9dc0e4; }
+  .sqlblock .cm  { color: var(--console-dim); }
+
+  figcaption {
+    font-family: var(--sans);
+    font-size: 0.79rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    max-width: 38rem;
+  }
+  figure { margin: 0; }
+
+  table.feeds, table.why {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9rem;
+    display: block;
+    overflow-x: auto;
+  }
+  table.feeds th, table.why th {
+    text-align: left;
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--rule);
+    padding: 0 1.1rem 0.45rem 0;
+    white-space: nowrap;
+  }
+  table.feeds td, table.why td {
+    padding: 0.55rem 1.1rem 0.55rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  table.why td:first-child { white-space: nowrap; }
+
+  ul.plain { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  footer {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 1.1rem;
+  }
+  footer p { max-width: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Bronze request &middot; Data Vault accelerator</p>
+    <h1>Four feeds need one manifest ROW each &mdash; no column</h1>
+    <p class="standfirst">
+      For the team that lands GP and UKG data. It grew since the last draft &mdash; what
+      read as one manifest row is now a schema to stand up first. Plus a correction: an
+      earlier draft asked for two more things we turned out to own ourselves.
+    </p>
+
+    <dl class="meta">
+      <dt>Raised</dt><dd>26 August 2026</dd>
+      <dt>From</dt><dd><code>data_platform_operations</code></dd>
+      <dt>Owner needed</dt><dd>whoever lands data into <code>01_usnc_bronze_dev</code></dd>
+      <dt>Supersedes</dt><dd>an earlier draft that asked for more than it should have</dd>
+    </dl>
+  </header>
+
+  <div class="trap">
+    <span class="label">Correction to the earlier draft</span>
+    <p>
+      An earlier version of this asked the platform team to create
+      <code>governance.ctl_approval_manifest</code> and
+      <code>governance.ref_dq_expectation</code>. <strong>That was our mistake, twice
+      over.</strong> The schema is ours &mdash; nobody needed to be asked. And the
+      <em>schema was wrong</em>: on 26 August both tables moved to a new
+      <code>control</code> schema, so that load control has one home separate from
+      <code>governance</code>, which holds masks, grants and the pipeline event logs only.
+      <strong>Updated 27 August:</strong> the table you write to is
+      <code>02_usnc_silver_edm_dev.<em>control</em>.ctl_approval_manifest</code>. Verified
+      today: <code>governance</code> contains no such table, so an earlier copy of this
+      page would have sent you looking for one that does not exist.
+    </p>
+    <p>What remains is genuinely yours.</p>
+  </div>
+
+  <div class="trap">
+    <span class="label">Updated again, 27 August &mdash; this one is not a mistake</span>
+    <p>
+      The schema named above was right, and stays right for Silver's own manifest. Where
+      <em>you</em> write is what changes: each layer's control schema records what THAT
+      layer did, not what a downstream layer needs. Record your deliveries in your own
+      control schema instead &mdash;
+      <code>01_usnc_bronze_dev.<em>control</em>.ctl_delivery_manifest</code> &mdash; and
+      Silver's loop-1 reconciliation reads them from there. Bronze stops reaching into a
+      schema it does not own, and the manifest sits with the team that knows what a
+      delivery is.
+    </p>
+    <p>
+      <strong>Revised 31 August: this is now a SMALLER ask than the version before it.</strong>
+      Bronze still has no <code>control</code> schema &mdash; <strong>47 schemas in
+      <code>01_usnc_bronze_dev</code>, inventoried 24 August, none of them called
+      <code>control</code></strong>, re-confirmed 29 August &mdash; and an earlier version of
+      this page asked you to stand one up. It turns out we can: our deploying identity already
+      holds <code>CREATE_SCHEMA</code> on that catalog. So we create the schema and its four
+      tables, and what is left for you is the two per-batch steps below. We would rather correct
+      an ask downwards than leave you holding work that was never yours.
+    </p>
+  </div>
+
+  <section class="req">
+    <span class="owner bronze">For the Bronze / ingestion team</span>
+    <h2>What we need</h2>
+    <p><strong>One thing now, reduced from three.</strong> The setup step that used to be
+      first is ours and is already done. The row-stamping step is no longer needed at all
+      &mdash; see below. What remains is a single manifest row per batch you land into the four
+      feeds listed here.</p>
+    <ul class="plain">
+      <li><strong>We create the <code>control</code> schema and its four tables</strong>
+        &mdash; not you. It does not exist in <code>01_usnc_bronze_dev</code> today, and the
+        first version of this page asked you to stand it up. Measured 31 August: our deploying
+        identity already holds <code>CREATE_SCHEMA</code> on that catalog through
+        <code>scope_tds_full_scopes_write</code>, so asking you for it was asking for something
+        we can do ourselves. The DDL is generated from our control standard and committed at
+        <code>governance/control_objects_bronze.sql</code>: the three mandatory audit tables
+        every layer carries &mdash; <code>aud_load_run</code>, <code>aud_table_load</code>,
+        <code>aud_table_discard</code>, append-only, they record what happened and must never
+        be rewritten &mdash; plus <code>ctl_delivery_manifest</code>, which is mutable because
+        a manifest records what <em>should</em> happen and stays correctable.
+        <strong>Creating them is not writing to them.</strong> The rows below stay yours:
+        only the delivering system knows what it delivered, and
+        <code>control_contracts/bronze.yaml</code> remains the contract for exactly that.</li>
+      <li><strong>Write one row</strong> to
+        <code>01_usnc_bronze_dev.control.ctl_delivery_manifest</code> &mdash;
+        <code>manifest_id</code> (any stable id for the batch),
+        <code>delivered_count</code> (how many rows it delivered),
+        <code>delivered_at</code>, <code>delivered_by</code> and
+        <code>source_system</code>.</li>
+      <li><strong>Withdrawn 1 September &mdash; do not add a column.</strong> This asked you
+        to stamp the manifest id onto every row as <code>_manifest_id</code>. Measured 1
+        September: all four feeds already carry <code>input_file_name</code>, which identifies
+        a delivery on every row &mdash; 3 files for <code>ukg_raw.gl</code>, 7 for
+        <code>gl20000</code>, 5 for <code>joborders</code> &mdash; and our loader already uses
+        it for ordering. We group on that instead. <strong>No change to any
+        <code>_raw</code> table.</strong></li>
+    </ul>
+
+    <table class="feeds">
+      <thead>
+        <tr><th scope="col">Source</th><th scope="col">Bronze table</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GP_US</code></td><td><code>great_plains_raw.gl20000</code></td></tr>
+        <tr><td><code>GP_US_HIST</code></td><td><code>great_plains_raw.gl30000</code></td></tr>
+        <tr><td><code>GP_US</code></td><td><code>great_plains_raw.gl00100</code></td></tr>
+        <tr><td><code>UKG_US</code></td><td><code>ukg_raw.gl</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      <code>_manifest_id</code> is not a new convention &mdash; <strong>eight other
+      bindings in our model already declare it</strong>, and the Striive timesheet feed
+      uses <code>approval_manifest_id</code>, for nine in all. (Corrected 27 August: an
+      earlier version of this page said eleven. Counted against
+      <code>metadata/entities/</code>.) These four simply do not carry one. It was
+      not part of the earlier Bronze work requests (BRZ&#8209;1 &hellip; BRZ&#8209;11).
+    </p>
+  </section>
+
+  <section>
+    <h2>What the delivery manifest does, and what it does not do</h2>
+    <p>
+      Writing <code>ctl_delivery_manifest</code> gives us the <strong>cross-layer delivery
+      control</strong> &mdash; did Silver stage everything you delivered. That is worth having,
+      and it is the honest thing for Bronze to state, because it is a fact about what Bronze
+      did.
+    </p>
+    <p>
+      <strong>It does not, on its own, light up loop-1</strong>, and an earlier version of this
+      page implied it would. Loop-1 compares what landed in one Silver table against a count
+      taken before the load, and for three of the four feeds below our loader collapses
+      re-delivered rows: <code>gl20000</code> carries about 1.8 copies of every business row
+      across 7 deliveries, <code>ukg_raw.gl</code> exactly 2 across 2. So your
+      <code>delivered_count</code> sits above what our loader accepts &mdash; by design, not by
+      error &mdash; and the two numbers are not interchangeable.
+    </p>
+    <p>
+      What loop-1 needs from you is item 3, the <code>_manifest_id</code> stamp. The count it
+      compares against has to be taken <em>after</em> our deduplication, which is ours to
+      compute, not yours.
+    </p>
+
+    <h2>Why</h2>
+    <div class="identity">landed <span class="op">+</span> (quarantined <span class="op">&minus;</span> superseded) <span class="op">=</span> approved</div>
+    <p style="margin-top:.6rem"><strong>Updated 27 August.</strong> The identity gained a
+    <code>superseded</code> term when we built a way to correct a rejected row and re-land
+    it. Nothing changes in what we are asking you for &mdash; the term counts rejects we
+    later accepted, and it is ours to record, not yours.</p>
+    <p>
+      This is the only check we run that proves <strong>everything that was supposed to
+      arrive did</strong>. Every other gate checks the shape or the content of what
+      arrived. Without this one, a load that silently dropped rows reports success and is
+      indistinguishable from a complete one.
+    </p>
+    <p>
+      The gate joins the vault to the manifest on <code>manifest_id</code>. Measured on
+      the loaded vault:
+    </p>
+    <figure>
+      <div class="console"><span class="path">re-measured 27 Aug 2026 &mdash; unchanged</span>nhl_general_journal_line   2,453,132 rows   <span class="bad">0 non-null manifest_id</span></div>
+      <figcaption>
+        Every row is unaccounted for. The gate now says so explicitly and fails; until the
+        feeds carry an id, there is nothing to reconcile against.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="req">
+    <span class="owner bronze">Added 27 August</span>
+    <h2>What still has to happen on <em>our</em> side</h2>
+    <p>
+      So that "done" is honest, and so nobody waits on the wrong team: once you deliver the
+      ids, the full identity still cannot be evaluated until we apply one piece of DDL of
+      our own. The <code>superseded</code> term needs
+      <code>control.ctl_quarantine_superseded</code>, which is written and merged but
+      <strong>not yet created in the lake</strong> &mdash; five of our six control tables
+      exist, that one does not. Applying it is a single task run on our job and does not
+      depend on you.
+    </p>
+    <p>
+      In other words: your part unblocks the reconciliation, and one task run of ours
+      completes it. Neither of us is waiting on the other.
+    </p>
+  </section>
+
+  <section class="quiet">
+    <h2>What we are <em>not</em> asking for</h2>
+    <p>
+      <strong>Nothing about our model.</strong> <code>delivered_count</code> is a count of
+      the rows in your batch, nothing more. We only reconcile targets that take one row
+      per approved row. Our hubs deduplicate &mdash; 4,444,172 GP rows become 2,221,108
+      hub rows &mdash; and our satellites store only changed rows, so the identity is
+      false for them by design and the gate refuses to reconcile them at all.
+    </p>
+    <p>
+      <strong>Nothing about <code>ref_dq_expectation</code>.</strong> It is created and
+      empty, and that is fine: the generator falls back to its two compiled-in key-safety
+      rules, so nothing is blocked. It exists for when a data steward has a rule to add.
+      It has since moved to the <code>control</code> schema with the manifest, and gained
+      a <code>severity</code> column &mdash; still nothing for you.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      Raised by the HFIG Data Vault accelerator. Technical record in the repository at
+      <code>docs/loop1_control_table_request.md</code> and
+      <code>docs/superpowers/OPEN_ITEMS.md</code>.
+    </p>
+  </footer>
+
+</div>

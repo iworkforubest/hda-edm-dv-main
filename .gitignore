@@ -1,0 +1,42 @@
+__pycache__/
+*.pyc
+.databricks/
+.databrickscfg
+*.env
+
+# SDD scratch workspace (subagent-driven-development)
+.superpowers/
+
+.venv/
+
+# Local plugin enablement, not project config -- see README's Superpowers note
+.claude/settings.json
+
+# Spreadsheet-app lock files. One reached a commit because the mapping workbook was
+# open while `git add -A` ran, which is a thing that will happen again.
+.~lock.*#
+
+
+# Workday integration credentials, until PLT-7 gives us a Key Vault-backed secret scope.
+# Git-ignored is not merely tidiness here: Databricks Asset Bundles exclude .gitignore'd
+# paths from the deploy upload too, so this one rule keeps the file out of the commit AND
+# out of /Workspace/Shared/.bundle, which grants CAN_MANAGE to  by inheritance.
+.workday-credentials
+.workday/
+
+# CUSTOMER INVOICE DATA IS NOT COMMITTED. The Ameren workbook holds 555 real invoice
+# lines naming 161 real workers for a named client. checks/seed_ameren_prototype.py
+# takes its path as an argument and reads it in place; the code is the deliverable.
+# These patterns exist so a copy dropped into the tree cannot be added by accident.
+MSP*_*.xlsx
+*Ameren*.xlsx
+
+# Archify browser-evidence sidecars -- regenerate with `archify visual-check`.
+# They are evidence for one run, not artefacts: 4 PNGs per diagram, and they
+# would grow with every re-render while proving nothing a reader needs.
+*.visual-check.*
+
+# Superpowers subagent-driven-development creates worktrees here. They are full copies of
+# this repo, so anything that walks the tree must skip them -- see NOT_THIS_CHECKOUT in
+# tests/test_accelerator.py, and the OPEN_ITEMS entry for what happened when nothing did.
+.worktrees/

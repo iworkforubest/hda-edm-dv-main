@@ -1,0 +1,202 @@
+# CAPACITY INPUTS -- ALL PLACEHOLDERS. Replace with measured or business-supplied numbers.
+#
+# These are NOT estimates from anyone who knows your volumes. They are round numbers chosen
+# to make the arithmetic legible, so that the OUTPUT shows which inputs the answer is
+# sensitive to. Change one and re-run; the drivers become obvious quickly.
+#
+# The reliable way to fill this in is to measure, not to guess: load one domain into
+# weu_tds, read bytes-per-row and DBU-per-load from the metrics vault, and put the actuals
+# here. Everything below marked MEASURE is a candidate for that.
+
+# --- global assumptions --------------------------------------------------------
+assumptions:
+  # Delta + Parquet + ZSTD on the mostly-narrow, highly-repetitive rows a vault produces.
+  # MEASURE: this is the assumption with the widest plausible range (2x-8x).
+  compression_ratio: 4.0
+  # Hash key width. SHA-256 as BINARY(32), per the ratified rulebook.
+  hash_key_bytes: 32
+  # load_dts, applied_dts, sub_seq, rec_src, batch_id, manifest_id
+  system_column_bytes: 60
+  # Average width of one descriptive payload column, uncompressed.
+  avg_payload_column_bytes: 24
+  # Delta keeps history files for time travel until VACUUM. Adds to storage, not to rows.
+  time_travel_overhead_pct: 15
+  horizon_years: [1, 3, 7]
+
+# --- per-entity volumes --------------------------------------------------------
+# rows_per_day        new source rows arriving per day, across all sources
+# change_rate         proportion of the population that CHANGES per day. This, not the
+#                     row count, drives satellite growth: insert-only means a satellite
+#                     grows with CHANGES, so a large but static population is cheap.
+# population          distinct business keys (drives hub size and PIT width)
+entities:
+  job_request:        {rows_per_day: 4000,   change_rate: 0.30, population: 250000}
+  job_request_details: {rows_per_day: 4000,  change_rate: 0.30, population: 250000}
+  job_request_commercials: {rows_per_day: 4000, change_rate: 0.05, population: 250000}
+  # THE SLEEPER: one row per posting PER CUSTOM FIELD. 15 fields = 15x the posting count.
+  job_request_custom_field: {rows_per_day: 60000, change_rate: 0.10, population: 250000}
+  worker:             {rows_per_day: 1500,   change_rate: 0.02, population: 400000}
+  worker_skills:      {rows_per_day: 6000,   change_rate: 0.05, population: 400000}
+  # SPLIT 29 September 2026: hub_organisation became hub_client and
+  # hub_operating_company. The 20,000 population was one number for two populations that
+  # differ by three orders of magnitude -- eleven input_db codes plus the SPVs on one
+  # side, the client book on the other. Split here too, and still a PLACEHOLDER: the
+  # operating-company count is MEASURED (13 rows in usnc_tds, 11 of them operating
+  # companies), the client count is not.
+  client:             {rows_per_day: 50,     change_rate: 0.01, population: 20000}
+  operating_company:  {rows_per_day: 1,      change_rate: 0.01, population: 100}
+  pay_period:         {rows_per_day: 20,     change_rate: 0.00, population: 5000}
+  # NHLs: immutable, so every delivered row is stored. These dominate.
+  timesheet_line:     {rows_per_day: 120000, change_rate: 1.00, population: 0}
+  payroll_detail:     {rows_per_day: 400000, change_rate: 1.00, population: 0}
+  journal_line:       {rows_per_day: 8000,   change_rate: 1.00, population: 0}
+  # THE BIG ONE, AND IT IS TWO TABLES. gl20000 and gl30000 are bound to two entities
+  # since the year-end close split, so they are sized separately -- and a line that
+  # migrates at the close is counted in BOTH, because the open-year table is
+  # insert-only and keeps it. gl30000 is the whole history (14.6m rows against gl20000's
+  # 4.4m delivered / 2.45m distinct), so the closed-year FIRST load dominates every
+  # later day of both.
+  general_journal_line: {rows_per_day: 12000, change_rate: 1.00, population: 0}
+  general_journal_line_closed_year: {rows_per_day: 12000, change_rate: 1.00, population: 0}
+  journal_line_external_code: {rows_per_day: 32000, change_rate: 1.00, population: 0}
+  journal_line_worktag: {rows_per_day: 24000, change_rate: 1.00, population: 0}
+  accounting_journal: {rows_per_day: 60,     change_rate: 1.00, population: 20000}
+  accounting_journal_header: {rows_per_day: 60, change_rate: 1.00, population: 20000}
+  ledger_account:     {rows_per_day: 5,      change_rate: 0.01, population: 8000}
+  payroll_line_classification: {rows_per_day: 400000, change_rate: 1.00, population: 0}
+  job_request_custom_promoted: {rows_per_day: 4000, change_rate: 0.30, population: 250000}
+  client_job_request: {rows_per_day: 4000,   change_rate: 1.00, population: 250000}
+
+  # --- Ameren invoicing (Task 2 / Task 3) -----------------------------------------
+  # PLACEHOLDERS AHEAD OF THE REAL FEED, more so than the rest of this file: the
+  # Fieldglass invoice source union does not exist yet (Task 1 deferred it), so there is
+  # no delivered row count to anchor these on the way timesheet_line and payroll_detail
+  # are anchored on a measured 178,627/120,000-row sample. Filled in with round numbers
+  # so the estimate script does not silently exclude these two hubs, and flagged for
+  # replacement the same day the Bronze feed lands and the bindings are repointed.
+  #
+  # invoice: one hub row per (buyer, invoice_id). An invoice is a weekly/monthly billing
+  # event, not a transaction line -- population is modest against timesheet_line's
+  # 120,000 rows/day, and change_rate is non-zero because an invoice moves through
+  # approval states after it is first submitted.
+  invoice:            {rows_per_day: 2000,   change_rate: 0.05, population: 500000}
+  # supplier: a roster, not a transaction stream -- closer in shape to legal_entity than
+  # to timesheet_line. Measured 23 September 2026: zero supplier_code columns across all
+  # 302 tables in 01_usnc_bronze_dev.fieldglass_raw, so there is no delivered count to
+  # anchor on; population is a round guess at "distinct staffing suppliers across 54
+  # Fieldglass buyer instances", not a measurement.
+  supplier:           {rows_per_day: 5,      change_rate: 0.01, population: 5000}
+  # invoice_line: an NHL -- stores every delivered row, like timesheet_line/payroll_detail
+  # above, so change_rate: 1.00 and population: 0 follow the same convention those use.
+  # rows_per_day is a round ~15 lines per invoice against invoice's 2,000 rows/day.
+  invoice_line:       {rows_per_day: 30000,  change_rate: 1.00, population: 0}
+  # THE SAME LINES, DESCRIBED. Split off nhl_invoice_line on 25 September: one row per
+  # line per delivery, versioned by hashdiff rather than replaced, so its change rate
+  # is the feed's re-statement rate and not the line creation rate.
+  invoice_line_details:               {rows_per_day: 1207, change_rate: 0.05, population: 1169}
+  # invoice_header: one row per invoice, changing as it moves through approval states
+  # after first submission -- same reasoning as hub_invoice's own change_rate.
+  invoice_header:     {rows_per_day: 2000,   change_rate: 0.05, population: 500000}
+  # invoice_line_gie (Task 5): a computed satellite, one row per invoice_line row, same
+  # convention payroll_line_classification uses against payroll_detail -- rows_per_day
+  # copies its parent NHL's, change_rate: 1.00 and population: 0 because a business-vault
+  # csat is rebuilt from the vault, not incrementally changed.
+  invoice_line_gie:   {rows_per_day: 30000,  change_rate: 1.00, population: 0}
+
+  # --- reference: the legal-entity roster ---------------------------------------
+  # NOT PLACEHOLDERS OF THE SAME KIND AS THE REST. These are bounded by a real, known
+  # quantity: the number of companies in Impellam Group and HeadFirst Group plus the
+  # client legal entities the feeds name. Low hundreds, and it churns on acquisitions and
+  # rebrands rather than on transactions -- so rows_per_day is near zero and the whole
+  # family is rounding error against any satellite. Declared anyway, because the gate that
+  # refuses an undeclared entity exists so that "too small to matter" is a stated
+  # judgement rather than an omission nobody noticed.
+  legal_entity:                        {rows_per_day: 1, change_rate: 0.01, population: 500}
+  # One edge per owned company, plus history. A rebrand adds a handful of rows, not a wave.
+  # RENAMED 24 September with the entity: this is the CLIENT hierarchy. The group's own
+  # structure is the consolidation family below.
+  client_legal_entity_hierarchy:             {rows_per_day: 1, change_rate: 0.02, population: 500}
+  # One open row per child, plus one closed row per structural change ever made.
+  client_legal_entity_hierarchy_effectivity: {rows_per_day: 1, change_rate: 0.02, population: 500}
+  # THE GROUP'S OWN STRUCTURE, FROM WORKDAY, and these populations are MEASURED rather than
+  # guessed: tenant headfirst3 holds 36 Company_Hierarchy organisations and 82 Companies, of
+  # which 80 carry a consolidation membership. Rounded up for headroom, because the estate
+  # grows by acquisition and the whole family is rounding error against any satellite.
+  consolidation_group:                       {rows_per_day: 1, change_rate: 0.01, population: 100}
+  # One edge per group with a parent -- 35 of 36 today.
+  consolidation_hierarchy:                   {rows_per_day: 1, change_rate: 0.02, population: 100}
+  consolidation_hierarchy_effectivity:       {rows_per_day: 1, change_rate: 0.02, population: 100}
+  # One edge per company that belongs to a group -- 80 of 82 today.
+  legal_entity_consolidation:                {rows_per_day: 1, change_rate: 0.02, population: 150}
+  legal_entity_consolidation_effectivity:    {rows_per_day: 1, change_rate: 0.02, population: 150}
+  # One open row per client, plus one closed row per move. Amy: only 1 contracting entity
+  # per client, changing during the legal entity unification -- so the population is the
+  # client count, not the product of clients and our companies.
+  client_contracting_entity:                 {rows_per_day: 1, change_rate: 0.02, population: 100}
+  client_contracting_entity_effectivity:     {rows_per_day: 1, change_rate: 0.02, population: 100}
+  # One version per entity, plus one more whenever a name, number, jurisdiction or status
+  # changes -- renames and redomiciliations, not transactions.
+  legal_entity_details:                {rows_per_day: 1, change_rate: 0.02, population: 500}
+  # MEASURED, NOT ESTIMATED, unlike its neighbours above. hubspot_raw.companies holds 2,457
+  # distinct companies today. The change rate is the one the three December 2025 snapshots
+  # actually showed: 444 of 2,457 companies differed by modification date between
+  # deliveries, which is 18% -- an order of magnitude livelier than a registry satellite,
+  # because a CRM record changes when a salesperson edits it, not when a company
+  # redomiciles. rows_per_day follows the daily SLA the binding declares rather than the
+  # feed's current silence.
+  legal_entity_profile:                {rows_per_day: 2457, change_rate: 0.18, population: 2457}
+
+  # --- Great Plains customer master (rm00101 / rm00102) -------------------------
+  # MEASURED, NOT ESTIMATED. 889 rows over 345 distinct custnmbr across five deliveries,
+  # so the population is the customer count and the churn is what the deliveries showed:
+  # ~2.6 versions per customer to date. rows_per_day follows the GL feed's daily cadence
+  # rather than the master's own, because a customer master is re-delivered whole with the
+  # extract rather than on the days it happens to change.
+  client_details:                      {rows_per_day: 345, change_rate: 0.10, population: 345}
+  # 1,910 rows over 505 distinct (custnmbr, adrscode) -- the multi-active grain is the
+  # address SLOT, not the customer, so the population is 505 and not 345. ~1.46 slots per
+  # customer today.
+  client_address:                      {rows_per_day: 505, change_rate: 0.10, population: 505}
+
+  # --- Great Plains vendor master (pm00200) -------------------------------------
+  # MEASURED. 32,606 rows over 16,295 distinct (input_db, vendorid) -- ~2.08 versions per
+  # vendor across the deliveries. The population is the SCOPED count, 16,295 and not
+  # 15,665: keying on vendorid alone would understate this table by 630 suppliers, which
+  # is the same arithmetic error the hub's scope exists to prevent.
+  supplier_details:                    {rows_per_day: 16295, change_rate: 0.10, population: 16295}
+
+  # --- Workday reference data (subsystem E, Task 3) -----------------------------
+  # PLACEHOLDER, same status as the Ameren invoicing block above: no snapshot has landed
+  # yet, since the binding reads an interim landing table (workday_landing) that does not
+  # exist. MEASURED against the inventory, though, not invented: 26 September's DCDD-derived
+  # inventory (metadata/workday/reference_types.json) names 386 distinct reference-ID
+  # types, of which 8 are excluded because this vault already models them
+  # (metadata/workday/reference_exclusions.yml) -- leaving 378 types landing here. Rounded
+  # population assumes ~130 values per type on average across those 378 types; churn is low
+  # because a reference value existing or not existing is the exception, not the rule.
+  wd_reference:             {rows_per_day: 50, change_rate: 0.00, population: 50000}
+  # One open row per reference value, plus one closed row per withdrawal -- same shape as
+  # the consolidation/legal-entity effectivity satellites above, at the hub's population.
+  # change_rate: 0.02 is a PLACEHOLDER, not a measurement -- it is copied from those same
+  # sibling effectivity satellites' convention, chosen only because an effectivity
+  # satellite's entire purpose is recording change, so 0.00 (no change, ever) is the one
+  # value that is definitely wrong regardless of the true withdrawal rate.
+  wd_reference_effectivity: {rows_per_day: 50, change_rate: 0.02, population: 50000}
+
+# --- query assistance ----------------------------------------------------------
+# THE BIGGEST SINGLE LEVER IN THE DESIGN. PIT rows = population x snapshot dates.
+# daily -> 365/yr, weekly -> 52/yr, month_end -> 12/yr.
+pit:
+  grain: daily            # daily | weekly | month_end
+  entities: [job_request, worker]
+  satellites_per_pit: 3   # one load_dts pointer column per satellite covered
+
+# --- regional distribution -----------------------------------------------------
+# The model deploys 8 times; the DATA volume differs per lake. Shares of the totals above.
+regions:
+  weu:  0.45
+  uks:  0.30
+  usnc: 0.20
+  aue:  0.05
+# TDS carries a synthetic subset, not a copy of production.
+tds_fraction_of_prod: 0.10

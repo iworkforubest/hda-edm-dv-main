@@ -1,0 +1,142 @@
+# THE OPERATING COMPANY HUB -- the other half of the 29 September 2026 hub_organisation
+# split. See hub_client.yml for why the split happened and why a rename would not do.
+#
+# "company" IN THE GL IS OUR OWN LEGAL ENTITY, NOT A CLIENT, and this hub is where that
+# population lives. gl20000.input_db carries eleven of them -- CER, BARM, CSS, BRPLM, GGI,
+# CSGH, INSPV, GUSPV, GLSPV, BPSPV, CESPV -- and BRPLM appears identically as `company` in
+# the UKG payroll posting. Same code, same legal entity, two systems. Eleven of
+# hub_organisation's thirteen usnc_tds rows were these; exactly one was a client. A hub
+# called `organisation` told a reader nothing about which it was holding.
+#
+# THE SPV CODES ARE OPERATING COMPANIES, approved 29 September (see the spec). INSPV,
+# GUSPV, GLSPV, BPSPV and CESPV are special-purpose vehicles Guidant owns and transacts
+# through -- they post journals in our GL under our chart of accounts. They are not
+# clients and they are not a third kind of thing.
+#
+# THE REFERENCE TYPE IS PART OF THE BUSINESS KEY, and it is what makes the split
+# mechanical rather than a judgement call. Every binding already declared it:
+#
+#   ('Organization_Reference_ID', 'BRPLM')   our legal entity, from GP and from UKG -- HERE
+#   ('Portal_Client_Code',        'ACME')    a client, from the portal -- hub_client
+#   ('Fieldglass_Buyer_Code',     'AEE1')    a client, from Fieldglass -- hub_client
+#
+# Two different assertions about identity cannot collide however similar the values,
+# because the type qualifies the value. That was the argument for folding them into one
+# hub, and it still holds -- it is why the fold was SAFE. It was never an argument that the
+# fold was informative, and the split does not weaken it: the type stays in the key on both
+# halves, so a client code and an operating-company code still cannot become one row even
+# if some future source delivers the same string for both.
+#
+# NO SOURCE CARRIES A TYPE COLUMN -- Dynamics GP gives a bare input_db, UKG a bare
+# company. The binding supplies the type as a key_literals constant, which composes into
+# the hash exactly as a column does (spec.hub_key_components / hashing.normalise).
+#
+# NOT ONE HASH KEY MOVED. spec.key_scope_of returns the BINDING name, never the entity
+# name, and key_style here is `authored`, so the expression is a function of
+# business_keys, key_columns and key_literals only -- all copied verbatim.
+# tests/test_accelerator.py proves it byte for byte against
+# tests/golden_key_expressions.json, rendered before the split and untouched by it.
+#
+# AUTHORED DELIBERATELY. key_style is per entity, so one style must cover every binding.
+# It does not need to be federated or tenant_scoped because the reference type already
+# scopes the value. tenant_scoped would prepend the source name to EVERY binding,
+# including GP's, silently discarding the authored decision hub_company.yml documented at
+# length -- and a tenant hub is not itself tenant-scoped, which is circular.
+#
+# NO PAYLOAD. Identity only; `name`, `class` and `status` belong on a satellite. Enforced
+# by the structural refusal that no hub or link may declare `payload`, which is scoped by
+# KIND over the whole loaded model and therefore already reaches this entity. Nothing is
+# added here to restate it -- see hub_client.yml.
+#
+# ONE BINDING PER SOURCE NAME ANY CHILD USES. spec.parent_key_components refuses to derive
+# a literal-keyed parent's key from a link/NHL/satellite binding whose source name this hub
+# does not itself carry -- because the literal would be omitted and the child's FK would
+# point at a hub row that never exists. That failure is silent: the pipeline builds, rows
+# load, and only a join returning nothing reveals it. So every source name below exists
+# because some child reads under it:
+#
+#   GP_US        nhl_general_journal_line (gl20000, the open year)
+#   GP_US_HIST   nhl_general_journal_line_closed_year (gl30000, closed years)
+#   UKG_US       nhl_journal_line, nhl_payroll_detail, msat_journal_line_{worktag,external_code}
+#   BUSINESS_VAULT  csat_payroll_line_classification (reaches this hub via payroll_detail)
+#
+# Only GP_US, GP_US_HIST and UKG_US are bound to a real table. BUSINESS_VAULT keeps its
+# PLACEHOLDER bronze table and stays out of active_sources -- see the active_sources
+# variable in databricks.yml and spec.resolve_active_sources. This hub's table is still
+# created with all four bindings' worth of inventory in every lake; only the active
+# bindings emit a flow, so the placeholder loads nothing instead of failing the pipeline
+# at definition time. Also DEPLOY.md Phase 0a.
+name: operating_company
+kind: hub
+domain: party
+key_style: authored
+business_keys: [reference_type, reference_id]
+sensitivity: internal
+
+sources:
+  # Dynamics GP, open year (2025-2026). 4,444,172 rows against 2,453,131 distinct
+  # (input_db, openyear, jrnentry, seqnumbr) across 7 deliveries -- every business row is
+  # present ~1.8 times, so the binding must dedup. dedup_by is the hub's own key column:
+  # one surviving row per legal entity per batch.
+  - name: GP_US
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.gl20000
+    # GENERATION 2 since 29 September 2026, with every other binding that reads
+    # gl20000. Bronze dropped and recreated that table; the full account and the two
+    # Delta ids are on hub_accounting_journal's GP_US binding, which is the flow that
+    # actually failed. Declared here because the generation belongs to the TABLE, not
+    # to the entity: a partial bump leaves some reader pointing at a Delta object that
+    # no longer exists, and tests/test_accelerator.py refuses a mixed generation.
+    stream_generation: 2
+    key_columns: [input_db]
+    key_literals:
+      reference_type: Organization_Reference_ID
+    applied_dts_column: dex_row_ts
+    dedup_by: [input_db]
+    dedup_order: [dex_row_ts, input_file_name]
+
+  # Dynamics GP history, identical 72-column shape. Bound because gl20000 covers the OPEN
+  # year only: without gl30000 the vault's operating-company history starts in 2025.
+  - name: GP_US_HIST
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.gl30000
+    key_columns: [input_db]
+    key_literals:
+      reference_type: Organization_Reference_ID
+    applied_dts_column: dex_row_ts
+    dedup_by: [input_db]
+    dedup_order: [dex_row_ts, input_file_name]
+
+  # UKG's payroll GL posting. 520 rows against 260 distinct
+  # (company, batchid, account, userdefined1) across 2 files -- the same lines delivered
+  # twice, identical in every business column.
+  - name: UKG_US
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.ukg_raw.gl
+    key_columns: [company]
+    key_literals:
+      reference_type: Organization_Reference_ID
+    # TWO CLOCKS, DELIBERATELY DIFFERENT COLUMNS. applied_dts is the BUSINESS clock --
+    # when the source asserted the fact -- and `paycheckdate` is that. dedup_order is the
+    # DELIVERY clock -- which re-delivery wins -- and Auto Loader's `timestamp` is that.
+    # The task brief named `timestamp` for applied_dts; using a landing time as an applied
+    # time collapses the very distinction naming.SYSTEM_COLUMNS keeps (load_dts vs
+    # applied_dts), so the business column is used here and the landing column stays where
+    # it belongs, in dedup_order. Same split on every UKG binding in this model.
+    applied_dts_column: paycheckdate
+    dedup_by: [company]
+    dedup_order: [timestamp, input_file_name]
+
+  # PLACEHOLDER. csat_payroll_line_classification recomputes nhl_payroll_detail's parent
+  # keys from the vault under this source name, so the literal has to be declarable here
+  # or that derivation cannot be proven identical to this hub's own.
+  #
+  # ITS SIBLING, `BUSINESS_VAULT_GIE`, IS ON hub_client. The two were never distinguished
+  # by source -- both read the vault -- but by WHAT THEY IDENTIFY: our own legal entity
+  # here, a Fieldglass buyer there. Under one hub that distinction could only be carried
+  # by the binding name and a long comment. It is now carried by the entity.
+  - name: BUSINESS_VAULT
+    bronze_table: hfig_usnc.raw_vault.nhl_payroll_detail
+    key_columns: [company_reference_id]
+    key_literals:
+      reference_type: Organization_Reference_ID

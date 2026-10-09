@@ -1,0 +1,43 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# The central Workday concept, and a textbook multi-active satellite.
+#
+# WorktagsReferenceID is unbounded, each value typed from a ~160-member enumeration
+# (Cost_Center_Reference_ID, Project_ID, Employee_ID, Spend_Category_ID, Deduction_Code,
+# Earning_Code ...). The XSD's own validation states the rule that makes worktag_type the
+# natural mas_key: "Only one worktag for each type is allowed for each document line."
+#
+# So: one row per (line, worktag_type), mas_key = worktag_type, and the one-per-type rule
+# becomes an expectation rather than an assumption.
+#
+# The enumeration itself is GOVERNED CONFIG -> ref_workday_reference_type, platform-owned.
+# The generator consumes it by join and never creates it.
+#
+# AND ITS SOURCE IS THE SERVICE, NOT THE XSD. Measured 6 Sep 2026: Workday's Get_References
+# operation (Integrations v46.1) takes a reference ID TYPE and returns the actual VALUES for
+# it -- every instance and its id. The XSD gives the ~160 type names and stops there, so a
+# worktag_value checked against the XSD is checked against nothing. Retrieved values are
+# also current by construction, where a transcribed list decays from the day it is written.
+# Access to that endpoint is WDJ-5 in docs/workday_journal_export_analysis.html.
+name: journal_line_worktag
+kind: msat
+domain: finance
+parents: [journal_line]
+sensitivity: internal
+mas_key: [worktag_type]
+payload: [worktag_type, worktag_value, is_balancing_worktag]
+
+sources:
+  - name: UKG_US
+    bronze_table: hfig_usnc.bronze.ukg_journal_line_worktag
+    # A link satellite rebuilds the LINK's key from the link's own parents, so it
+    # must map every one of nhl_journal_line's four -- pay_period included.
+    parent_keys:
+      accounting_journal: [company, batchid]
+      operating_company: [company]
+      ledger_account: [company, account]
+      pay_period: [payperiodstartdate, payperiodenddate]
+    payload: [worktag_type, worktag_value, is_balancing_worktag]
+    applied_dts_column: accounting_date
+    cdc_op_column: _cdc_op
+    expectations: [worktag_type_known, one_worktag_per_type_per_line]

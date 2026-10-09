@@ -1,0 +1,76 @@
+# WHAT THE CRM KNOWS ABOUT A CLIENT COMPANY -- which is not what a registry knows.
+#
+# WHY THIS IS A SEPARATE ENTITY FROM legal_entity_details. That satellite declares
+# `registered_name, company_number, jurisdiction, registered_status`: a COMPANIES-REGISTRY
+# payload, written when we expected a mastered legal-entity roster. Hubspot is a CRM. It has
+# no registration number and no registration status, and its `country` is where the company
+# sits, not where it is incorporated.
+#
+# The alternative was to map what fits and leave the rest NULL -- `jurisdiction <- country`,
+# `company_number` empty forever. That puts CRM data into fields whose NAMES promise registry
+# data, and a name that promises the wrong thing is the quiet kind of defect this repo keeps
+# paying for. So legal_entity_details keeps its registry payload and its placeholder, for
+# whenever a registry source lands, and what Hubspot actually knows lives here under its own
+# name.
+#
+# BOTH HANG OFF THE SAME HUB, which is the point of a Data Vault: one hub_legal_entity, two
+# satellites describing it from two systems, neither able to corrupt the other's history.
+
+name: legal_entity_profile
+kind: sat
+domain: reference
+parents: [legal_entity]
+key_style: federated
+
+payload:
+  - company_name
+  - company_domain
+  - country
+  - city
+  - state
+  - industry
+  - industry_group
+  - regional_group
+  - regional_group_global
+  - lifecycle_stage
+  - employee_count
+  - annual_revenue
+
+sources:
+  # ORDER IS PART OF THE CONTRACT -- spec.check_payload_order refuses a reordering, because
+  # the hashdiff is taken over the payload in declared order and alphabetising it would
+  # invalidate every stored hashdiff. New columns are appended at the END.
+  #
+  # NAMES DIFFER FROM THE SOURCE'S deliberately. `name`, `domain` and `state` are reserved
+  # or ambiguous enough in SQL and in this model to be worth renaming once, here, rather
+  # than quoting forever downstream -- and `hs_industry_group` carries a vendor prefix that
+  # means nothing to a reader of the vault.
+  - name: HUBSPOT
+    bronze_table: 01_usnc_bronze_dev.hubspot_raw.companies
+    parent_keys:
+      # PARENT_KEYS, NOT key_columns, for the reason sat_legal_entity_details records at
+      # length: the key_columns fallback scopes the parent FK by the SATELLITE's key_style
+      # (federated), while hub_legal_entity is authored and hashes under nothing. The FK
+      # would be well-formed and could never join.
+      legal_entity: [hs_object_id]
+    payload:
+      - name
+      - domain
+      - country
+      - city
+      - state
+      - company_industry
+      - hs_industry_group
+      - regional_group
+      - regional_group_global
+      - lifecyclestage
+      - numberofemployees
+      - annualrevenue
+    # NOT DEDUPED TO ONE ROW, and that is the difference between this and the hub. The feed
+    # is a full snapshot delivered three times; the hub wants one row per company, but a
+    # SATELLITE wants the change history. The hashdiff already collapses snapshots that say
+    # the same thing, and keeps the ones that do not -- measured: 444 companies differ by
+    # modification date across the three deliveries and 6 by name. Deduping here would throw
+    # away exactly the history this table exists to hold.
+    applied_dts_column: hs_lastmodifieddate
+    freshness_sla_hours: 24

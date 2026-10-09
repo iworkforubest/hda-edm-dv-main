@@ -1,0 +1,132 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# THE RAW PAYMENT GRAIN. This is the transaction-grain record the GL journal aggregates.
+#
+# One row per worker, per pay period, per payroll code occurrence. This is the grain that
+# can answer "what did we pay this worker, and why" -- which nhl_journal_line cannot,
+# because a journal line carries every worker's HSA deduction summed into 2,418.41.
+#
+# UNIT OF WORK: worker + organisation + pay_period. All three are needed for one row to read
+# back as a complete statement of a payment event. The payroll code is NOT a parent -- it
+# is governed config in ref_payroll_code, referenced by foreign key, because a deduction
+# code has no independent business life beyond being a code.
+#
+# DEPENDENT CHILD KEY: line_sequence. A worker can legitimately have two rows for the same
+# code in one period (a correction, a second garnishment, a retro adjustment), so the code
+# alone does not discriminate.
+#
+# ee_er_indicator IS LOAD-BEARING. Employee deduction versus employer contribution is the
+# difference between money withheld from a worker and cost to HFIG. For Pay & Bill margin
+# that distinction is material, and the source encodes it in a suffix (WAPMLEE = employee,
+# WAPMLER = employer). Carried raw here; interpreted in csat_payroll_line_classification.
+#
+# SENSITIVITY: this is the crypto-shredding case from the governance sheet. Per-worker
+# amounts and tax codes are personal AND financial data, unlike the journal above which
+# has no worker at all.
+name: payroll_detail
+kind: nhl
+domain: payroll
+# VERSION 2, AND ONE BUMP SERVES BOTH REASONS. That is the whole benefit of combining
+# the keyed-kind staging migration with the hub split instead of running them in
+# sequence: separately, the eleven keyed non-hub entities would each have been versioned
+# twice -- twenty version operations rather than thirteen, and two cutovers per entity
+# on a stable view whose grants are dropped by every one of them (runbook §2.1).
+#
+#   1. KEYED-KIND STAGING. This entity is no longer written directly by the SDP
+#      pipeline. It is a batch-loaded table that checks/load_hubs.py builds from the
+#      staging log `stg_nhl_payroll_detail_rev2` by anti-join, and a job task cannot
+#      INSERT into a streaming table -- so the loader needs a NEW physical table, not an
+#      altered one.
+#   2. THE HUB SPLIT. `organisation_hk` is now `operating_company_hk` here. A column
+#      rename is a schema migration and `delta.appendOnly=true` forbids one in place.
+#
+# NOT ONE HASH-KEY EXPRESSION MOVED, only the column NAME -- asserted byte for byte
+# against tests/golden_key_expressions.json, which was rendered before the split. A
+# rename is recoverable; a digest change is not, and the two are distinguished by
+# comparing the expression under the renamed identity rather than the identity itself.
+#
+# naming.physical("nhl_payroll_detail", 2) -> nhl_payroll_detail_rev2, and the stable
+# view `nhl_payroll_detail` keeps pointing at nhl_payroll_detail_rev1 until
+# checks/cutover_vault_version.py deliberately moves it -- a separate, gated decision
+# that is NOT part of declaring this version. The operator sequence is
+# docs/superpowers/plans/2026-09-29-keyed-kind-staging-runbook.md; its §7 carries the
+# version table this number is asserted against, so bumping it here without amending
+# that table reds tests/test_accelerator.py.
+version: 2
+grain: transaction
+key_style: federated
+parents: [worker, operating_company, pay_period]
+transaction_key: [payroll_register_reference, line_sequence]
+sensitivity: restricted
+
+# DEF-26: `rate` was the one amount in this payload with no mask, and nhl_timesheet_line
+# masks a column of the same name. One column name, sensitive on one table and clear on
+# the other, is exactly the shape of the defect the catalogue-wide assertion in
+# checks/mask_survival_check.py exists to refuse -- and on a `restricted` entity a
+# worker's pay rate is not the exception that proves it. Found by that assertion's
+# metadata twin in tests/test_accelerator.py, not by review.
+masks:
+  gross_amount: governance.mask_money
+  amount: governance.mask_money
+  taxable_amount: governance.mask_money
+  ytd_amount: governance.mask_money
+  rate: governance.mask_money
+
+payload:
+  - line_sequence
+  - payroll_code
+  - payroll_code_category
+  - ee_er_indicator
+  - amount
+  - gross_amount
+  - taxable_amount
+  - ytd_amount
+  - hours
+  - rate
+  - currency
+  - gl_account_as_asserted
+  - pay_check_date
+  - pay_check_reference
+  - work_state_code
+  - tax_authority_code
+
+sources:
+  - name: UKG_US
+    bronze_table: hfig_usnc.bronze.ukg_payroll_register_detail
+    parent_keys:
+      # hub_worker.business_keys is ONE position (worker_reference), so one
+      # column. Two columns here hashed a component the hub never hashes --
+      # a silent orphan FK, invisible because hub_worker declares no
+      # key_literals and parent_key_components therefore skips the count.
+      worker: [worker_reference_id]
+      # hub_organisation supplies reference_type as a key_literals constant on its own
+      # UKG_US binding, so only the VALUE column is named here.
+      operating_company: [company_reference_id]
+      # hub_pay_period is keyed on the interval alone -- which organisation transacted
+      # in it is a fact of THIS link, not of the period object.
+      pay_period: [pay_period_start_date, pay_period_end_date]
+    payload:
+      - line_sequence
+      - payroll_code
+      - payroll_code_category
+      - ee_er_indicator
+      - amount
+      - gross_amount
+      - taxable_amount
+      - ytd_amount
+      - hours
+      - rate
+      - currency
+      - gl_account_as_asserted
+      - pay_check_date
+      - pay_check_reference
+      - work_state_code
+      - tax_authority_code
+    applied_dts_column: pay_check_date
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+    expectations:
+      - payroll_code_known
+      - ee_er_indicator_known
+      - amount_present
+      - pay_period_within_open_calendar

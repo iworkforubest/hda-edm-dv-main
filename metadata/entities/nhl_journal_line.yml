@@ -1,0 +1,186 @@
+# THE PAYROLL JOURNAL. Not the general ledger -- see nhl_general_journal_line.
+#
+# This entity declares aggregates_from: payroll_detail, so it is the GL PROJECTION OF
+# PAYROLL, and only UKG's extract carries it. Dynamics GP's gl20000 is the GENERAL ledger:
+# payables, receivables, payroll, undifferentiated, trxsorce GLTR on essentially every row,
+# and no pay-period column at all. Posting to GP LOSES the pay period. Two entities, not
+# one. Sub-project 3a spec E3a-2.
+#
+# NON-HISTORIZED LINK. A posted GL line is immutable by nature: a correction is a reversal
+# plus a new journal, never an edit. So payload sits on the link, there is no hashdiff and
+# no end-dating.
+#
+# UNIT OF WORK -- FOUR hubs now. One row must read back as a complete accounting statement:
+# which journal, for which organisation, against which ledger account, FOR WHICH PAY PERIOD.
+#
+# PAY PERIOD IS A PARENT, AND THAT FORCES aggregate_drops. The SME confirms a batch is
+# unique within company and pay period, supplemental runs get their own batch, and a
+# company/batch sits in exactly ONE pay period (verified: max_periods_per_batch = 1). Their
+# answer on modelling was "Parent". spec.py requires aggregate_drops to be DISJOINT from the
+# entity's own parents, so promoting pay_period to a parent forces aggregate_drops to
+# [worker]. These are ONE change, not two, and validation enforces the consistency.
+#
+# GRAIN: AGGREGATE. This is the GL projection of payroll, not the payment record.
+# One line is EVERY worker's HSA deduction summed for the batch. There is no worker on this
+# row and there never can be -- which is exactly what aggregate_drops: [worker] records, and
+# what stops validation ever letting a worker be attached to it. Any per-worker question is
+# answered from nhl_payroll_detail, and the two are reconciled by
+# checks/payroll_gl_reconciliation_check.py, which reads the pair from this metadata.
+#   -> RECORDED, NOT FIXED: THAT FILE DOES NOT EXIST. The gate that actually reads this
+#      pair (grain: aggregate + aggregates_from) is checks/aggregate_reconciliation_check.py.
+#      The citation above is left as written rather than silently rewritten, because the
+#      same name may appear elsewhere; and that gate carries its own KNOWN DEFECT header
+#      -- its variance join compares a mapped-account STRING to a hash key and can never
+#      match, so it is not correct on the day this pair activates. Read it first.
+#
+# aggregate_drops names PARENTS OF THE RAW COUNTERPART that were summed away, not columns
+# missing from the source. The SME asked where worker appears in the GL file: it does not,
+# and this declaration is the record of that.
+#
+# TRANSACTION KEY: userdefined1. The measured natural key of ukg_raw.gl is
+# (company, batchid, account, userdefined1) -- 260 distinct across 520 rows. The first three
+# are supplied by the organisation, accounting_journal and ledger_account parents, so
+# userdefined1 is the only component the link must add itself. It is a packed payroll code,
+# "D - FSADC - Ded - FSA Dependent" (type - code - category - description), carried verbatim
+# here and decoded in csat_payroll_line_classification.
+#
+# RE-DELIVERY, NOT DOUBLE-ENTRY. The parent spec claimed ukg_raw.gl holds exactly two rows
+# per key, the debit side and the credit side. It does not: the same 260 lines were
+# delivered twice, identical in every business column INCLUDING the amounts (348 debit rows
+# = 174 lines, 172 credit rows = 86 lines). It is the same overlapping-delivery pattern as
+# GP's 1.8x, so it needs dedup_by, and an NHL has no hashdiff to hide a duplicate behind.
+# Spec E3a-4.
+#
+# DEBIT XOR CREDIT: both columns are carried, nullable, because the source asserts one or
+# the other and the vault records what the source said. Deriving signed_amount is a SOFT
+# rule and belongs in a computed satellite.
+#
+# COLUMN NAMES ARE THE SOURCE'S. The generator projects nothing and renames nothing: a flow
+# appends the staged DataFrame as it stands, so payload, transaction_key and masks must all
+# name columns that exist in the bound table. `debit`/`credit` are ukg_raw.gl's names for
+# what the retired Workday-shaped binding called debit_amount/credit_amount.
+name: journal_line
+kind: nhl
+domain: finance
+# VERSION 2, AND ONE BUMP SERVES BOTH REASONS. That is the whole benefit of combining
+# the keyed-kind staging migration with the hub split instead of running them in
+# sequence: separately, the eleven keyed non-hub entities would each have been versioned
+# twice -- twenty version operations rather than thirteen, and two cutovers per entity
+# on a stable view whose grants are dropped by every one of them (runbook §2.1).
+#
+#   1. KEYED-KIND STAGING. This entity is no longer written directly by the SDP
+#      pipeline. It is a batch-loaded table that checks/load_hubs.py builds from the
+#      staging log `stg_nhl_journal_line_rev2` by anti-join, and a job task cannot
+#      INSERT into a streaming table -- so the loader needs a NEW physical table, not an
+#      altered one.
+#   2. THE HUB SPLIT. `organisation_hk` is now `operating_company_hk` here. A column
+#      rename is a schema migration and `delta.appendOnly=true` forbids one in place.
+#
+# NOT ONE HASH-KEY EXPRESSION MOVED, only the column NAME -- asserted byte for byte
+# against tests/golden_key_expressions.json, which was rendered before the split. A
+# rename is recoverable; a digest change is not, and the two are distinguished by
+# comparing the expression under the renamed identity rather than the identity itself.
+#
+# naming.physical("nhl_journal_line", 2) -> nhl_journal_line_rev2, and the stable view
+# `nhl_journal_line` keeps pointing at nhl_journal_line_rev1 until
+# checks/cutover_vault_version.py deliberately moves it -- a separate, gated decision
+# that is NOT part of declaring this version. The operator sequence is
+# docs/superpowers/plans/2026-09-29-keyed-kind-staging-runbook.md; its §7 carries the
+# version table this number is asserted against, so bumping it here without amending
+# that table reds tests/test_accelerator.py.
+version: 2
+grain: aggregate
+aggregates_from: payroll_detail
+aggregate_drops: [worker]
+key_style: federated
+parents: [accounting_journal, operating_company, ledger_account, pay_period]
+transaction_key: [userdefined1]
+sensitivity: financial
+
+masks:
+  debit: governance.mask_money
+  credit: governance.mask_money
+
+# Which columns play which accounting role, for checks/journal_integrity_check.py. The
+# gate hardcoded `debit_amount`/`credit_amount`/`line_order` -- names from the retired
+# Workday-shaped binding that no bound source delivers -- so it asserted nothing at all
+# against this entity while looking like coverage. It reads these names now.
+#
+# NO line_order ROLE, DELIBERATELY. ukg_raw.gl has no line ordinal: userdefined1 is a
+# packed payroll code ("D - FSADC - Ded - FSA Dependent"), not a sequence, and asserting
+# it is dense and unique would be asserting something false about the source. The gate
+# reports the ordering property as NOT EVALUATED for this entity, by name -- an omitted
+# role is a stated absence, never a silently skipped assertion.
+accounting:
+  journal: accounting_journal
+  debit: debit
+  credit: credit
+
+payload:
+  - userdefined1
+  - debit
+  - credit
+  - reference
+  - paycheckdate
+  # ADDED 30 Aug 2026, when ukg_raw.gl gained three columns. Placed on the LINK, not in a
+  # satellite, symmetrically with the GP sibling: nhl_general_journal_line already carries
+  # curncyid, trxsorce and the correcting_je/voided family as NHL payload, and these are the
+  # same three shapes arriving from the other payroll source. An NHL is non-historized, so
+  # this adds no hashdiff and re-versions nothing.
+  #
+  # MEASURED BEFORE MODELLING. All three arrived in the 28 Aug delivery and are single-valued
+  # in it -- currencyid 'USD', sourcedocument 'UKG', transactiontype 'Standard' -- across 265
+  # rows, while the 260 rows from the two 18 Aug deliveries carry NULL. The vault will hold
+  # them NULL for the older half of its lines: that is the source's own history, recorded
+  # rather than backfilled.
+  #
+  # currencyid EARNS ITS PLACE regardless of being constant today. debit and credit are masked
+  # money, and an amount whose currency lives anywhere but the same row is ambiguous the moment
+  # a second currency appears.
+  #
+  # sourcedocument IS THE WEAKEST OF THE THREE: it reads 'UKG' on every row, restating what the
+  # binding already says. Carried because the vault records what the source asserted, and
+  # because trxsorce plays exactly this role on the GP side -- but if it stays single-valued it
+  # is telling us nothing the binding did not.
+  - currencyid
+  - sourcedocument
+  - transactiontype
+
+sources:
+  - name: UKG_US
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.ukg_raw.gl
+    parent_keys:
+      # company-scoped, symmetrically with GP: batchid is a run number minted per
+      # company, and the SME's uniqueness statement is explicitly within company.
+      accounting_journal: [company, batchid]
+      operating_company: [company]
+      # hub_ledger_account is company-scoped on both bindings -- see DEF-21 there.
+      ledger_account: [company, account]
+      pay_period: [payperiodstartdate, payperiodenddate]
+    payload:
+      - userdefined1
+      - debit
+      - credit
+      - reference
+      - paycheckdate
+      - currencyid
+      - sourcedocument
+      - transactiontype
+    # applied_dts is the BUSINESS clock, dedup_order the DELIVERY clock -- `timestamp`
+    # is Auto Loader's landing time and must not be passed off as an applied clock.
+    applied_dts_column: paycheckdate
+    # 520 rows / 260 keys / 2 files. dedup_by is the measured natural key.
+    dedup_by: [company, batchid, account, userdefined1]
+    dedup_order: [timestamp, input_file_name]
+    # Both amounts arrive as DOUBLE, and a DOUBLE's string rendering is not stable across
+    # loads. Cast at the staging boundary, replacing the column by name, so any satellite
+    # that later hashes this payload cannot produce spurious rows from an unchanged value.
+    cast:
+      debit: DECIMAL(18,2)
+      credit: DECIMAL(18,2)
+    expectations:
+      - debit_xor_credit_populated
+      - debit_and_credit_not_both_zero

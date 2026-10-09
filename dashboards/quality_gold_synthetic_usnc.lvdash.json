@@ -1,0 +1,445 @@
+{
+  "datasets": [
+    {
+      "displayName": "Runs recorded",
+      "name": "ds_runs_recorded",
+      "queryLines": [
+        "SELECT\n",
+        "  count(DISTINCT job_run_id) AS runs_recorded,\n",
+        "  count(*) AS load_rows_recorded,\n",
+        "  max(recorded_at) AS last_recorded_at\n",
+        "FROM 03_usnc_gold_edm.control.tst_aud_table_load\n"
+      ]
+    },
+    {
+      "displayName": "Rows read from the vault, and published",
+      "name": "ds_load_volume",
+      "queryLines": [
+        "SELECT\n",
+        "  job_run_id, table_name, written_by,\n",
+        "  staged, accepted,\n",
+        "  staged - accepted AS not_published,\n",
+        "  recorded_at\n",
+        "FROM 03_usnc_gold_edm.control.tst_aud_table_load\n",
+        "ORDER BY recorded_at DESC\n"
+      ]
+    },
+    {
+      "displayName": "Published rate, or not evaluated",
+      "name": "ds_publish_rate",
+      "queryLines": [
+        "WITH totals AS (\n",
+        "  SELECT table_name,\n",
+        "         sum(staged) AS denominator,\n",
+        "         sum(accepted) AS accepted\n",
+        "  FROM 03_usnc_gold_edm.control.tst_aud_table_load\n",
+        "  GROUP BY table_name\n",
+        ")\n",
+        "SELECT table_name, denominator, accepted,\n",
+        "  CASE WHEN denominator = 0 THEN NULL ELSE accepted / denominator END AS publish_rate,\n",
+        "  CASE WHEN denominator = 0\n",
+        "       THEN 'not evaluated' ELSE 'evaluated' END AS state\n",
+        "FROM totals\n",
+        "ORDER BY table_name\n"
+      ]
+    },
+    {
+      "displayName": "Rows read but not published, by reason",
+      "name": "ds_discard_reason",
+      "queryLines": [
+        "SELECT\n",
+        "  table_name, discard_reason,\n",
+        "  sum(discarded) AS discarded,\n",
+        "  count(DISTINCT job_run_id) AS runs\n",
+        "FROM 03_usnc_gold_edm.control.tst_aud_table_discard\n",
+        "GROUP BY table_name, discard_reason\n",
+        "ORDER BY discarded DESC\n"
+      ]
+    },
+    {
+      "displayName": "Runs that never completed",
+      "name": "ds_incomplete_runs",
+      "queryLines": [
+        "SELECT job_run_id, target,\n",
+        "       max(CASE WHEN phase = 'opened' THEN recorded_at END) AS opened_at\n",
+        "FROM 03_usnc_gold_edm.control.tst_aud_load_run\n",
+        "GROUP BY job_run_id, target\n",
+        "HAVING sum(CASE WHEN phase = 'completed' THEN 1 ELSE 0 END) = 0\n",
+        "ORDER BY opened_at DESC\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "displayName": "Gold load quality",
+      "layout": [
+        {
+          "position": {
+            "height": 3,
+            "width": 3,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "w_runs_recorded",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_runs_recorded",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`runs_recorded`",
+                      "name": "runs_recorded"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "value": {
+                  "displayName": "Runs recorded (0 means gold has never been loaded)",
+                  "fieldName": "runs_recorded"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 3
+          },
+          "widget": {
+            "name": "w_publish_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_publish_rate",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`denominator`",
+                      "name": "denominator"
+                    },
+                    {
+                      "expression": "`accepted`",
+                      "name": "accepted"
+                    },
+                    {
+                      "expression": "`publish_rate`",
+                      "name": "publish_rate"
+                    },
+                    {
+                      "expression": "`state`",
+                      "name": "state"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "denominator",
+                    "title": "denominator",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "accepted",
+                    "title": "accepted",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "publish_rate",
+                    "title": "publish_rate",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "state",
+                    "title": "state",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Vault rows published to the projection, or not evaluated"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 9
+          },
+          "widget": {
+            "name": "w_load_volume",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_load_volume",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`job_run_id`",
+                      "name": "job_run_id"
+                    },
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`staged`",
+                      "name": "staged"
+                    },
+                    {
+                      "expression": "`accepted`",
+                      "name": "accepted"
+                    },
+                    {
+                      "expression": "`not_published`",
+                      "name": "not_published"
+                    },
+                    {
+                      "expression": "`recorded_at`",
+                      "name": "recorded_at"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "job_run_id",
+                    "title": "job_run_id",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "staged",
+                    "title": "staged",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "accepted",
+                    "title": "accepted",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "not_published",
+                    "title": "not_published",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "recorded_at",
+                    "title": "recorded_at",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Rows read from the vault (staged) and published (accepted)"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 15
+          },
+          "widget": {
+            "name": "w_discard_reason",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_discard_reason",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`table_name`",
+                      "name": "table_name"
+                    },
+                    {
+                      "expression": "`discard_reason`",
+                      "name": "discard_reason"
+                    },
+                    {
+                      "expression": "`discarded`",
+                      "name": "discarded"
+                    },
+                    {
+                      "expression": "`runs`",
+                      "name": "runs"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "table_name",
+                    "title": "table_name",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "discard_reason",
+                    "title": "discard_reason",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "discarded",
+                    "title": "discarded",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "runs",
+                    "title": "runs",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Read but not published, by reason"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 5,
+            "width": 6,
+            "x": 0,
+            "y": 21
+          },
+          "widget": {
+            "name": "w_incomplete_runs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_incomplete_runs",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`job_run_id`",
+                      "name": "job_run_id"
+                    },
+                    {
+                      "expression": "`target`",
+                      "name": "target"
+                    },
+                    {
+                      "expression": "`opened_at`",
+                      "name": "opened_at"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "displayAs": "string",
+                    "fieldName": "job_run_id",
+                    "title": "job_run_id",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "target",
+                    "title": "target",
+                    "type": "string"
+                  },
+                  {
+                    "displayAs": "string",
+                    "fieldName": "opened_at",
+                    "title": "opened_at",
+                    "type": "string"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Runs that never completed"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        }
+      ],
+      "name": "page_gold_quality",
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}

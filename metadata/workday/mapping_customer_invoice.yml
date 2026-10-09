@@ -1,0 +1,121 @@
+# VAULT COLUMN -> DCDD FIELD, for Submit_Customer_Invoice.
+#
+# The DCDD is read-only: metadata/workday/dcdd/Submit_Customer_Invoice_DCDD.xlsx is
+# committed verbatim with a sha256 digest. This file is where the mapping lives.
+#
+# `money: true` marks a field whose value comes from a masked column. The export refuses
+# to write a file whose money fields are null on every row, because the run-as service
+# principal cannot read masked money until PLT-2 lands -- and a CSV of NULL amounts looks
+# exactly like a correct one.
+#
+# `csv_file` IS THE WORKBOOK'S CELL, VERBATIM, not this repo's reading of it. Two of the
+# 91 populated rows do not name an ordinary file, and both are must-populate:
+#
+#   Customer_Invoice_ID                 "All CSVs"
+#   Customer_Invoice_Line_Reference_ID  "Submit_Customer_Invoice_Lines,
+#                                        Submit_Customer_Invoice_Lines_Details"
+#
+# Neither is a fifth or sixth output file. The first is the join key every file carries,
+# the second is one field written into two files. wd_mapping.resolve_csv_files holds that
+# reading and the suite proves the whole workbook still resolves to exactly four files.
+# Copying this repo's reading into the cell instead would hide a DCDD that later split
+# those rows, so the cell stays verbatim and the reading stays in code.
+#
+# ------------------------------------------------------------------------------------
+# `notation` -- WHICH SIDE OF THE LOAD A SOURCE COLUMN IS NAMED FROM
+# ------------------------------------------------------------------------------------
+# `<table>.<column>` was ambiguous in the first cut of this file and the ambiguity was
+# load-bearing: three entries were written vault-side and one source-side, and nothing
+# said so, which left any future resolution gate with no defined target. Every entry now
+# declares it, and the suite refuses an entry that does not.
+#
+#   notation: vault     the column is named as THIS REPO declares it -- a hub's
+#                       business_keys, an NHL's payload, a control table's columns. The
+#                       suite resolves these against the entity model and
+#                       control_standard.LAYER_TABLES, and a name that does not resolve
+#                       goes red.
+#   notation: source    the column is named as the SOURCE SYSTEM spells it, upstream of
+#                       the vault. Nothing can select this, so an entry declaring it must
+#                       also carry `unresolved` -- the suite enforces the pairing.
+#   notation: constant  `source` is `constant:<value>`, a literal the writer emits on
+#                       every row. Nothing to resolve.
+#
+# ------------------------------------------------------------------------------------
+# `unresolved` -- THE MECHANICAL BARRIER IN FRONT OF TASK 5
+# ------------------------------------------------------------------------------------
+# Two of the five sources this mapping was handed name columns that DO NOT EXIST. They
+# are shipped exactly as the task brief declared them, because changing a
+# customer-facing mapping on inference is what this project keeps refusing to do. But
+# prose in a comment stops nothing, so each carries `unresolved: <reason>` and
+# wd_mapping.exportable_fields excludes them. Task 5 builds from exportable_fields, and
+# a writer that never sees the entry cannot emit a blank column for it.
+#
+# The marker is a REASON, never a bare flag, and the suite refuses `unresolved: true`.
+# The suite also checks the marker in BOTH directions -- an unmarked source that does not
+# resolve goes red, and a marker on a source that DOES resolve goes red too, so the
+# markers cannot outlive the problem.
+#
+# THE EVIDENCE, for whoever settles these. Both were written in SOURCE-SIDE notation,
+# and metadata/entities/hub_invoice.yml is what shows it:
+#
+#     business_keys: [invoice_tenant, invoice_reference]     <- vault side
+#     key_columns:   [buyer_tenant,   invoice_id]            <- FIELDGLASS_US side
+#     dedup_by:      [buyer_tenant,   invoice_id]
+#
+# `buyer_tenant` and `invoice_id` are the Fieldglass column names, mapping POSITIONALLY
+# onto `invoice_tenant` and `invoice_reference`. So both suspect values are the same kind
+# of thing -- a source-side name where a vault-side one was wanted -- and the positional
+# correspondence names the vault column each would become.
+#
+# THAT IS NOT AUTHORITY TO RENAME THEM, and neither rename has been applied.
+# Customer_Invoice_ID -> control.ctl_invoice_issuance.invoice_reference is a near-certain
+# clerical fix, but the ledger is keyed on line_reference and the owner should confirm
+# the grain. Customer_Reference_ID is the harder one: the positional evidence points at
+# invoice_tenant, and whether Workday's CUSTOMER is the Fieldglass BUYER TENANT is a
+# modelling call about who is being invoiced, not a rename. Adrian decides both, with the
+# above in front of him.
+fields:
+  Customer_Invoice_ID:
+    csv_file: All CSVs
+    source: control.ctl_invoice_issuance.invoice_id
+    notation: source
+    unresolved: >-
+      ctl_invoice_issuance has no column `invoice_id`. Its seven columns are
+      invoice_date, invoice_reference, invoice_tenant, issued_at, issued_by_run_id,
+      line_number, line_reference. `invoice_id` is the FIELDGLASS_US source-side name
+      that hub_invoice.yml key_columns pairs with `invoice_reference`, so
+      control.ctl_invoice_issuance.invoice_reference is the likely fix -- unapplied,
+      because this is the must-populate join key on all four files and a wrong guess
+      exports four CSVs joined on nothing.
+    rule: null
+    money: false
+  Customer_Invoice_Line_Reference_ID:
+    csv_file: "Submit_Customer_Invoice_Lines, Submit_Customer_Invoice_Lines_Details"
+    source: control.ctl_invoice_issuance.line_reference
+    notation: vault
+    rule: null
+    money: false
+  Company_Reference_ID:
+    csv_file: Submit_Customer_Invoice
+    source: hub_operating_company.reference_id
+    notation: vault
+    rule: null
+    money: false
+  Customer_Reference_ID:
+    csv_file: Submit_Customer_Invoice
+    source: hub_invoice.buyer_tenant
+    notation: source
+    unresolved: >-
+      hub_invoice has no column `buyer_tenant`. Its business_keys are invoice_tenant and
+      invoice_reference. `buyer_tenant` is the FIELDGLASS_US source-side name that
+      hub_invoice.yml key_columns pairs positionally with `invoice_tenant` -- but whether
+      Workday's CUSTOMER is the Fieldglass buyer tenant is a modelling call about who is
+      being invoiced, not a rename, and it is the owner's to make.
+    rule: null
+    money: false
+  Submit:
+    csv_file: Submit_Customer_Invoice
+    source: "constant:1"
+    notation: constant
+    rule: null
+    money: false

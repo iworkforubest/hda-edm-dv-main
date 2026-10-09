@@ -1,0 +1,104 @@
+# THE ACCOUNT MASTER, rebound to Dynamics GP -- and COMPANY-SCOPED, for the same measured
+# reason the journal hub is.
+#
+# DEF-21, MEASURED. actindx is a per-company-database SURROGATE, not a global account id:
+#
+#     great_plains_raw.gl00100:  6,724,565 rows | 11 databases
+#                                  361,706 distinct actindx
+#                                1,906,775 distinct (input_db, actindx)
+#
+# Keying on actindx alone merges 1,906,775 real accounts into 361,706 hub rows -- a 5.3x
+# collapse -- and it is worse than the journal case was, because `dedup_by: [actindx]`
+# would DELETE roughly 1.5 million source rows before they ever reached the hub. Each
+# input_db is a separate GP company database and GP mints actindx within one, exactly as
+# it mints jrnentry within one.
+#
+# THE UKG BINDING IS SCOPED TOO, on the same reasoning as the journal's batchid. The
+# extract cannot prove it either way -- one company (BRPLM), 101 accounts -- which is
+# uninformative rather than reassuring. What is known: `company` is already part of
+# ukg_raw.gl's measured natural key (company, batchid, account, userdefined1), where it
+# would be redundant if the account string alone identified an account; and a chart of
+# accounts is maintained per legal entity, so the same segmented number denoting different
+# accounts in two companies is the expected case, not the exotic one. Scoping costs
+# nothing if the account string turns out to be global; not scoping is unrecoverable if it
+# is not.
+#
+# The previous 2-part (account_set_id, ledger_account_id) key came from the Workday XSD for
+# a UKG feed that does not exist in this workspace, and is retired.
+#
+# TWO IDENTIFIER FORMS, DELIBERATELY NOT MERGED. GP asserts an account INDEX (a bare
+# integer surrogate in gl00100); UKG's payroll posting asserts an account NUMBER
+# ("70-00-0000-202117-00"). They denote the same real account, but neither source carries
+# the other's form, so the vault holds one row per asserted form until a same-as link
+# resolves them -- as hub_organisation does. What must NOT happen is that either form be
+# dropped: nhl_journal_line (UKG) and both general-journal entities (GP) declare
+# ledger_account as a parent, so a form with no binding here produces a foreign key
+# pointing at a hub row that never exists, and that failure is silent.
+#
+# ---------------------------------------------------------------------------------------
+# WHY THIS FOLD CARRIES NO reference_type LITERAL, when hub_organisation argues at length
+# that the type is what makes a fold safe. Three reasons, and the first is the substantive
+# one:
+#
+# 1. THE TWO FOLDS ARE NOT THE SAME KIND OF FOLD. hub_organisation folds across BUSINESS
+#    DOMAINS -- our own legal entity and a client -- where one string legitimately denotes
+#    two different real-world THINGS: 'BRPLM' as an Organization_Reference_ID and the same
+#    characters as a Portal_Client_Code are different assertions, and only a type can keep
+#    them apart. Here both forms denote the same KIND of thing, a GL account, and the
+#    question is only which notation the source used.
+# 2. THE VALUE SHAPES CANNOT COLLIDE. A GP account index is a bare integer; a UKG account
+#    number is a dash-segmented string. Within one company, a collision needs an account
+#    whose NUMBER is a bare integer identical to some account's INDEX -- and GP's own chart
+#    is segmented, so the number form is segmented on both sides.
+# 3. A LITERAL WOULD FORCE A DISHONEST BINDING. spec.parent_key_components enters its
+#    strict path as soon as ANY binding here declares a literal, and then this hub must
+#    carry a binding for every source name its children read under -- including GP_US_HIST,
+#    because nhl_general_journal_line_closed_year reads gl30000 under that name. gl00100 is the account
+#    master for ALL years; there is no history counterpart (gl30000 is the JOURNAL history).
+#    The GP_US_HIST binding would be a second flow over the same table under a second source
+#    name, duplicating every hub row to satisfy a validator rather than to record a fact.
+#
+# If a third identifier form ever arrives -- one that could collide by shape -- this
+# reasoning expires and the hub takes the reference-type pattern like the other two.
+# ---------------------------------------------------------------------------------------
+#
+# KEY ORDER IS (whose, which), matching hub_accounting_journal. organisation_reference_id
+# carries the SAME VALUES as hub_operating_company's own reference_id -- input_db from GP,
+# company from UKG -- so the three finance hubs agree on what a company is called by
+# construction rather than by convention.
+#
+# THE BUSINESS-KEY COLUMN KEEPS THE WORD `organisation` DELIBERATELY, 29 September 2026.
+# hub_organisation split into hub_client and hub_operating_company that day, but this
+# column is a BUSINESS KEY POSITION -- it is hashed into ledger_account_hk. Renaming it
+# would change this hub's key expression and re-key every row already loaded, for a word.
+# The entity moved; the key did not. Same decision on hub_accounting_journal.yml.
+name: ledger_account
+kind: hub
+domain: finance
+key_style: authored
+business_keys: [organisation_reference_id, ledger_account_reference]
+sensitivity: internal
+
+sources:
+  # GP's account master. dedup_by is the full key: keying or deduping on actindx alone is
+  # the 5.3x collapse measured above.
+  - name: GP_US
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.gl00100
+    key_columns: [input_db, actindx]
+    applied_dts_column: dex_row_ts
+    dedup_by: [input_db, actindx]
+    dedup_order: [dex_row_ts, input_file_name]
+
+  # UKG's payroll GL posting asserts the account NUMBER. Bound so nhl_journal_line's
+  # ledger_account foreign key resolves to a hub row that exists.
+  # applied_dts is the business clock (paycheckdate); dedup_order is the delivery clock
+  # (Auto Loader's `timestamp`). See hub_accounting_journal.yml for why they differ.
+  - name: UKG_US
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.ukg_raw.gl
+    key_columns: [company, account]
+    applied_dts_column: paycheckdate
+    dedup_by: [company, account]
+    dedup_order: [timestamp, input_file_name]

@@ -1,0 +1,632 @@
+{
+  "version": "3.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "currentViewName": null,
+  "defaultView": {
+    "detailLevel": "All",
+    "relationshipMode": "All",
+    "tablePositions": [
+      {
+        "name": "csat_job_request_custom_promoted",
+        "schemaName": "business_vault",
+        "x": 3208,
+        "y": 48
+      },
+      {
+        "name": "csat_payroll_line_classification",
+        "schemaName": "business_vault",
+        "x": 3808,
+        "y": 4536
+      },
+      {
+        "name": "hub_accounting_journal",
+        "schemaName": "raw_vault",
+        "x": 2144,
+        "y": 3392
+      },
+      {
+        "name": "hub_job_request",
+        "schemaName": "raw_vault",
+        "x": 2568,
+        "y": 1272
+      },
+      {
+        "name": "hub_ledger_account",
+        "schemaName": "raw_vault",
+        "x": 1624,
+        "y": 4192
+      },
+      {
+        "name": "hub_organisation",
+        "schemaName": "raw_vault",
+        "x": 2424,
+        "y": 2792
+      },
+      {
+        "name": "hub_pay_period",
+        "schemaName": "raw_vault",
+        "x": 2176,
+        "y": 1792
+      },
+      {
+        "name": "hub_worker",
+        "schemaName": "raw_vault",
+        "x": 1984,
+        "y": 2872
+      },
+      {
+        "name": "lnk_client_job_request",
+        "schemaName": "raw_vault",
+        "x": 2992,
+        "y": 1616
+      },
+      {
+        "name": "msat_job_request_custom_field_fieldglass_eu",
+        "schemaName": "raw_vault",
+        "x": 2488,
+        "y": 56
+      },
+      {
+        "name": "msat_journal_line_external_code_ukg_us",
+        "schemaName": "raw_vault",
+        "x": 616,
+        "y": 1192
+      },
+      {
+        "name": "msat_journal_line_worktag_ukg_us",
+        "schemaName": "raw_vault",
+        "x": 48,
+        "y": 2184
+      },
+      {
+        "name": "msat_worker_skills_hr_eu",
+        "schemaName": "raw_vault",
+        "x": 2592,
+        "y": 2048
+      },
+      {
+        "name": "msat_worker_skills_striive_eu",
+        "schemaName": "raw_vault",
+        "x": 520,
+        "y": 2944
+      },
+      {
+        "name": "nhl_general_journal_line",
+        "schemaName": "raw_vault",
+        "x": 2352,
+        "y": 4144
+      },
+      {
+        "name": "nhl_general_journal_line_closed_year",
+        "schemaName": "raw_vault",
+        "x": 1344,
+        "y": 3296
+      },
+      {
+        "name": "nhl_journal_line",
+        "schemaName": "raw_vault",
+        "x": 1296,
+        "y": 2544
+      },
+      {
+        "name": "nhl_payroll_detail",
+        "schemaName": "raw_vault",
+        "x": 2880,
+        "y": 3256
+      },
+      {
+        "name": "nhl_timesheet_line",
+        "schemaName": "raw_vault",
+        "x": 3368,
+        "y": 1912
+      },
+      {
+        "name": "sat_accounting_journal_header_ukg_us",
+        "schemaName": "raw_vault",
+        "x": 3840,
+        "y": 3344
+      },
+      {
+        "name": "sat_job_request_commercials_striive_eu",
+        "schemaName": "raw_vault",
+        "x": 1872,
+        "y": 2224
+      },
+      {
+        "name": "sat_job_request_details_bullhorn_eu",
+        "schemaName": "raw_vault",
+        "x": 1904,
+        "y": 328
+      },
+      {
+        "name": "sat_job_request_details_fieldglass_eu",
+        "schemaName": "raw_vault",
+        "x": 3088,
+        "y": 2616
+      },
+      {
+        "name": "sat_job_request_details_prounity_eu",
+        "schemaName": "raw_vault",
+        "x": 1312,
+        "y": 1424
+      },
+      {
+        "name": "sat_job_request_details_striive_eu",
+        "schemaName": "raw_vault",
+        "x": 3688,
+        "y": 728
+      }
+    ],
+    "tableGroupCollapseStates": [],
+    "stickyNoteLayouts": [],
+    "referencePaths": [
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "csat_job_request_custom_promoted",
+        "firstSchemaName": "business_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "payroll_detail_hk"
+        ],
+        "firstTableName": "csat_payroll_line_classification",
+        "firstSchemaName": "business_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "payroll_detail_hk"
+        ],
+        "secondTableName": "nhl_payroll_detail",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "lnk_client_job_request",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "organisation_hk"
+        ],
+        "firstTableName": "lnk_client_job_request",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "organisation_hk"
+        ],
+        "secondTableName": "hub_organisation",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "msat_job_request_custom_field_fieldglass_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "journal_line_hk"
+        ],
+        "firstTableName": "msat_journal_line_external_code_ukg_us",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "journal_line_hk"
+        ],
+        "secondTableName": "nhl_journal_line",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "journal_line_hk"
+        ],
+        "firstTableName": "msat_journal_line_worktag_ukg_us",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "journal_line_hk"
+        ],
+        "secondTableName": "nhl_journal_line",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "worker_hk"
+        ],
+        "firstTableName": "msat_worker_skills_hr_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "worker_hk"
+        ],
+        "secondTableName": "hub_worker",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "worker_hk"
+        ],
+        "firstTableName": "msat_worker_skills_striive_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "worker_hk"
+        ],
+        "secondTableName": "hub_worker",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "firstTableName": "nhl_general_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "secondTableName": "hub_accounting_journal",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "ledger_account_hk"
+        ],
+        "firstTableName": "nhl_general_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "ledger_account_hk"
+        ],
+        "secondTableName": "hub_ledger_account",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "organisation_hk"
+        ],
+        "firstTableName": "nhl_general_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "organisation_hk"
+        ],
+        "secondTableName": "hub_organisation",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "firstTableName": "nhl_general_journal_line_closed_year",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "secondTableName": "hub_accounting_journal",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "ledger_account_hk"
+        ],
+        "firstTableName": "nhl_general_journal_line_closed_year",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "ledger_account_hk"
+        ],
+        "secondTableName": "hub_ledger_account",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "organisation_hk"
+        ],
+        "firstTableName": "nhl_general_journal_line_closed_year",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "organisation_hk"
+        ],
+        "secondTableName": "hub_organisation",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "firstTableName": "nhl_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "secondTableName": "hub_accounting_journal",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "ledger_account_hk"
+        ],
+        "firstTableName": "nhl_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "ledger_account_hk"
+        ],
+        "secondTableName": "hub_ledger_account",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "organisation_hk"
+        ],
+        "firstTableName": "nhl_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "organisation_hk"
+        ],
+        "secondTableName": "hub_organisation",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "pay_period_hk"
+        ],
+        "firstTableName": "nhl_journal_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "pay_period_hk"
+        ],
+        "secondTableName": "hub_pay_period",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "organisation_hk"
+        ],
+        "firstTableName": "nhl_payroll_detail",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "organisation_hk"
+        ],
+        "secondTableName": "hub_organisation",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "pay_period_hk"
+        ],
+        "firstTableName": "nhl_payroll_detail",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "pay_period_hk"
+        ],
+        "secondTableName": "hub_pay_period",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "worker_hk"
+        ],
+        "firstTableName": "nhl_payroll_detail",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "worker_hk"
+        ],
+        "secondTableName": "hub_worker",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "nhl_timesheet_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "organisation_hk"
+        ],
+        "firstTableName": "nhl_timesheet_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "organisation_hk"
+        ],
+        "secondTableName": "hub_organisation",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "worker_hk"
+        ],
+        "firstTableName": "nhl_timesheet_line",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "worker_hk"
+        ],
+        "secondTableName": "hub_worker",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "firstTableName": "sat_accounting_journal_header_ukg_us",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "accounting_journal_hk"
+        ],
+        "secondTableName": "hub_accounting_journal",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "sat_job_request_commercials_striive_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "sat_job_request_details_bullhorn_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "sat_job_request_details_fieldglass_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "sat_job_request_details_prounity_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "job_request_hk"
+        ],
+        "firstTableName": "sat_job_request_details_striive_eu",
+        "firstSchemaName": "raw_vault",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "job_request_hk"
+        ],
+        "secondTableName": "hub_job_request",
+        "secondSchemaName": "raw_vault",
+        "secondRelation": "1",
+        "checkPoints": []
+      }
+    ]
+  },
+  "views": {}
+}

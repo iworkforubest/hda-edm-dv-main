@@ -1,0 +1,894 @@
+# Orchestration. Every gate that cannot be recovered from if broken runs as a task
+# that FAILS the run, not as a convention someone remembers.
+resources:
+  jobs:
+    vault_load:
+      name: "[${bundle.target}] hfig vault load"
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      email_notifications:
+        on_failure: ["${var.notification_email}"]
+      tasks:
+        # 0 -------------------------------------------------- HARD GATE: hash parity
+        # Runs FIRST and blocks the load. Proves this region/runtime produces exactly
+        # the digests the ratified rulebook specifies. A divergence here means keys
+        # computed in this lake cannot join to keys computed in another -- which is
+        # unrecoverable without re-keying, so it is checked before anything is written.
+        - task_key: assert_hash_parity
+          spark_python_task:
+            python_file: ../checks/hash_parity_check.py
+            parameters: ["--region", "${bundle.target}"]
+          environment_key: checks
+
+        # 0a ------------------------------- PRECONDITION: Bronze still provides what we read
+        # Runs before the load and BLOCKS it. source_contracts/<target>.yaml states what Silver
+        # requires of each Bronze table; this asks whether Bronze still provides it. A MISSING
+        # COLUMN means the load fails or silently writes nulls, and a LOSSY CAST means money rows
+        # arrive NULL -- both are things to learn before writing, not after.
+        #
+        # NO --catalog: contract_catalog() derives it from the contract's own fully-qualified
+        # table names, so an operator cannot point this at the wrong lake.
+        #
+        # Safe for every target. The seven with no committed contract return 0 and print
+        # NOT_EVALUATED -- a declared-but-unbuilt lake has nothing to conform to.
+        - task_key: assert_source_conformance
+          # NOW DEPENDS ON create_control_objects TOO, because it no longer only asserts --
+          # it records one row per contracted table into control.ctl_source_conformance, and
+          # the schema that holds it is created by that task. Without this edge the first run
+          # of a fresh lake writes into nothing.
+          depends_on: [{task_key: assert_hash_parity},
+                       {task_key: create_control_objects}]
+          spark_python_task:
+            python_file: ../checks/source_conformance_check.py
+            # THE RECORD IS WHAT THE BRONZE CONFORMANCE DASHBOARD READS. Both destination
+            # arguments are passed together on purpose -- the gate FAILS on half a
+            # destination rather than skipping quietly, because a skip would look exactly
+            # like a run that was never asked to record.
+            parameters: ["--target", "${bundle.target}",
+                         "--record-catalog", "${var.catalog}",
+                         "--record-schema", "${var.control_schema}",
+                         "--job-run-id", "{{job.run_id}}"]
+          environment_key: checks
+
+        # 0b ------------------------------------- PREREQUISITE: the control objects
+        # Nothing ran governance/control_objects.sql before this task existed -- the two
+        # control tables were applied by hand once. Four gates now depend on this schema,
+        # so its creation cannot be a manual step.
+        #
+        # It also writes aud_load_run's 'opened' row. NOT assert_hash_parity: that runs
+        # before this task, when the schema may not exist, and gate zero has no business
+        # writing anything. The task that guarantees the target exists is the first that
+        # can write to it.
+        - task_key: create_control_objects
+          depends_on: [{task_key: assert_hash_parity}]
+          spark_python_task:
+            python_file: ../checks/apply_control_objects.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--governance-schema"
+              - "${var.governance_schema}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--target"
+              - "${bundle.target}"
+              - "--active-sources"
+              - "${var.active_sources}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+          environment_key: checks
+
+        # 1 -------------------------------- PREREQUISITE: the mask functions exist
+        # DEF-20. raw_vault declares MASK clauses in its table definitions, so
+        # governance.mask_money must EXIST before the pipeline runs -- a MASK naming a
+        # function that is not there cannot be declared, and the table is never created.
+        # apply_governance creates the functions but sits AFTER the load (task 5), so the
+        # dependency was inverted and the three masked journal tables could never be built.
+        #
+        # This task runs --functions-only: CREATE OR REPLACE FUNCTION and nothing else.
+        # It is NOT apply_governance moved earlier, and that distinction is the point.
+        # apply_masks.sql also REVOKEs ALL PRIVILEGES on the SHARED bronze catalog and
+        # grants to groups that DO NOT EXIST in this workspace (README RECONCILE #3, still
+        # open -- see DEPLOY.md Phase 6a). Running that block unattended would strip
+        # everyone's Bronze access and fail on the grant that was meant to restore it.
+        # Creating a function touches no permission, so this half is safe to automate and
+        # the other half stays behind a human decision.
+        # 0b ------------------------- HARD GATE: the LAKE agrees with the model's keys
+        # The third leg of the hash contract. assert_hash_parity proves the ALGORITHM
+        # travels and metadata/key_derivation.json proves the COMPONENTS are the ones
+        # intended -- neither proves the STORED ROWS were built either way.
+        #
+        # It has to run before anything writes, because the failure it prevents is an
+        # append: re-keying hub_job_request on 4 Sep left 45,516 stored rows built one way
+        # and a model declaring another, and the next load would have added 45,516
+        # new-keyed rows beside them with every gate green. append_only looks for MUTATION
+        # and finds none; its uniqueness check passes because the old and new keys are
+        # DIFFERENT rather than duplicated; hubs are outside landing_integrity's reach.
+        #
+        # Depends on create_control_objects because it WRITES its verdict, and on
+        # assert_hash_parity because a lake that disagrees about the algorithm makes the
+        # question of components moot.
+        - task_key: assert_key_derivation
+          depends_on: [{task_key: assert_hash_parity},
+                       {task_key: create_control_objects}]
+          spark_python_task:
+            python_file: ../checks/key_derivation_guard.py
+            parameters: ["--catalog", "${var.catalog}",
+                         "--control-schema", "${var.control_schema}",
+                         "--vault-schema", "${var.vault_schema}",
+                         "--target", "${bundle.target}",
+                         "--job-run-id", "{{job.run_id}}"]
+          environment_key: checks
+
+        # 0c ------------------- BUILD THE SOURCES SILVER BINDS BUT BRONZE DOES NOT SHIP
+        # Fieldglass delivers one table PER TENANT -- 30 live today, one more per client
+        # onboarded. Silver binds a table, not a pattern, so this builds the table it binds:
+        # a union view rebuilt from information_schema on every run, which is what stops a
+        # newly onboarded client from silently missing. It records the tenant list it used
+        # into ctl_source_union so the change is visible afterwards rather than invisible.
+        #
+        # BEFORE THE LOAD, OBVIOUSLY -- a flow cannot read a view that does not exist yet.
+        # After create_control_objects because it writes its record there.
+        - task_key: apply_source_unions
+          depends_on: [{task_key: assert_hash_parity},
+                       {task_key: create_control_objects}]
+          spark_python_task:
+            python_file: ../checks/apply_source_unions.py
+            parameters: ["--catalog", "${var.catalog}",
+                         "--bronze-catalog", "${var.bronze_catalog}",
+                         "--control-schema", "${var.control_schema}",
+                         "--target", "${bundle.target}",
+                         "--job-run-id", "{{job.run_id}}"]
+          environment_key: checks
+
+        - task_key: create_mask_functions
+          depends_on: [{task_key: assert_hash_parity}, {task_key: create_control_objects}]
+          spark_python_task:
+            python_file: ../checks/apply_governance.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--vault-schema"
+              - "${var.vault_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--bronze-catalog"
+              - "${var.bronze_catalog}"
+              - "--gold-catalog"
+              - "${var.gold_catalog}"
+              # DEF-46: environment-specific, and required. It used to default to
+              # hfig_data_engineering, a group that exists nowhere in this estate -- so
+              # every GRANT in apply_masks.sql was addressed to nobody, and being a
+              # default it only surfaced when someone tried to run it.
+              - "--privileged-group"
+              - "${var.vault_privileged_group}"
+              - "--functions-only"
+          environment_key: checks
+
+        # 2 -------------------------------------------------- Raw vault
+        # Step 1 was bronze ingest; there is no such task any more. Bronze
+        # ingestion is out of this repo's scope (spec decision D4): the estate's
+        # own raw-to-clean pipeline lands <source>_raw and the vault reads it.
+        # So the raw vault load is the first thing behind the parity gate.
+        - task_key: raw_vault_reference
+          # BOTH DEPENDENCIES ARE EXPLICIT ON PURPOSE. create_mask_functions is required
+          # because a MASK naming a function that does not exist cannot be declared.
+          # assert_hash_parity is GATE ZERO -- it must precede every load, no exceptions --
+          # and until 27 Aug it reached this task only TRANSITIVELY, through
+          # create_mask_functions. That held, but it made the estate's most important gate an
+          # inherited side effect of a mask dependency: removing or reordering
+          # create_mask_functions would have left the load with no gate above it at all, and
+          # nothing would have said so. Named directly, the graph states the requirement
+          # rather than happening to satisfy it.
+          #
+          # assert_key_derivation is named here for the same reason: it is the gate that
+          # refuses to load into a re-keyed vault, and an inherited edge would make the
+          # estate's second most important gate a side effect of something else.
+          # REFERENCE FIRST, and this edge is a requirement rather than a technical dependency.
+          # Legal entities and their hierarchies are the master data every other
+          # domain's business keys are eventually reconciled against, so the domain
+          # that defines them loads before the domains that reference them.
+          depends_on: [{task_key: create_mask_functions}, {task_key: assert_hash_parity},
+                       {task_key: assert_source_conformance},
+                       {task_key: assert_key_derivation},
+                       {task_key: apply_source_unions}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.raw_vault_reference.id}
+            full_refresh: false
+
+        - task_key: raw_vault_finance
+          depends_on: [{task_key: raw_vault_reference}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.raw_vault_finance.id}
+            full_refresh: false
+
+        - task_key: raw_vault_job
+          # ITS OWN PIPELINE IS THE POINT. job_request/FIELDGLASS_US reads a 30-branch union
+          # over fieldglass_raw -- 82 columns across 30 tenant tables. Isolated here, its
+          # graph cost cannot reach the invoice load in pay_bill.
+          depends_on: [{task_key: raw_vault_reference}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.raw_vault_job.id}
+            full_refresh: false
+
+        - task_key: raw_vault_payroll
+          depends_on: [{task_key: raw_vault_reference}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.raw_vault_payroll.id}
+            full_refresh: false
+
+        - task_key: raw_vault_pay_bill
+          depends_on: [{task_key: raw_vault_reference}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.raw_vault_pay_bill.id}
+            full_refresh: false
+
+        - task_key: raw_vault_party
+          # PARTY LAST, DERIVED FROM THE MODEL. hub_organisation declares BUSINESS_VAULT and
+          # BUSINESS_VAULT_GIE bindings that read nhl_payroll_detail and nhl_invoice_line --
+          # vault tables owned by payroll and pay_bill. Both are INACTIVE today, and the
+          # edge is declared anyway: activating a binding must not require anyone to
+          # remember that it also changes the load order.
+          depends_on: [{task_key: raw_vault_reference}, {task_key: raw_vault_payroll},
+                       {task_key: raw_vault_pay_bill}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.raw_vault_party.id}
+            full_refresh: false
+
+        # 2a-i ---------------------------- Stable views, pipeline-owned: WITHDRAWN
+        # publish_stable_views WAS A TASK HERE and was removed on 29 September, when
+        # link, NHL and HAL joined naming.STAGED_KINDS. Its scope is
+        # naming.GENERATABLE - naming.STAGED_KINDS, which is now EMPTY, and the gate
+        # fails closed on an empty scope by design -- it returns 1 saying no kind is
+        # pipeline-owned. Left in the job it failed every single run and took
+        # assert_freshness and assert_mask_survival down with it, so no run was ever
+        # green and cutover_vault_version.py's --gated-by-run could never be satisfied.
+        #
+        # THE FILE STAYS AND ITS FAIL-CLOSED BRANCH STAYS. checks/publish_stable_views.py
+        # is not deleted and must not be softened to return 0: that branch is the proof
+        # that an emptied scope is a defect rather than a pass, and it is what a future
+        # kind added to naming.GENERATABLE but not to naming.STAGED_KINDS would trip. If
+        # that ever happens, put this task back exactly as it was.
+        #
+        # NOTHING IT PROVIDED IS LOST, AND BOTH HALVES WERE CHECKED BEFORE REMOVING IT:
+        #
+        #   * THE STABLE VIEW. Every generatable kind is now staged, so every stable
+        #     view is bootstrapped by checks/load_hubs.py (keyed kinds) or
+        #     checks/load_satellites.py (satellite kinds), through the one shared rule in
+        #     accelerator.stable_views. That is the same three-case rule this task used.
+        #
+        #   * THE aud_table_load ROW, which is the half that would have gone silently
+        #     missing. This task wrote one COVERAGE row per pipeline-owned table --
+        #     staged=0, accepted=0 -- so assert_freshness could see those tables at all.
+        #     checks/load_hubs.py writes a row for the SAME table_name (both take it from
+        #     entity.tables(), the physical _revN name) with real staged/accepted counts,
+        #     and it writes one for all eleven keyed entities rather than only the active
+        #     ones, because it scopes by KIND and not by binding activity. So the audit
+        #     coverage assert_freshness reads is a superset of what it was, not a subset.
+        #
+        # The two tasks that depended on this one lost their explicit edge and keep the
+        # ordering transitively: both reach load_hubs through
+        # load_satellites_business -> business_vault -> load_satellites -> load_hubs. That
+        # reachability is now asserted in tests/test_accelerator.py rather than left to
+        # the shape of the graph.
+
+        # 2b ------------------------------------------------- Hubs
+        # DEF-42: the classical hub loader. The pipeline appends every source's rows to
+        # stg_hub_*, duplicates and all; this inserts into hub_* only the keys not
+        # already there. A hub is a conformed identity, so several sources legitimately
+        # supply the same key -- 538,186 of them on hub_accounting_journal alone -- and
+        # no append flow can dedupe across flows, because a streaming table cannot read
+        # its own contents. A batch task can.
+        #
+        # Nothing waits on it: links and NHLs COMPUTE their parent hash keys rather than
+        # looking them up, so hub load order is a matter of clarity, not correctness.
+        - task_key: load_hubs
+          # FANS IN FROM EVERY DOMAIN. It reads the staging logs of the whole
+          # model, so it cannot start while any domain is still writing them.
+          depends_on: [{task_key: raw_vault_reference}, {task_key: raw_vault_finance},
+                       {task_key: raw_vault_job}, {task_key: raw_vault_payroll},
+                       {task_key: raw_vault_pay_bill}, {task_key: raw_vault_party}]
+          spark_python_task:
+            python_file: ../checks/load_hubs.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              # --active-sources: the loader ALTERs the declared column masks onto the
+              # tables it creates (a CTAS copies the shape and not the masks), and a mask
+              # belongs only on a table this lake actually loads -- an inactive keyed
+              # table is built from its ghost flow alone and has no payload column to
+              # mask. Same list, same reason, as assert_mask_survival's own parameter.
+              - "--active-sources"
+              - "${var.active_sources}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+          environment_key: checks
+
+        # 2c ------------------------------------------------- Raw-layer satellites
+        # DEF-52: the satellite loader. The raw_vault pipeline appends every delivered
+        # row to stg_sat_*/stg_msat_*; this inserts only rows whose hashdiff differs
+        # from the LATEST stored version. Without it every satellite re-appends every
+        # row on every run -- and no gate objects, because a re-delivery arrives with a
+        # fresh load_dts and is unique at the grain append_only asserts.
+        #
+        # --layer raw: sat and msat only. business_vault computes csat FROM the raw
+        # vault (a msat this task just loaded, or an nhl), so this must land BEFORE
+        # business_vault runs. csat's own staging log (stg_csat_*) is produced by the
+        # SEPARATE business_vault pipeline and does not exist yet at this point --
+        # loading it here would look for stg_csat_* before it exists.
+        - task_key: load_satellites
+          depends_on: [{task_key: load_hubs}]
+          spark_python_task:
+            python_file: ../checks/load_satellites.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--active-sources"
+              - "${var.active_sources}"
+              - "--layer"
+              - "raw"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+          environment_key: checks
+
+        # 2d ------------------------------------------------- Business vault
+        # Computes FROM the Raw Vault, so it runs after raw_vault, not alongside it.
+        # An SDP pipeline targets one schema, so this is a second pipeline reading
+        # the first one's output rather than a second schema in the same pipeline.
+        # It runs after load_satellites (2c) because a csat is computed from the msat/nhl
+        # rows that task lands, not from the staging log the pipeline wrote.
+        - task_key: business_vault
+          depends_on: [{task_key: load_satellites}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.business_vault.id}
+            full_refresh: false
+
+        # 2d-i ----------------------------------------------- GIE issuance and export
+        # Ameren invoicing (Tasks 1-8). BOTH TASKS ARE WRITTEN NOW, and both parse and
+        # use every parameter below: invoice_issue reads csat_invoice_line_gie, which
+        # business_vault has just computed, and appends any not-yet-issued invoice
+        # date/line numbers to the append-only ledger (control.ctl_invoice_issuance)
+        # -- invoice_export projects the same satellite at its current version, joins the
+        # ledger for the two frozen values, and writes the four Workday csv files.
+        #
+        # NEITHER PRINTS PASSED ON A RUN THAT DID NOTHING, and that is deliberate rather
+        # than incidental. Each one finishes NOT_EVALUATED and names its open question
+        # instead: invoice_issue has no --invoice-date to freeze (AME002), and
+        # invoice_export has two mapped fields whose source columns do not exist plus one
+        # whose source it has no declared path to. Both return 0, so the ordering edge
+        # behind them still runs, while a job log can tell an idle run from a released
+        # invoice.
+        #
+        # THE TASKS STAY IN THE JOB FOR THE EDGE, WHICH IS REAL. Ordering is the one
+        # thing this branch could build and verify without the feed, and deleting the
+        # tasks would discard it.
+        #
+        # ISSUE BEFORE EXPORT, ALWAYS. Gold reads the issuance ledger; if export ran
+        # first it would find no row for a new invoice and would either emit a null
+        # line number or invent one. The dependency is the whole guarantee.
+        - task_key: invoice_issue
+          depends_on: [{task_key: business_vault}]
+          spark_python_task:
+            python_file: ../checks/invoice_issue.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+          environment_key: checks
+
+        - task_key: invoice_export
+          depends_on: [{task_key: invoice_issue}]
+          spark_python_task:
+            python_file: ../checks/invoice_export.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--gold-catalog"
+              - "${var.gold_catalog}"
+              - "--gold-export-schema"
+              - "${var.gold_export_schema}"
+              # PASSED EXPLICITLY, NOT LEFT TO THE WRITER'S OWN DEFAULT. Both this file
+              # and checks/invoice_export.py default it to raw_vault today, which is two
+              # places that have to keep agreeing -- and the day a target overrides
+              # vault_schema, an unpassed one reads the wrong schema silently.
+              - "--vault-schema"
+              - "${var.vault_schema}"
+              # WHERE THE FILE SET LANDS, AND IT IS NEVER DEFAULTED. The task refuses to
+              # run without it rather than picking a path, because a wrong-but-plausible
+              # default is how four CSVs land somewhere nobody is collecting from.
+              - "--export-volume"
+              - "${var.gold_export_volume}"
+          environment_key: checks
+
+        # 2e ------------------------------------------------- Business-layer satellites
+        # DEF-52, business half. business_vault has now produced stg_csat_* by computing
+        # over the msat/nhl load_satellites just landed; this run inserts hashdiff-changed
+        # csat rows the same way the raw run does for sat/msat. --layer business restricts
+        # this invocation to csat -- see checks/load_satellites.py's kinds_for_layer().
+        - task_key: load_satellites_business
+          depends_on: [{task_key: business_vault}]
+          spark_python_task:
+            python_file: ../checks/load_satellites.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--active-sources"
+              - "${var.active_sources}"
+              - "--layer"
+              - "business"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+          environment_key: checks
+
+        # 3 -------------------------------------------------- HARD GATE: append-only
+        # DESCRIBE HISTORY on every vault table must show zero UPDATE / DELETE / MERGE.
+        #
+        # Depends on load_satellites_business, not business_vault directly: this check
+        # covers BOTH vault schemas (DEF-44), and the csat satellite tables in
+        # business_vault are written by load_satellites_business's hashdiff INSERTs, not
+        # by the business_vault pipeline itself (which only produces their staging log).
+        # A dependency on business_vault alone would let this run before those inserts
+        # happen -- checking history that does not yet include the very writes it exists
+        # to police.
+        - task_key: assert_append_only
+          depends_on: [{task_key: load_satellites_business}]
+          spark_python_task:
+            python_file: ../checks/append_only_check.py
+            # DEF-44: BOTH vault schemas. This passed only the raw vault, so the business
+            # vault's streaming tables and their materialization twins were never checked
+            # for a mutating operation -- no assertion at all on half the estate, under a
+            # green gate.
+            parameters: ["--catalog", "${var.catalog}",
+                         "--schema", "${var.vault_schema}",
+                         "--schema", "${var.business_vault_schema}",
+                         "--schema", "${var.control_schema}"]
+          environment_key: checks
+
+        # 3a ------------------------------------------------ HARD GATE: freshness
+        # Has every feed loaded recently enough to be trusted? Nothing else here asks.
+        # Every other gate asks whether what landed is CORRECT, so a feed that quietly
+        # stopped delivering passes all of them -- keys join, history stays append-only,
+        # reconciliation balances -- and the vault serves yesterday's answer with nothing
+        # marking it as yesterday's.
+        #
+        # AFTER the loads, not before: it reads aud_table_load, and this run's own rows
+        # have to be in it or the gate measures the previous run and calls it stale on
+        # every first run of the day. Depends on assert_append_only for ordering rather
+        # than on the loaders directly -- that task already waits for every writer.
+        #
+        # It reads the audit table only. No vault table, no mask, no cleartext, so it is
+        # unaffected by the run-as identity's mask privileges -- which is why it can be
+        # green while assert_journal_integrity is red.
+        - task_key: assert_freshness
+          # EVERY TASK THAT WRITES aud_table_load MUST BE AN ANCESTOR, BECAUSE THIS GATE
+          # READS IT. The edge to publish_stable_views was added 26 September after a
+          # review found it missing, and removed 29 September with that task itself (see
+          # 2a-i above). What it guaranteed did not go away: the coverage rows for the
+          # keyed kinds are now written by load_hubs, and assert_append_only already
+          # reaches it -- assert_append_only -> load_satellites_business ->
+          # business_vault -> load_satellites -> load_hubs.
+          #
+          # RELYING ON REACHABILITY IS EXACTLY WHY IT IS ASSERTED AND NOT ASSUMED. "In
+          # practice it finishes first" is not a dependency; that was the finding on
+          # 26 September and it still holds. tests/test_accelerator.py walks the
+          # ancestors of every aud_table_load reader and fails if a writer is not among
+          # them, so cutting that chain fails the suite rather than quietly letting this
+          # gate measure an audit trail still being written.
+          depends_on: [{task_key: assert_append_only}]
+          spark_python_task:
+            python_file: ../checks/freshness_check.py
+            parameters: ["--catalog", "${var.catalog}",
+                         "--control-schema", "${var.control_schema}",
+                         "--active-sources", "${var.active_sources}"]
+          environment_key: checks
+
+        # 3b ------------------------------------------------- Rejects reintegrated
+        # Rejects a later run accepted. Runs AFTER the pipeline because the PIPELINE
+        # writes both sides of the comparison -- the accepted rows to the staging log and
+        # the rejected rows to the quarantine twin, as complements of one rule evaluation
+        # -- so both exist once it is done. It does NOT wait for a loader, and since
+        # 29 September that is a choice: every keyed kind is staged now, so a loader does
+        # run afterwards, but "landed" here means "accepted by the pipeline", which is the
+        # log rather than the deduplicated table the loader builds from it.
+        #
+        # reconcile_loop1 depends on THIS, not the reverse: loop-1 subtracts the records
+        # this task writes, so reconciling first would subtract an incomplete set and
+        # report a false variance.
+        - task_key: supersede_quarantine
+          # FANS IN FROM EVERY DOMAIN. It reads the staging logs of the whole
+          # model, so it cannot start while any domain is still writing them.
+          depends_on: [{task_key: raw_vault_reference}, {task_key: raw_vault_finance},
+                       {task_key: raw_vault_job}, {task_key: raw_vault_payroll},
+                       {task_key: raw_vault_pay_bill}, {task_key: raw_vault_party}]
+          spark_python_task:
+            python_file: ../checks/supersede_quarantine.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+              - "--active-sources"
+              - "${var.active_sources}"
+          environment_key: checks
+
+        # 4 -------------------------------------------------- HARD GATE: loop 1
+        # landed + (quarantined - superseded) must equal approved, per manifest.
+        # The subtraction is what supersede_quarantine (task 3b) records: a reject a
+        # later run legitimately re-accepted must not keep counting against the
+        # manifest that first rejected it. It is also the one adjustment in this gate
+        # that can only make it WEAKER, which is why loop-1 refuses to over-subtract.
+        #
+        # --entity IS PASSED EXPLICITLY, and that is not a preference. This task used to
+        # pass only --catalog and --schema, so the gate fell back to its own default of
+        # nhl_timesheet_line -- an entity whose only binding (STRIIVE_EU) is inactive in
+        # this lake. It reconciled a table nobody loads, which looked like a pass, and
+        # broke outright once the factory stopped creating quarantine twins for tables
+        # with no active binding. The gate now skips inactive tables and announces them,
+        # but a hard gate must not depend on a default to point at real data.
+        #
+        # The three tables named are the ones 3a actually loads. --active-sources is the
+        # same declared list the pipelines get, so the gate's notion of "inactive" is the
+        # generator's, not a second one.
+        - task_key: reconcile_loop1
+          depends_on: [{task_key: business_vault}, {task_key: supersede_quarantine}]
+          spark_python_task:
+            python_file: ../checks/loop1_reconciliation.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--entity"
+              - "nhl_general_journal_line,nhl_general_journal_line_closed_year,nhl_journal_line"
+              - "--active-sources"
+              - "${var.active_sources}"
+              # DEF-55: the manifest moved from governance to control. The script's own
+              # default now names control, but a default is a LITERAL schema name -- and
+              # every schema in this bundle comes from a variable, so the deployed job
+              # resolves it here rather than relying on the literal. --manifest-table is
+              # also the seam that lets the manifest live in another catalog later
+              # without a code change; this is that seam being used, not bypassed.
+              - "--manifest-table"
+              - "${var.catalog}.${var.control_schema}.ctl_approval_manifest"
+              # loop-1 now subtracts superseded rejects (control.ctl_quarantine_superseded)
+              # from the quarantined count, so it needs the schema that table lives in --
+              # the same variable every other control-schema reference in this job uses.
+              - "--control-schema"
+              - "${var.control_schema}"
+          environment_key: checks
+
+        # 4b -------------------------------- HARD GATE: accounting -- WITHDRAWN 26 Sep
+        # assert_journal_integrity STOOD HERE, between reconcile_loop1 and the grain gate
+        # below, and comes back to this exact position when PLT-2 lands.
+        #
+        # It asserts SUM(debits) = SUM(credits) per journal and agreement with the
+        # header's declared control total -- aggregate invariants a row-level
+        # expectation cannot express. It is removed from the job deliberately and
+        # temporarily, NOT because it is wrong: the run-as service principal cannot see
+        # money. governance.mask_money and mask_money_double now admit
+        # scope_unmask_currency_values (they admitted
+        # global_dataplatform_pipeline_job_runners until the platform team refused to use
+        # an operational group as a data-access key), so every debitamt/crdtamnt reads
+        # NULL and the gate correctly refuses to assert on zeros -- while blocking five
+        # tasks behind it and proving nothing. The restore condition is membership of the
+        # CURRENCY scope group, not the job-runner group.
+        #
+        # WHAT IS ABSENT WHILE IT IS OUT: debits-equals-credits and the control total
+        # over 2,453,127 journal lines are checked by nothing at all. Not failing, not
+        # passing. Recorded in docs/superpowers/OPEN_ITEMS.md and enforced from
+        # verify_repo.py's _WITHDRAWN_GATE_FILES, which fails the build if this gate
+        # goes missing WITHOUT that record -- or comes back and leaves the record behind.
+        #
+        # RESTORE: put the task back here, restore the apply_governance edge below, and
+        # drop the _WITHDRAWN_GATE_FILES entry -- one change, all three.
+
+        # 4c ------------------------------------------------- HARD GATE: grain
+        # The GL journal is an AGGREGATE of the payroll register. Both are loaded
+        # faithfully and both are correct in their own terms; the risk is that they
+        # silently stop agreeing. Pairs are read from metadata (grain: aggregate +
+        # aggregates_from), so a second aggregate is covered without editing this file.
+        #
+        # THREE TABLES IN TWO SCHEMAS. The aggregate and its raw counterpart are Raw
+        # Vault; the csat classification satellite it joins is computed FROM the Raw
+        # Vault by the second pipeline and lives in business_vault. This task passed one
+        # schema for all three and would have looked for the csat in the wrong place.
+        #
+        # --active-sources: under this target the payroll pair is entirely inactive --
+        # nhl_payroll_detail is ghost-only with no amount column and the csat has no _v1
+        # -- so the gate announces the pair as NOT EVALUATED instead of failing on the
+        # missing objects and blocking every task behind it.
+        #
+        # Depends on load_satellites_business, not business_vault directly: the csat
+        # this gate joins against is one of the three tables named above, and its rows
+        # come from load_satellites_business's hashdiff INSERT, not from the
+        # business_vault pipeline (which only materializes the csat's staging log).
+        - task_key: assert_aggregate_reconciliation
+          depends_on: [{task_key: load_satellites_business}]
+          spark_python_task:
+            python_file: ../checks/aggregate_reconciliation_check.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--active-sources"
+              - "${var.active_sources}"
+          environment_key: checks
+
+        # DEF-40: a vault schema also holds SDP's __materialization_* backing table for
+        # every streaming table -- same values, NO mask, because the mask lives on the
+        # streaming table and the generator never creates the storage underneath it. A
+        # schema- or catalog-level SELECT covers those twins, so it grants cleartext
+        # money to the very group mask_money exists to stop. apply_governance grants
+        # SELECT per TABLE from the declared model; this asserts nothing broader exists
+        # beside it.
+        #
+        # It runs BEFORE apply_governance deliberately: the point is to catch a broad
+        # grant that is ALREADY there, before more are layered on top of it.
+        - task_key: assert_no_broad_grant
+          depends_on: [{task_key: assert_append_only}, {task_key: reconcile_loop1}, {task_key: assert_aggregate_reconciliation}]
+          spark_python_task:
+            python_file: ../checks/schema_grant_check.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--schema"
+              - "${var.business_vault_schema}"
+              - "--schema"
+              - "${var.control_schema}"
+              # DEF-46: Bronze is READ by this repo and governed by another team. The
+              # REVOKE that used to enforce this from apply_masks.sql is gone; the
+              # dependency is asserted instead, and a failure is a conversation with
+              # the owning team rather than a grant from us.
+              - "--assert-not-world-readable"
+              - "${var.bronze_catalog}"
+              # DEF-47: the ALTER that used to set this was invalid on this runtime AND
+              # not ours to issue -- the catalog is Terraform-managed. Asserted instead.
+              - "--assert-isolated"
+              - "${var.catalog}"
+              # Task 6: the gate's own run on 27 September listed silver, control and
+              # bronze -- NOT gold, so a catalog- or schema-level SELECT there would
+              # have passed unseen. Subsystem C puts real money data in gold.
+              - "--gold-catalog"
+              - "${var.gold_catalog}"
+              # DECIDED 26 Aug 2026 (DEPLOY.md Phase 6STOP): the raw vault is not
+              # consumer-readable, and the business vault only through the gold catalog.
+              # Until now that held only because vault_privileged_group happened to name
+              # an engineering group -- setting it to a consumer group would have granted
+              # the vault away with nothing objecting, masks included, since a vault
+              # grant carries the unmasked __materialization_* twin with it (DEF-40).
+              #
+              # Only the privileged group is allowed. The owner needs no entry: Unity
+              # Catalog does not record ownership as a grant, so it never appears in
+              # information_schema.table_privileges.
+              - "--allow-table-select"
+              - "${var.vault_privileged_group}"
+              # Task 8: the lake can hold a schema this repo does not declare -- silver_vault
+              # did, for days, after verify_repo.py's config-level "survives nowhere in the
+              # bundle" check had already PASSED. schema_grant_check.undeclared_schemas()
+              # sweeps the catalog's actual schemas and fails on anything outside this list
+              # that is not system-owned.
+              - "--declared-schema"
+              - "${var.vault_schema}"
+              - "--declared-schema"
+              - "${var.business_vault_schema}"
+              - "--declared-schema"
+              - "${var.governance_schema}"
+              - "--declared-schema"
+              - "${var.control_schema}"
+              # Spec section 6: every hfig.control_object table lives in control, and none
+              # is left in governance. Both schemas are swept -- governance is the one the
+              # manifest and the expectation reference moved OUT of, so it is exactly where
+              # a leftover would sit.
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--control-object-schema"
+              - "${var.control_schema}"
+              - "--control-object-schema"
+              - "${var.governance_schema}"
+          environment_key: checks
+
+        # 5 -------------------------------------------------- Governance re-application
+        # Generators create/replace tables and can drop policies. Re-apply, then PROVE it.
+        - task_key: apply_governance
+          # DEF-44: assert_journal_integrity is in this list. Three of the four
+          # post-load gates blocked governance and the accounting one did not, because it
+          # was added after the dependency list was written -- so a run with debits not
+          # equal to credits would still have applied grants and published metadata.
+          # assert_journal_integrity WAS THE SECOND PREREQUISITE HERE. Removed with the
+          # task itself on 26 September (see 4b above); RESTORE BOTH TOGETHER when PLT-2
+          # is granted, or governance applies grants behind an unasserted ledger.
+          depends_on: [{task_key: assert_no_broad_grant}]
+          spark_python_task:
+            python_file: ../checks/apply_governance.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--vault-schema"
+              - "${var.vault_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--bronze-catalog"
+              - "${var.bronze_catalog}"
+              - "--gold-catalog"
+              - "${var.gold_catalog}"
+              # DEF-40: the SELECT grants are per table and derived from the model, so
+              # this task needs the SAME activity list the pipeline was given -- a
+              # quarantine twin exists only for an active binding.
+              - "--active-sources"
+              - "${var.active_sources}"
+              # DEF-46: environment-specific, and required. It used to default to
+              # hfig_data_engineering, a group that exists nowhere in this estate -- so
+              # every GRANT in apply_masks.sql was addressed to nobody, and being a
+              # default it only surfaced when someone tried to run it.
+              - "--privileged-group"
+              - "${var.vault_privileged_group}"
+          environment_key: checks
+
+        # --active-sources: a table with no active binding carries no MASK clause and no
+        # _v1, because it has no payload column to mask. The gate announces those rather
+        # than reporting a missing mask on a column that does not exist.
+        # LANDING INTEGRITY: every source key in _raw reached the vault or its twin.
+        #
+        # NOT loop-1, and the gate says so itself. Both sides come from OUR read of _raw, so it
+        # cannot see a delivery that never arrived -- it checks the LOADER. It is here because
+        # it can assert today, with nothing needed from Bronze, while reconcile_loop1 stays
+        # NOT_EVALUATED on BRZ-12.
+        #
+        # AFTER supersede_quarantine, because the identity subtracts the superseded term that
+        # task writes. Reading it before would count a re-landed reject twice and report a
+        # variance on a correct load.
+        - task_key: assert_landing_integrity
+          depends_on: [{task_key: load_satellites_business},
+                       {task_key: supersede_quarantine}]
+          spark_python_task:
+            python_file: ../checks/landing_integrity_check.py
+            parameters: ["--catalog", "${var.catalog}",
+                         "--schema", "${var.vault_schema}",
+                         "--control-schema", "${var.control_schema}",
+                         "--active-sources", "${var.active_sources}"]
+          environment_key: checks
+
+        - task_key: assert_mask_survival
+          # MOVED 31 Aug, off apply_governance and onto the last LOAD task.
+          #
+          # It hung behind apply_governance, which DEF-44 gates on assert_no_broad_grant AND
+          # assert_journal_integrity. Both have been red for days on OTHER TEAMS -- the
+          # platform team's schema-level SELECT, the admin team's group membership -- so this
+          # gate and audit completeness were SKIPPED on every run. A security gate whose
+          # silence means "did not run" is worse than one that fails, because a run summary
+          # reads as green beside it.
+          #
+          # Nothing about that gating applied to THIS task. apply_governance WRITES grants and
+          # mask DDL, and gating a write on correctness is right. This one only reads:
+          # information_schema.columns and column_masks. What it genuinely needs is the vault
+          # LOADED and the mask functions created, which load_satellites_business gives
+          # transitively -- it is the same anchor assert_append_only already uses for "the
+          # vault is fully loaded".
+          #
+          # NOT create_mask_functions alone, which was the shape this was first written as:
+          # that task runs BEFORE raw_vault, so the gate could sweep tables that had not been
+          # loaded yet and pass over nothing.
+          #
+          # publish_stable_views WAS ADDED HERE 26 September (spec 4.4) and REMOVED
+          # 29 September with the task itself (see 2a-i above). F3's existence assertion
+          # still covers every generatable kind, including link/NHL/HAL -- what changed is
+          # WHO bootstraps those views. Every generatable kind is staged now, so they come
+          # from load_hubs and load_satellites, and load_satellites_business's chain DOES
+          # reach both: load_satellites_business -> business_vault -> load_satellites ->
+          # load_hubs. The 26 September comment said that chain did not reach them, and
+          # that was true only while link/NHL/HAL were written by the SDP pipelines.
+          #
+          # That is a reachability argument, so it is asserted rather than trusted:
+          # tests/test_accelerator.py derives the set of view-publishing tasks from the
+          # source (a task whose python_file uses accelerator.stable_views' shared rule)
+          # and fails if any of them is not an ancestor of this gate.
+          depends_on: [{task_key: load_satellites_business}]
+          spark_python_task:
+            python_file: ../checks/mask_survival_check.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              # DEF-44: BOTH vault schemas. The gate walks EVERY entity in the model, and
+              # the computed satellites live in the business vault -- so
+              # csat_payroll_line_classification's two masks were looked for in a schema
+              # that cannot contain them, and would have reported MISSING the day its
+              # binding activates. The catalogue sweep had the same blind spot.
+              - "--schema"
+              - "${var.vault_schema}"
+              - "--schema"
+              - "${var.business_vault_schema}"
+              - "--active-sources"
+              - "${var.active_sources}"
+          environment_key: checks
+
+        # HARD GATE: no discard went unattributed. REPORTED BESIDE IT: prior runs closed.
+        #
+        # Runs BEFORE publish_model_metadata, which writes the run's 'completed' row, so
+        # the in-flight run is unclosed BY CONSTRUCTION at this point. That is why
+        # --job-run-id is passed and why closure is a report rather than a failure: as a
+        # hard assertion this gate was red on EVERY run, blocking publish_model_metadata
+        # -- which is the very task that would have closed the run. The arithmetic half
+        # (staged - accepted == SUM(discarded)) is unaffected and still fails the task,
+        # over every run on record including this one.
+        #
+        # --job-run-id is NOT a filter here. It names the in-flight run so the closure
+        # report can exclude it; the queries still read every run.
+        - task_key: assert_audit_completeness
+          depends_on: [{task_key: assert_mask_survival}]
+          spark_python_task:
+            python_file: ../checks/audit_completeness_check.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+          environment_key: checks
+
+        # 6 -------------------------------------------------- Publish metadata for lineage
+        - task_key: publish_model_metadata
+          # apply_governance ADDED 31 Aug, and it is the whole reason moving the mask gate is
+          # safe. This task WRITES -- meta_vault_model, mode("overwrite") -- and it used to
+          # inherit DEF-44's protection only by hanging off a chain that ran through
+          # apply_governance. Freeing the two read-only gates above cut that chain, so without
+          # this line a run with debits not equal to credits would publish metadata anyway:
+          # exactly the hole DEF-44 was opened to close, re-opened as a side effect of an
+          # unrelated fix.
+          depends_on: [{task_key: assert_audit_completeness},
+                       {task_key: apply_governance}]
+          spark_python_task:
+            python_file: ../checks/publish_metadata.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.governance_schema}"
+              - "--control-schema"
+              - "${var.control_schema}"
+              - "--job-run-id"
+              - "{{job.run_id}}"
+              - "--target"
+              - "${bundle.target}"
+              - "--active-sources"
+              - "${var.active_sources}"
+          environment_key: checks
+
+      environments:
+        - environment_key: checks
+          spec:
+            client: "3"
+            dependencies: ["pyyaml"]

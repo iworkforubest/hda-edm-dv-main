@@ -1,0 +1,620 @@
+<title>Platform Requests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does.
+
+   THIS PAGE REPLACED FOUR. workspace_admin_request.{html,md}, platform_team_access_reply,
+   platform_team_runas_sequencing and platform_team_mask_bypass_email were one queue split
+   across five files, three of which were letters written on a particular day and then left
+   to go stale. Two had already drifted far enough to need a gate keeping them in step. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2F6F62; --accent-soft:#E6F0ED;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#6FBFAC; --accent-soft:#152622;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#6FBFAC; --accent-soft:#152622;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+
+<style>
+.tbl table.status td.num{font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+.done{opacity:.72}
+.done .task{border-left-color:var(--ready)}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Requests to Platform &amp; Workspace Admin &middot; Data &amp; AI</p>
+    <h1>Four things we need, and the record of what is already done</h1>
+    <p class="lede">
+      One queue. This page replaces four separate documents &mdash; two admin requests, a
+      reply and a follow-up letter &mdash; that between them carried the same asks in
+      different states, and two of which had drifted far enough apart to need a gate keeping
+      them in step. Everything still outstanding is above the fold; everything settled is kept
+      below it, because the reasoning is the reusable part.
+    </p>
+    <p class="meta">
+      <span>Consolidated 6 September 2026</span>
+      <span>From <code>data_platform_operations</code></span>
+      <span>First raised 25 August</span>
+      <span>Workspace <code>usnc_tds</code> &middot; <code>adb-2593897084138079</code></span>
+    </p>
+  </header>
+
+  <div class="note warn">
+    <h3>One of these is a hazard, not a request</h3>
+    <p>
+      <strong><span class="mono">PLT-1</span> is the ownership transfer, and it breaks the
+      pipeline unless the job&rsquo;s <code>run_as</code> moves in the same change.</strong>
+      There is no order in which the two can move separately that leaves the vault loading
+      &mdash; the loader reaches its own schemas by ownership and by nothing else, which is
+      the state the September carve-out correctly left us in.
+    </p>
+    <p>
+      That is ours to have told Platform, not theirs to have known, and it was ours to have
+      told them <em>sooner</em>. <strong>Sent to Michael on 6 September</strong>, this page in
+      full. The ball is with Platform: the transfer cannot start until we have the service
+      principal&rsquo;s name, and it must not start without us.
+    </p>
+  </div>
+
+  <section>
+    <h2>Where this stands</h2>
+    <div class="strip">
+      <div class="stat p3"><span class="n">4</span><span class="l">open</span></div>
+      <div class="stat p3"><span class="n">1</span><span class="l">blocking a control today</span></div>
+      <div class="stat p3"><span class="n">5</span><span class="l">closed &amp; verified</span></div>
+      <div class="stat p3"><span class="n">6 Sep</span><span class="l">sent to Michael</span></div>
+    </div>
+
+    <div class="tbl" style="margin-top:1.25rem">
+      <table class="status">
+        <thead><tr><th>Id</th><th>Ask</th><th>Holder</th><th>What it blocks</th></tr></thead>
+        <tbody>
+          <tr><td>PLT-1<span class="sub">sent 6 Sep</span></td>
+              <td>Transfer schema ownership to a service principal &mdash; <strong>and tell us its name so <code>run_as</code> moves in the same change</strong></td>
+              <td class="who them">Platform</td>
+              <td>Nothing today. Breaks every load the moment it is done alone</td></tr>
+          <tr><td>PLT-2<span class="sub">reshaped 28 Sep</span></td>
+              <td>Unmask currency for the load identity &mdash; <strong>done on their side via <code>scope_unmask_currency_values</code></strong>, not <code>global_dataplatform_pipeline_job_runners</code></td>
+              <td class="who them">Admin</td>
+              <td><code>assert_journal_integrity</code>, and every gate behind it</td></tr>
+          <tr><td>PLT-3<span class="sub">DEF-43</span></td>
+              <td>A deployment folder outside <code>/Shared</code>, owned by us</td>
+              <td class="who them">Admin</td>
+              <td>The quality dashboard&rsquo;s release to business users; <code>bundle validate --strict</code></td></tr>
+          <tr><td>PLT-4</td>
+              <td>Per-table <code>SELECT</code> on the vault for the engineering scope group &mdash; <strong>and the group&rsquo;s name</strong></td>
+              <td class="who them">Platform</td>
+              <td>Any human read of the vault. Today access is by ownership only</td></tr>
+          <tr><td>PLT-5</td>
+              <td><code>USE CATALOG</code> on gold &mdash; and confirmation of which gold catalog</td>
+              <td class="who them">Platform</td>
+              <td>The gold layer, which is where every consumer is being sent</td></tr>
+          <tr><td>PLT-6</td>
+              <td>Codify <code>01_usnc_bronze_dev.control</code> in the bronze repo and transfer it</td>
+              <td class="who them">Platform</td>
+              <td>Nothing. Hygiene &mdash; we created it and said we would hand it over</td></tr>
+          <tr><td>PLT-7<span class="sub">added 6 Sep</span></td>
+              <td>An Azure Key Vault secret for the Workday ISU, and a Key&nbsp;Vault-backed secret scope in the workspace</td>
+              <td class="who them">Platform</td>
+              <td>Any automated use of the Workday Reference Service. Not a person running it by hand</td></tr>
+          <tr class="done"><td>PLT-C1<span class="sub">closed 2 Sep</span></td>
+              <td>Revoke schema-level <code>SELECT</code> on the vault</td>
+              <td class="who ok">done</td>
+              <td>Nothing &mdash; kept for the argument, which has been re-proposed twice</td></tr>
+          <tr class="done"><td>PLT-C2<span class="sub">closed 3 Sep</span></td>
+              <td>Revoke the table grants our own job had made</td>
+              <td class="who ok">done</td>
+              <td>Nothing &mdash; the cause is fixed in code, not just revoked</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Open</h2>
+      <span class="why">Each is one action. None depends on another, except that PLT-1 and PLT-4 both need a principal named.</span>
+    </div>
+
+    <article class="task b">
+      <div class="task-top"><span class="id">PLT-2</span><h3>Unmasking currency for the load identity</h3><span class="pill b">1 &middot; one membership, a control is unevaluated</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Add to <code>global_dataplatform_pipeline_job_runners</code>: <code>adrian.turcu@headfirst.group</code> now, so TDS loads run by hand produce real values; and the production service principal before the first PROD load.</dd>
+        <dt>Why membership is load-bearing</dt><dd>Mask functions evaluate <strong>with the run-as identity&rsquo;s rights</strong> during a pipeline refresh. An unprivileged pipeline does not merely hide values from itself &mdash; a downstream materialized view <strong>materialises the NULLs into the vault as fact</strong>, and the silver layer is insert-only, so they stay.</dd>
+        <dt>Measured</dt><dd>Both GL amount columns carry <code>governance.mask_money</code>, and the loading identity is in neither privileged group:
+          <div class="ev" style="margin-top:.4rem">current_user()                                                    adrian.turcu@headfirst.group
+is_account_group_member('global_dataplatform_pipeline_job_runners') false
+is_account_group_member('usnc_data_analyst_finance')                false
+
+assert_journal_integrity: 2,453,132 line(s), EVERY debitamt/crdtamnt reads NULL</div>
+          <span class="sub" style="margin-top:.4rem">The gate correctly refuses to assert on zeros. Everything behind it &mdash; <code>apply_governance</code>, <code>assert_no_broad_grant</code>, <code>publish_model_metadata</code> &mdash; is skipped.</span>
+        </dd>
+        <dt>The irreversible part has not happened yet</dt><dd>and that is the whole argument. No materialized view over a masked table exists today; the only derived object is a plain <code>_v1</code> view, which stores nothing. The exposure becomes real the day the first PIT or Gold materialized view is built &mdash; which is scheduled work. <strong>Granting membership before then costs a group edit; after, it costs a reload of history that cannot be reconstructed.</strong></dd>
+        <dt>Why this group</dt><dd>Deliberately not <code>data_platform_operations</code>: platform engineers do not need cleartext PII to operate the platform, whereas the job identity needs it to load correctly.</dd>
+        <dt>Answered 7 Sep, and measured the same day</dt><dd>The reply was <em>&ldquo;all data engineers should be members of this group already&rdquo;</em>. <strong>The identity that runs the loads is not.</strong> Asked the workspace directly:
+          <div class="ev" style="margin-top:.4rem">SELECT current_user(),
+       is_account_group_member('global_dataplatform_pipeline_job_runners'),
+       is_account_group_member('usnc_data_analyst_finance')
+
+adrian.turcu@headfirst.group   false   false</div>
+          <span class="sub" style="margin-top:.4rem">Not a disagreement about policy &mdash; the group may well be intended to contain the data engineers. It does not contain this one, and this one is what <code>vault_load</code> runs as, so the mask denies it and 8.5M values still read NULL. <strong>&ldquo;Should be&rdquo; and &ldquo;is&rdquo; are the whole gap.</strong></span>
+        </dd>
+        <dt>Done when</dt><dd>That query returns <code>true</code>. The gate resumes on the next load and we will send you the result unprompted.</dd>
+      
+        <dt>MEASURED 23 Sep &mdash; TRUE. Done</dt><dd><code>is_account_group_member('global_dataplatform_pipeline_job_runners')</code> now returns <strong>true</strong>. The claim that was false on 7 September is correct on 23 September.
+          <div class="ev">who: adrian.turcu@headfirst.group   in_job_runners: true   in_finance: false</div>
+          <strong>Five gates change state on the next load, two reporting for the first time</strong> &mdash; <code>assert_journal_integrity</code> green, <code>assert_no_broad_grant</code> resumed, <code>assert_freshness</code> executing for the first time ever, with <code>apply_governance</code> and <code>publish_model_metadata</code> behind them. <strong>We owe Michael the <code>assert_no_broad_grant</code> result unprompted</strong> &mdash; promised in writing, now due. <strong>The load cannot run yet</strong>: see <span class="mono">PLT-1</span>.</dd>
+      
+        <dt>MEASURED 25 September &mdash; the human half is done, the service-principal half is now blocking TDS, not PROD</dt>
+        <dd>This asked for two memberships: a person, so hand-run TDS loads produce real values, and <em>&ldquo;the production service principal before the first PROD load&rdquo;</em>. The first is granted &mdash; <code>adrian.turcu@vertage.com</code> is now in <code>global_dataplatform_pipeline_job_runners</code>, confirmed from the workspace. <strong>The second is no longer a PROD-only concern.</strong>
+          <br><br>On 25 September <code>run_as: service_principal</code> was added to the <code>usnc_tds</code> target (see <span class="mono">PLT-1</span>), so every task in the TDS load now runs as <strong><code>Data Platform US Terraform TDS</code></strong> (<code>7732b208-8366-4aef-af09-60e9dec9cf86</code>, id <code>144707596165893</code>) rather than as a person. That identity is not in the group, so the gate is red for the same reason as before &mdash; only the identity changed:
+          <br><br><code>assert_journal_integrity: 2,453,127 line(s) but EVERY debitamt/crdtamnt value reads NULL.</code>
+          <br><code>&nbsp;&nbsp;&ldquo;almost certainly the refresh-as-owner trap: the run-as identity is not privileged under mask_money&rdquo;</code>
+          <br><br><strong>The ask is therefore one membership, not two:</strong> add that service principal to <code>global_dataplatform_pipeline_job_runners</code>. The mask already admits the group by name and the group is named for pipeline job runners, so this reads as a gap from when the SP was created rather than a new privilege.
+          <br><br><strong>We cannot do it ourselves</strong> &mdash; <code>/api/2.0/preview/scim/v2/Groups/150092186881524</code> returns <em>&ldquo;only accessible by admins&rdquo;</em>, so we can neither read the membership nor change it. <strong>And running the job as a person is not the way round it:</strong> a human account is in the group and the mask would resolve, but <code>run_as</code> exists because that identity hit <code>PERMISSION_DENIED</code> on the schemas the SP owns. That trades one failing gate for a failing load.
+          <br><br><strong>The irreversible part still has not happened</strong>, and the original argument holds unchanged: the only derived object over a masked table is a plain <code>_v1</code> view, which stores nothing. Verified 25 September against the measured evidence in <code>2026-08-26-mask-propagation-through-views.md</code>. The exposure becomes real at the first PIT or Gold materialized view.</dd>
+
+        <dt>REFUSED 28 September &mdash; and the refusal is a better answer than the ask</dt>
+        <dd>The reply, in full force: <em>&ldquo;That&rsquo;s an operational group, and its only function is to let data engineers run jobs. The SP doesn&rsquo;t need it to run anything&#59; it needs it only because <code>mask_money</code> unmasks for that group. That makes this a data-access grant, not a gap in job permissions. If we keep it there, anyone added just to run jobs also gets cleartext currency values.&rdquo;</em>
+          <br><br><strong>They are right, and we have taken the correction.</strong> They created <code>scope_unmask_currency_values</code> and put the pipeline service principals in it, including <code>7732b208-8366-4aef-af09-60e9dec9cf86</code>. Our side of the change is landed: <code>governance.mask_money</code> <em>and</em> <code>governance.mask_money_double</code> now admit <code>scope_unmask_currency_values</code> in place of <code>global_dataplatform_pipeline_job_runners</code>. The second function was not named in their message and is changed anyway &mdash; it carries the GL originating-currency amounts (<code>ordbtamt</code>, <code>orcrdamt</code>) that the journal-integrity gate reads, so moving only <code>mask_money</code> would have half-fixed it.
+          <br><br><strong>The three PII masks are deliberately unchanged</strong> and still admit <code>global_dataplatform_pipeline_job_runners</code>. <code>scope_unmask_currency_values</code> is a currency group&#59; exempting a personal-name mask for it would be wrong semantically and as governance. No column declares those three today, so nothing is blocked. The first PII column that lands is a separate conversation with you.
+          <br><br><strong>Consequence we are carrying knowingly:</strong> <code>adrian.turcu@vertage.com</code> is in <code>global_dataplatform_pipeline_job_runners</code> but is <strong>not</strong> in <code>scope_unmask_currency_values</code>, so work run by hand now reads NULL money where it read real values before. Per your own rule &mdash; people who need cleartext amounts are added to the scope group by explicit request &mdash; <strong>that is a request, made here, not something we will engineer around.</strong> We have deliberately not added a fallback that admits either group.
+          <br><br><strong>Unverified from our side:</strong> we cannot confirm <code>scope_unmask_currency_values</code> exists or who is in it. <code>is_account_group_member</code> returns <code>false</code> identically for a non-member and for a group that does not exist, and the SCIM endpoint is admin-only. If the name differs by a character the masks deny to everyone and fail safe, silently. <strong>Please confirm the exact group name and that the SP is in it.</strong></dd>
+      </dl>
+    </article>
+
+<article class="task b">
+      <div class="task-top"><span class="id">PLT-3</span><h3>A deployment folder outside <code>/Shared</code></h3><span class="pill b">2 &middot; every deploy warns, world-writable</span></div>
+      <dl>
+        <dt>Ask</dt><dd>One folder per workspace, owned by <code>data_platform_operations</code>, with <code>users</code> holding nothing &mdash; no entry, direct or inherited:
+          <div class="ev" style="margin-top:.4rem">databricks workspace mkdirs /hfig-platform --profile &lt;workspace&gt;</div>
+        </dd>
+        <dt>Why it matters</dt><dd>Bundles deploy the pipeline&rsquo;s <em>source code</em> to the bundle root, and Lakeflow executes that code under the run-as identity, which is privileged against the raw vault. The measured ACL on the deployed folder gives <code>users</code> <strong><code>CAN_MANAGE</code>, inherited</strong> &mdash; so any workspace user can rewrite the code the vault runs. That does not defeat the column masks so much as <strong>go around them</strong>.</dd>
+        <dt>What it is blocking now</dt><dd>A finished quality dashboard cannot be released to business users. The publishing mode they would need runs queries as the publisher, for whom masks resolve to cleartext, and any user can repoint one of its queries at the raw vault. We shipped it with that mode disabled and a build check preventing re-enablement, so <strong>nothing is exposed</strong> &mdash; but the feature is finished and withheld.</dd>
+        <dt>And it hides every other warning</dt><dd><code>bundle validate --strict</code> promotes warnings to errors, so this one standing warning fails the command outright and no other warning can ever be seen behind it. We deliberately have not silenced it: making the root a variable suppresses the message without changing the permission.</dd>
+        <dt>Why we cannot fix it ourselves</dt><dd>Declaring bundle permissions cannot revoke an inherited grant, and the same block would widen the <code>vault_load</code> ACL &mdash; the opposite of what is wanted. Deploying to a personal folder works and ties the estate to one account. Creating a top-level folder is denied to us; it needs workspace admin.</dd>
+        <dt>What changes on our side</dt><dd>One line &mdash; <code>bundle_root_prefix</code> is already a variable and all eight targets follow it.</dd>
+        <dt>Answered 7 Sep, and it is a better answer than our ask</dt><dd>The reply was <em>&ldquo;deployments through the repository should cover this &mdash; bundles are released to the service principal's workspace directly, which normal users don't have access to.&rdquo;</em> <strong>We would rather do that than have a folder created for us</strong>: it removes the laptop from the deployment path entirely, which is a better outcome than a restricted folder we still deploy into by hand.
+          <br><br><strong>It has not changed anything yet, and cannot until PLT-1.</strong> What we deploy today still targets <code>/Shared</code> and still warns, measured 7 September:
+          <div class="ev" style="margin-top:.4rem">$ databricks bundle validate --target usnc_tds
+Warning: the bundle root path /Workspace/Shared/.bundle/hfig-dv-accelerator/usnc_tds
+         is writable by all workspace users</div>
+          <span class="sub" style="margin-top:.4rem">To take the repository route we need the service principal's name and its workspace path &mdash; the same input <span class="mono">PLT-1</span> and <span class="mono">PLT-4</span> are waiting on. <code>bundle_root_prefix</code> is already a variable, so pointing it there is one line.</span>
+        </dd>
+        <dt>If the answer is no</dt><dd>Tell us and we record it as an accepted risk for TDS. <strong>It must not stand for production</strong>, where the run-as identity holds production catalog rights.</dd>
+      </dl>
+    </article>
+
+<article class="task w">
+      <div class="task-top"><span class="id">PLT-7</span><h3>A Key Vault secret, and a scope to read it through</h3><span class="pill w">3 &middot; blocks the Workday half of reference data</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Two things, and the second may be ours to do if you give us the first:
+          <ul class="plain" style="margin-top:.4rem">
+            <li><strong>Hold the Workday integration user&rsquo;s password in Azure Key Vault.</strong> The credential exists and we hold it; where it lives is yours.</li>
+            <li><strong>A Key&nbsp;Vault-backed Databricks secret scope</strong> in <code>usnc_tds</code>, and later in the production workspaces. If you would rather we created it, we need the vault&rsquo;s <code>resource_id</code>, <code>tenant_id</code> and <code>dns_name</code>, and read permission on the vault &mdash; the CLI refuses with <code>UNAUTHENTICATED</code> otherwise.</li>
+          </ul>
+        </dd>
+        <dt>Measured</dt><dd><strong>There are no secret scopes in this workspace at all</strong> &mdash; not one, of either kind, checked 6 September. So this is not a matter of choosing a name inside an existing arrangement; the arrangement does not exist yet.</dd>
+        <dt>What it does NOT block</dt><dd>Trying the integration. Our retrieval tool reads the password from the environment, so whoever holds it can run it from their own shell today. <strong>We are not blocked and are not asking you to hurry.</strong></dd>
+        <dt>What it does block</dt><dd>Anything automated. The moment a job or pipeline needs that credential it must come from a scope, because the alternative is a secret in a file the bundle ships &mdash; and the bundle root grants <code>CAN_MANAGE</code> to <code>users</code> by inheritance until <span class="mono">PLT-3</span> lands. Our build refuses to carry a credential in those files, which is deliberate.</dd>
+        <dt>Worth knowing</dt><dd>A Key&nbsp;Vault-backed scope is <strong>read-only through the Databricks API</strong> &mdash; secrets are created in the vault, not through Databricks. So rotation stays entirely yours, which we think is the right answer anyway.</dd>
+        <dt>Done when</dt><dd>A scope name and a key name we can read, or the three vault facts plus permission to create the scope ourselves.</dd>
+      
+        <dt>MEASURED 23 Sep &mdash; the scope EXISTS, and we cannot use it</dt><dd><strong>A Key Vault-backed scope now exists</strong>: <code>kv-usnc-automation</code>, backend <code>AZURE_KEYVAULT</code>. Real progress &mdash; on 6 September this workspace had no scopes of any kind.
+          <div class="ev">scope: kv-usnc-automation | backend: AZURE_KEYVAULT
+
+$ databricks secrets list-secrets kv-usnc-automation
+Error: does not have secret-scopes.secrets/list permission on scope kv-usnc-automation</div>
+          <strong>We hold no permission on it</strong>, so we cannot see whether the Workday credential is in it, under what key, or grant the run-as identity access. <strong>The end condition for <code>.workday-credentials</code> is therefore NOT met.</strong> The file stays, and its reason is now narrower and easier to close: not &ldquo;no scope exists&rdquo; but &ldquo;one exists and we have no READ on it&rdquo;.
+          <br><br><strong>Still needed:</strong> a <code>READ</code> ACL for us and for the pipeline&rsquo;s run-as principal, plus the key name the Workday password sits under &mdash; or confirmation it has not been loaded yet, which is a different task and ours to prompt.</dd>
+      </dl>
+    </article>
+
+<article class="task w">
+      <div class="task-top"><span class="id">PLT-5</span><h3>Gold access &mdash; and is it still the right catalog?</h3><span class="pill w">4 &middot; largest unknown, blocks nothing today</span></div>
+      <dl>
+        <dt>Ask</dt><dd><code>USE CATALOG</code> on <code>03_usnc_gold_edm_dev</code>. We cannot build a gold layer in a catalog we cannot open.</dd>
+        <dt>And confirm the target</dt><dd>Four other gold catalogs <em>are</em> visible to us &mdash; <code>03_usnc_gold_finance_dev</code>, <code>_job_order_dev</code>, <code>_job_request_dev</code>, <code>_marketing_sales_dev</code>. If the intent has moved to per-domain gold catalogs we would rather build into that than into <code>_edm_dev</code> out of habit. Our bundle names <code>_edm_dev</code> today; changing it is a one-line variable.</dd>
+        <dt>How we know it exists</dt><dd>Asking Unity Catalog returns <code>User does not have USE CATALOG on Catalog '03_usnc_gold_edm_dev'</code>, while a deliberately invented name still returns <em>does not exist</em>. The catalog is real and we simply have no access.</dd>
+        <dt>Why it matters beyond us</dt><dd>Every answer we give about vault access ends &ldquo;consumers get gold&rdquo;. Until this lands, that sentence has no route behind it, and the honest position is that there is <strong>no path to this data for anyone outside data engineering</strong>.</dd>
+      
+        <dt>MEASURED 23 Sep &mdash; access granted, and their per-domain answer is confirmed</dt><dd>We can now open <code>03_usnc_gold_edm_dev</code>. It holds <strong>nothing but <code>information_schema</code></strong>. Five gold catalogs are visible:
+          <div class="ev">03_usnc_gold_edm_dev              &lt;- what our bundle targets, and it is empty
+03_usnc_gold_finance_dev
+03_usnc_gold_job_order_dev
+03_usnc_gold_job_request_dev
+03_usnc_gold_marketing_sales_dev</div>
+          <strong>Their reply &mdash; &ldquo;per domain gold catalogs has been the design since Artifact set it up&rdquo; &mdash; is true on the evidence.</strong> That turns our question into a live decision: <code>gold_catalog</code> is hard-coded to <code>03_usnc_gold_edm_dev</code> in <strong>all nine targets</strong>, and if gold is per-domain then a finance projection belongs in <code>..._finance_dev</code>, not an <code>edm</code> catalog that exists and holds nothing. <strong>A modelling decision with a nine-target config change behind it</strong>, to be taken deliberately rather than by leaving the default.</dd>
+      
+        <dt>INVESTIGATED 23 Sep &mdash; and CORRECTED the same day</dt><dd><strong><code>03_usnc_gold_edm_dev</code> is the right target and stays.</strong> It is where this programme builds; the four per-domain catalogs are the <em>existing</em> estate and are to be consolidated into it over time. <strong>No config change is needed and none was made.</strong></dd>
+        <dt>What was measured, which is still worth having</dt><dd><div class="ev">CATALOG                           CREATED      SCHEMAS
+03_usnc_gold_edm_dev              2026-09-04   (none beyond information_schema)
+03_usnc_gold_finance_dev          2026-01-15   dimensions, facts, sharing
+03_usnc_gold_job_order_dev        2025-12-23   facts, sharing
+03_usnc_gold_job_request_dev      2025-12-23   dimensions, facts, man_internal_suppliers, sharing
+03_usnc_gold_marketing_sales_dev  2025-12-15   marketing_sales, sharing
+
+all five owned by 7732b208-... , all five commented "Managed by Terraform"</div>
+        The four domain catalogs carry a settled <code>dimensions</code> / <code>facts</code> / <code>sharing</code> convention. <strong>That convention is worth adopting for our own projections regardless</strong>, since those catalogs are the ones eventually merging into ours &mdash; matching it now is free, and diverging from it makes the consolidation someone else's problem later.</dd>
+        <dt>The wrong turn, recorded because the shape of it will recur</dt><dd>On this evidence we recommended <em>against</em> <code>03_usnc_gold_edm_dev</code>: it is the newest catalog, it is empty, and it appeared days after we asked for gold access, so it read as a catalog created for us by a team answering the wrong request. <strong>Every one of those facts is true and the conclusion drawn from them was wrong.</strong>
+        <br><br>The same evidence fits two opposite stories &mdash; a mistaken catalog created in haste, or the <strong>consolidation target</strong> of a migration that has not started, which is what it is. <strong>Creation dates order events; they do not reveal intent</strong>, and nothing in the lake could have distinguished the two readings. Platform&rsquo;s own answer &mdash; &ldquo;per domain gold catalogs has been the design since Artifact set it up&rdquo; &mdash; describes the estate as it stands, not the direction it is moving, and we read it as both.
+        <br><br><strong>The rule this leaves:</strong> a measurement can establish what exists and when it appeared. Where something is <em>going</em> is a roadmap question, and the only reliable source is the person holding the roadmap. Ask, rather than infer it from timestamps.</dd>
+      </dl>
+    </article>
+
+  </section>
+
+  <section class="tier done">
+    <div class="tier-head">
+      <h2>Closed &mdash; kept because the reasoning is reused</h2>
+      <span class="why">Nothing here needs sending or acting on. It is here because both arguments have been re-proposed since.</span>
+    </div>
+
+    
+<article class="task b">
+      <div class="task-top"><span class="id">PLT-1</span><h3>Ownership transfer &mdash; and <code>run_as</code> in the same change</h3><span class="pill r">Done 25 Sep</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Tell us the service principal&rsquo;s name. Transfer ownership of the four vault schemas to it. We set <code>run_as</code> to that principal and redeploy &mdash; a one-line change we can land the same day.</dd>
+        <dt>Why it cannot be split</dt><dd>The pipeline reaches its schemas <strong>by ownership and by nothing else</strong>. Measured in <code>02_usnc_silver_edm_dev</code>, 5 September:
+          <div class="ev" style="margin-top:.4rem">Grants on raw_vault      none at all
+Grants on control        none at all
+Grants on the catalog    USE_CATALOG to scope_tds_full_scopes_write -- traversal only
+Owner of all four        adrian.turcu@headfirst.group
+Job run_as on usnc_tds   not declared, so it runs as its creator -- the same account</div>
+          <span class="sub" style="margin-top:.4rem">Ownership first &rarr; the job runs as a user who owns nothing. <code>run_as</code> first &rarr; the job runs as a principal that owns nothing. There is no third order.</span>
+        </dd>
+        <dt>Sequencing</dt><dd>Nothing clever is needed: <code>vault_load</code> has no cron and no trigger, so the window between the two changes costs nothing as long as nobody starts a load inside it. We will not.</dd>
+        <dt>Please do NOT bridge it</dt><dd>with a temporary schema-level <code>SELECT</code>. That was our own first suggestion and we withdrew it &mdash; a schema grant covers SDP&rsquo;s <code>__materialization_*</code> twins, which carry no mask. It is the exact grant your revocation removed, and our build gate fails on it. The reasoning is kept in full below.</dd>
+        <dt>Two facts on our side</dt><dd>The four production targets already declare <code>run_as: ${var.service_principal}</code> &mdash; the shape you are asking for is the shape we built. The four <code>_tds</code> targets, the ones actually deployed, do not. And <code>service_principal</code> resolves to an empty string today, so <strong>production could not deploy either</strong>. One answer settles both.</dd>
+        <dt>Done when</dt><dd><strong>A principal name. In TDS we do not need a time.</strong> Nothing on this workspace runs on a timer &mdash; re-measured 7 September, <code>schedule</code>, <code>trigger</code> and <code>continuous</code> all absent &mdash; and every load here is started by hand. So there is no window to coordinate: transfer whenever suits you, and we redeploy <code>run_as</code> before the next load. If we get the order wrong the load fails with a permission error, which is harmless here and announces itself.
+          <br><br><strong>The coordinated window is a production requirement, not a TDS one.</strong> Keeping that straight matters in both directions: asking you to schedule a change window for a test workspace wastes your time, and <em>not</em> asking for one in production would be the actual mistake &mdash; there the run-as identity holds production catalog rights and a scheduled load can land inside the gap. <strong>Do not carry this TDS answer forward to production.</strong></dd>
+      
+        <dt>MEASURED 23 Sep &mdash; the transfer is PARTIAL, and a partial transfer is worse than none</dt><dd>Ownership moved on or about 8 September to <code>7732b208-8366-4aef-af09-60e9dec9cf86</code>, but only some of it &mdash; matching the wording &ldquo;what ownership I can&rdquo;:
+          <div class="ev">SCHEMA OWNERS   raw_vault       7732b208-...   &lt;- moved
+                business_vault  adrian.turcu   &lt;- NOT moved
+                control         adrian.turcu   &lt;- NOT moved
+
+TABLE OWNERS    raw_vault        6 tables  7732b208-...
+                raw_vault       67 tables  adrian.turcu
+                control          9 tables  7732b208-...
+                business_vault   8 tables  adrian.turcu</div>
+          <strong>A schema owned by the principal whose tables are owned by a person is a split we must not deploy on top of.</strong> Setting <code>run_as</code> to the principal now hands the pipeline an identity owning its schema and 6 of 73 raw-vault tables, so the first load fails on the other 67 &mdash; and it would look like our change broke it.
+          <br><br><strong>Nothing ran inside the window, so the commitment held.</strong> <code>vault_load</code> last executed <strong>4 September</strong>, four days before the transfer, and <code>schedule</code>, <code>trigger</code> and <code>continuous</code> remain absent. <strong>We sat in the gap for fifteen days without noticing</strong>, survivable only because nothing here runs on a timer &mdash; the same fact the original argument rested on.</dd>
+      
+        <dt>CLOSED 25 September &mdash; the split is gone, and the load proves it</dt>
+        <dd>Ownership is now whole. Measured directly:
+          <br><br><code>raw_vault, business_vault, control, governance &mdash; all four schemas owned by 7732b208-&hellip;</code>
+          <br><code>every table visible to us in those schemas &mdash; same owner</code>
+          <br><br>The partial state this raised &mdash; a schema owned by the principal whose tables were owned by a person &mdash; no longer exists. <code>run_as: service_principal</code> was added to the <code>usnc_tds</code> target in the same change, as this asked, and the full load then ran end to end: 23 tasks, six domain pipelines, ten hubs, five satellites, <code>create_control_objects</code> issuing <code>ALTER TABLE</code> and <code>load_satellites</code> issuing <code>ALTER COLUMN &hellip; SET MASK</code>, all as that principal. <strong>Nothing about this is inferred from the grant;</strong> the operations that would have failed on a split all succeeded.</dd>
+      </dl>
+
+      <div class="note warn" style="margin-top:1.1rem">
+        <h3>Update, 25 September &mdash; this is now the reply Michael asked for, not an escalation</h3>
+        <p style="margin-bottom:.6rem">
+          Michael&rsquo;s tenant-move note says: <em>&ldquo;Queries and tables you created
+          yourself&hellip; may still show your old address as owner. They still work, but if
+          you need to edit or delete one and can&rsquo;t, let us know and we will move the
+          ownership across. (This has been done for some objects but let me know if any are
+          missing)&rdquo;</em> &mdash; so what follows is <strong>three objects that were
+          missed</strong>, reported as invited. The weight this page gave PLT-1 was right for
+          a carve-out nobody had scheduled; it is heavier than this needs now.
+        </p>
+        <p>
+          Two things have changed since this was written, and together they turn the ask
+          from <em>&ldquo;name a principal&rdquo;</em> into <strong>one action a metastore
+          admin can take in a minute</strong>.
+        </p>
+        <p>
+          <strong>The transfer is half done, and it split along the line this page warned
+          about.</strong> Re-measured 25 September:
+        </p>
+        <div class="ev">02_usnc_silver_edm_dev   owner 7732b208-...  Data Platform US Terraform TDS   OK
+  raw_vault              owner 7732b208-...                                   OK
+  business_vault         owner adrian.turcu@headfirst.group                   STALE
+  control                owner adrian.turcu@headfirst.group                   STALE
+  governance             owner adrian.turcu@headfirst.group                   STALE</div>
+        <p>
+          The catalog and <code>raw_vault</code> moved &mdash; those are the objects
+          Terraform created. The other three were created by hand and kept their creator.
+        </p>
+        <p>
+          <strong>And that creator no longer exists.</strong> The Microsoft tenant moved
+          from <code>headfirst.group</code> to <code>vertage.com</code>, so those three
+          schemas are owned by a principal this tenant cannot resolve. Nobody can grant on
+          them, and nobody can create in them.
+        </p>
+        <p>
+          <strong>It now breaks the load, where a week ago it did not.</strong> Deployed to
+          <code>usnc_tds</code> on 25 September &mdash; the deploy itself succeeded, 155
+          files, both pipelines and the job updated &mdash; and <code>vault_load</code>
+          failed at its third task:
+        </p>
+        <div class="ev">[UNAUTHORIZED_ACCESS] PERMISSION_DENIED:
+User does not have CREATE TABLE on Schema '02_usnc_silver_edm_dev.control'</div>
+        <p>
+          Every earlier load worked because it had never needed to <em>create</em> anything
+          in <code>control</code>. <code>raw_vault</code> already holds <strong>17.9M
+          rows</strong>. It would have failed twice more, at <code>apply_governance</code>
+          and <code>business_vault</code>, for the same reason.
+        </p>
+        <p>
+          <strong>We tried to fix it ourselves and were refused</strong>, which is the
+          expected answer and worth recording: UC requires ownership or metastore admin to
+          reassign, and our live identity is neither for these three.
+        </p>
+        <p><strong>So the ask is now exactly this, and nothing else:</strong></p>
+        <div class="ev">databricks schemas update 02_usnc_silver_edm_dev.control \
+  --json '{"owner":"adrian.turcu@vertage.com"}'
+databricks schemas update 02_usnc_silver_edm_dev.governance \
+  --json '{"owner":"adrian.turcu@vertage.com"}'
+databricks schemas update 02_usnc_silver_edm_dev.business_vault \
+  --json '{"owner":"adrian.turcu@vertage.com"}'</div>
+        <p>
+          <strong>A service principal instead of the user is better and we will take
+          either.</strong> If you would rather these went to the same principal that owns
+          the catalog and <code>raw_vault</code>, that is the tidier answer and we will set
+          <code>run_as</code> to match in the same change &mdash; which is what this page
+          has asked for from the start. What we cannot do is leave them owned by an
+          identity that no longer exists.
+        </p>
+        <p>
+          <strong>The <code>run_as</code> half is still open and still ours to land.</strong>
+          <code>var.service_principal</code> resolves to an empty string on
+          <code>usnc_tds</code>, so the job runs as whoever triggers it &mdash; which is why
+          the failure above wore a person&rsquo;s name. One principal name settles that too.
+        </p>
+        <p>
+          <strong>And one correction to offer Michael, gently, because it is his own
+          assumption and it does not hold here.</strong> His note says <em>&ldquo;Production
+          pipelines and data are not affected. They run under service accounts, not
+          people.&rdquo;</em> That is true of production. It is <strong>not</strong> true of
+          <code>vault_load</code> on <code>usnc_tds</code>: <code>run_as</code> is unset, so
+          it runs as whoever starts it, and today that was a person whose identity had just
+          changed. Worth his knowing, since the same will be true of any other TDS job built
+          the same way &mdash; and it is the half of PLT-1 we have been asking him to unblock
+          since 6 September.
+        </p>
+      </div>
+
+    </article>
+
+<article class="task w">
+      <div class="task-top"><span class="id">PLT-4</span><h3>Per-table <code>SELECT</code> for the engineering group, and the allowlist name</h3><span class="pill r">Granted 23 Sep</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Wire per-table <code>SELECT</code> on <code>raw_vault</code> and <code>business_vault</code>, through your access repo, for the engineering scope group corresponding to <code>us_tds_data_engineer</code>. No individual names &mdash; a per-person list rots the first time someone joins or leaves.</dd>
+        <dt>Who needs what</dt><dd>The data engineering team, and nobody else &mdash; all tables, that one group. No analysts, no BI developers, no business users, in any environment.</dd>
+        <dt>The write half is not a permissions question</dt><dd>Nobody needs <code>MODIFY</code> on a vault table, us included. The model is changed by editing metadata in git and deploying it, so &ldquo;who may change the vault&rdquo; is controlled by repository review and deploy rights. That is a better control than a grant: a change arrives as a reviewed commit or it does not arrive.</dd>
+        <dt>The second answer we need</dt><dd>Our <code>assert_no_broad_grant</code> gate fails the build on any table-level read grant held by a principal outside a configured allowlist &mdash; deliberately, because a per-table grant to the wrong group defeats a mask as completely as a schema grant. <strong>So your correctly-made grant will turn our build red unless the gate knows the grantee.</strong> Simplest from our side is a list we read from somewhere you control, so your repo stays the source of truth and we stop guessing.</dd>
+        <dt>Why the vault stays closed</dt><dd>The silver layer is a historised audit model. A business question answered directly from it will be answered <em>wrongly</em> &mdash; the shape invites joining a satellite without end-dating it and reading superseded rows as current. Consumers get gold. Which is <span class="mono">PLT-5</span>.</dd>
+        <dt>Done when</dt><dd>The grant exists, and we know the principal name to trust.</dd>
+      
+        <dt>MEASURED 23 Sep &mdash; granted, and we read the name out rather than asking again</dt><dd>SR-324918 is in place. The grantee is <strong><code>scope_tds_edm_vault_read</code></strong>, holding <code>SELECT</code> on <strong>43 tables</strong> across <code>raw_vault</code> and <code>business_vault</code>. <strong>The second answer we asked for arrived as data rather than as a reply</strong> &mdash; a grant names its own grantee, so that input never needed a human.
+          <br><br><strong>Two things verified rather than assumed.</strong> No <code>SELECT</code> exists at schema or catalog level on any vault schema, so the grant was made per-table exactly as asked and <span class="mono">PLT-C1</span>&rsquo;s carve-out holds. And it works: <code>raw_vault.hub_ledger_account</code> returns <strong>1,906,882 rows</strong> to a human for the first time &mdash; access was by ownership only until now.
+          <br><br><strong>Our gate fails the build until it learns this name</strong>, which is the failure we warned them about. That is our change to make, not theirs.</dd>
+      
+        <dt>FIXED on our side 23 Sep</dt><dd><code>vault_privileged_group</code> now reads <code>scope_tds_edm_vault_read</code> for both <code>usnc_tds</code> and <code>dev</code> &mdash; both target the same workspace and the same catalog, so changing one and not the other would have had our own apply add a second grantee to the tables the other governs. <strong>Both names resolve</strong> (<code>is_account_group_member</code> is true for each), so this was not a broken value being corrected: <code>us_tds_data_engineer</code> is the ROLE group that holds people, <code>scope_tds_edm_vault_read</code> is the SCOPE group that holds the grants. <strong>The variable does two jobs</strong> &mdash; the gate ALLOWS this name and <code>apply_governance</code> GRANTS to it &mdash; which is why the role group would have failed the build on Platform&rsquo;s correct grant <em>and</em> created a second grantee.</dd>
+      </dl>
+    </article>
+
+<article class="task r">
+      <div class="task-top"><span class="id">PLT-6</span><h3>Codify the bronze control schema</h3><span class="pill r">Done 23 Sep</span></div>
+      <dl>
+        <dt>Ask</dt><dd>Include <code>01_usnc_bronze_dev.control</code> in the same codification as the other schemas &mdash; declare it in the bronze repo and transfer it.</dd>
+        <dt>Context</dt><dd>We created it on 31 August, with four tables, owned by the same personal account. It is exactly the practice your point about user-created schemas is about, and we accept the argument. We cannot repeat it in any case: the <code>CREATE_SCHEMA</code> that made it possible is now gone, which is the right outcome.</dd>
+        <dt>For completeness</dt><dd>The four tables are the three mandatory audit tables plus <code>ctl_delivery_manifest</code>, generated from our control standard. The bronze ingestion service principal holds <code>USE_SCHEMA</code> plus <code>SELECT</code> and <code>MODIFY</code> <strong>per table</strong>, so it can write the delivery rows. If you would rather that grant also came through the access repo, say so.</dd>
+        <dt>And it is the only one</dt><dd>We swept rather than assumed: across <code>01_usnc_bronze_dev</code> and <code>02_usnc_silver_edm_dev</code> this is the sole user-created schema of ours. <code>test</code> and <code>test_raw</code> are owned by your ingestion service principal.</dd>
+      
+        <dt>MEASURED 23 Sep &mdash; DONE</dt><dd><code>01_usnc_bronze_dev.control</code> is owned by <code>7732b208-8366-4aef-af09-60e9dec9cf86</code>. We created that schema by hand on 31 August; it is now held by the deployment principal like the rest.</dd>
+      </dl>
+    </article>
+
+<article class="task r">
+      <div class="task-top"><span class="id">PLT-C1</span><h3>Schema-level <code>SELECT</code> on the vault</h3><span class="pill r">Granted 2 Sep</span></div>
+      <dl>
+        <dt>Outcome</dt><dd>Revoked from <code>scope_tds_full_scopes_read</code> and <code>scope_tds_full_scopes_write</code> on all three vault schemas &mdash; <code>raw_vault</code>, <code>business_vault</code>, <code>control</code> &mdash; with a permanent sensitive-schema carve-out merged in the access repo so propagation cannot re-add it. Catalog-level <code>CREATE_SCHEMA</code> went with it. <code>governance</code> keeps its grants, correctly &mdash; measured, it holds zero masked columns.
+          <div class="ev" style="margin-top:.4rem">before  SCHEMA GRANT GATE FAILED -- 180 problem(s)
+after   SCHEMA GRANT GATE PASSED: no catalog- or schema-level read grant on 02_usnc_silver_edm_dev
+        GATE SUMMARY :: schema_grant :: status=PASSED asserted=11 not_evaluated=0</div>
+        </dd>
+        <dt>Re-verified 7 Sep, five days on</dt><dd>Still clean. <code>SELECT</code> is held by <strong>nobody</strong> at schema level on <code>raw_vault</code>, <code>business_vault</code> or <code>control</code>. That is the part worth confirming: the original grants arrived by <em>propagation</em> from the <code>full_scopes</code> roll-up groups, so a hand revoke would have lasted until the next apply. <strong>Five days without recurrence is evidence the carve-out is doing the work</strong>, not the revoke.</dd>
+        <dt>The cause was ours, indirectly</dt><dd>Our own write access was implemented by adding the silver catalogs to the <code>full_scopes</code> roll-up groups, which propagate a standard privilege set including <code>SELECT</code> onto every schema in their catalogs. Nothing was misconfigured and nothing came from our governance job &mdash; <code>apply_masks.sql</code> is built not to emit a schema grant and says so at the site. What was missing was a carve-out, which did not exist because the catalog was empty when it was wired up. A hand revoke would not have held.</dd>
+        <dt>THE ARGUMENT, which is why this is kept</dt><dd><strong>A schema grant is not a bigger table grant; it is a different thing.</strong> Every streaming table has a hidden companion that SDP creates to materialise it, named <code>__materialization_*</code>. The column masks are declared on the streaming table. <strong>They are not on the companion.</strong> A grant naming a table conveys that table and the mask applies; a grant on the schema conveys everything in it, companions included &mdash; so the holder reads the unmasked twin of a masked column. Money and PII in cleartext, no mask evaluated, and nothing in the audit distinguishing that read from any other.</dd>
+        <dt>Why it keeps mattering</dt><dd>This is what <code>checks/schema_grant_check.py</code> encodes, and a temporary schema-level <code>SELECT</code> has been proposed as a convenient bridge <strong>twice</strong> since the revoke &mdash; once by us. Read this before anyone suggests a third.</dd>
+      </dl>
+    </article>
+
+<article class="task r">
+      <div class="task-top"><span class="id">PLT-C2</span><h3>Our own manual grants</h3><span class="pill r">Revoked, and the cause fixed</span></div>
+      <dl>
+        <dt>Outcome</dt><dd>26 table-level <code>SELECT</code> and 2 <code>USE SCHEMA</code> revoked; <code>us_tds_data_engineer</code> holds nothing on the vault.</dd>
+        <dt>The part worth keeping</dt><dd>Those grants were <strong>ours</strong>, emitted by our own job, not set by hand &mdash; so a revoke alone would have lasted until the next run. The code changed too: every data grant now sits behind one flag that defaults to off, and a build check refuses that flag in the job definition. Turning it back on is a decision taken with Platform, not a parameter someone slips in.</dd>
+      </dl>
+    </article>
+
+  </section>
+
+  <section>
+    <h2>Two corrections we made to ourselves</h2>
+    <p class="closing">
+      Both were in the 3 September reply, and both were re-checked rather than assumed to have
+      kept. Neither changes what we asked for.
+    </p>
+    <div class="tbl" style="margin-top:1.25rem">
+      <table class="status">
+        <thead><tr><th>What we said</th><th>What is true</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>&ldquo;Gold does not exist yet&rdquo;<span class="sub">3 September</span></td>
+            <td>It exists and we cannot see it. We did not notice it appear.</td>
+            <td>Our position is unchanged &mdash; consumers get gold, the vault stays closed &mdash; but the <em>reason</em> we gave is out of date. Now <span class="mono">PLT-5</span>.</td>
+          </tr>
+          <tr>
+            <td>&ldquo;<code>assert_no_broad_grant</code> is green&rdquo;<span class="sub">3 September</span></td>
+            <td>It was green then and <strong>has not run since</strong>. We can assert it, not show it.</td>
+            <td>It sits downstream of <code>assert_journal_integrity</code>, which is <span class="mono">PLT-2</span>. You may reasonably act on &ldquo;their gate is green&rdquo; when wiring grants; the honest statement is &ldquo;green on 3 September, unable to run since&rdquo;.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="note">
+    <h3>One thing consolidating this found in our own configuration</h3>
+    <p>
+      <code>service_principal</code> is declared with <code>default: ""</code>. The variable
+      directly beneath it, <code>vault_privileged_group</code>, carries a comment saying there
+      is <em>deliberately</em> no default, because &ldquo;a wrong-but-plausible default is how
+      a grant lands on the wrong principal quietly; an unset one fails at configuration time,
+      naming the target that is missing it.&rdquo;
+    </p>
+    <p>
+      By its neighbour&rsquo;s own rule, an empty-string default is the weaker of the two
+      choices &mdash; it resolves rather than failing, and a production deploy would carry an
+      empty <code>run_as</code> rather than refusing. Ours to fix, not Platform&rsquo;s, and
+      noted here because <span class="mono">PLT-1</span> is what puts a real value into it.
+    </p>
+  </div>
+
+  <footer>
+    <p>
+      Consolidated 6 September 2026 from <code>workspace_admin_request.{html,md}</code>,
+      <code>platform_team_access_reply.html</code>,
+      <code>platform_team_runas_sequencing.html</code> and
+      <code>platform_team_mask_bypass_email.html</code>, all four retired. Measurements keep
+      the dates they were taken on; nothing here has been re-measured against a live workspace
+      as part of the merge.
+    </p>
+    <p>
+      <strong>Sent to Michael on 6 September 2026</strong>, in full. The measurement
+      <span class="mono">PLT-1</span>&rsquo;s &ldquo;the window costs nothing&rdquo; argument
+      rests on was re-taken the same day <strong>against the deployed job itself</strong>,
+      not inferred from the bundle: <code>schedule</code>, <code>trigger</code> and
+      <code>continuous</code> are all absent and <code>edit_mode</code> is
+      <code>UI_LOCKED</code>, so one cannot be added through the UI either.
+      <code>run_as</code> is still the personal account. The bundle was redeployed that day
+      too, so the transfer really is the one line it claims to be &mdash; the workspace had
+      drifted 90 commits behind and was a task short.</p>
+    <p>
+      <strong>That measurement now has a shelf life.</strong> It was true when this was sent;
+      a schedule is one edit away from being true instead, and the argument does not survive
+      it. Re-measure before the transfer is executed, not before it is agreed.
+    </p>
+  </footer>
+
+</div>

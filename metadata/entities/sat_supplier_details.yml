@@ -1,0 +1,81 @@
+# THE GREAT PLAINS VENDOR MASTER'S DESCRIPTIVE ATTRIBUTES, 29 September 2026.
+#
+# hub_supplier records that a vendor id was asserted within one company's books; this
+# records what GP said about it. pm00200 is the payables vendor master and the first real
+# source this hub has ever had -- its FIELDGLASS_US binding still reads a placeholder,
+# because Fieldglass carries no supplier CODE at all (zero supplier_code columns across
+# all 302 tables in fieldglass_raw, measured 23 September) and a name cannot be a key when
+# the same company arrives spelled two ways inside a single row.
+#
+# THE SOURCE NAME IS GP_VENDOR, MATCHING THE HUB'S BINDING, and here that is a convention
+# rather than a necessity: hub_supplier declares no key_literals, so this satellite's
+# parent key is composed from its own key columns. Matching anyway keeps the generated
+# table name (sat_supplier_details_gp_vendor) and the rec_src honest about which binding
+# minted the parent rows, and it means the satellite does not silently keep working if the
+# hub's binding is renamed out from under it.
+#
+# SCOPED BY input_db, AND THE SCOPE IS THE WHOLE POINT. 32,606 rows, 15,665 distinct
+# vendorid, 16,295 distinct (input_db, vendorid): 630 vendor ids name DIFFERENT companies
+# in different operating companies. The parent key below carries both positions because
+# the hub's does; dropping input_db here would point this satellite's rows at a hub row
+# that never exists, which is the recoverable half of that mistake. Dropping it on the hub
+# is the unrecoverable half.
+#
+# VERSIONED. 32,606 rows over 15,665 vendors is ~2.08 per vendor -- the same
+# delivery-over-delivery shape the customer master has -- so no dedup_by: each delivery is
+# GP's answer at a different moment and a satellite exists to keep the answers apart.
+#
+# NO MASK. Nothing here is money. `curncyid` is a currency CODE and `pymtrmid` a payment
+# TERMS code; both are identifiers. So this satellite needs no ALTER path after a CTAS,
+# which is what a declared mask would have required -- a CTAS copies shape and not masks.
+#
+# `vendstts` IS CARRIED AND NEVER FILTERED, on the same reasoning as rm00101's `inactive`
+# and sat_legal_entity_details' dissolved companies: an inactive or hold vendor still owns
+# payables history and must still resolve. A staging filter would leave hub rows with no
+# satellite, and every table involved would go on loading.
+name: supplier_details
+kind: sat
+domain: party
+parents: [supplier]
+sensitivity: internal
+
+payload:
+  - vendname
+  - venddba
+  - vendshnm
+  - vendstts
+  - curncyid
+  - pymtrmid
+
+descriptions:
+  vendname: >-
+    The vendor's name as Great Plains holds it, within one company's books. Not a key and
+    not reliable as one: 630 vendor ids carry different names in different operating
+    companies, which is why the id is scoped rather than the name normalised.
+  venddba: >-
+    The vendor's trading name -- "doing business as" -- where GP holds one. Frequently
+    empty and frequently a different spelling of vendname rather than a different company.
+  vendshnm: >-
+    GP's short name for the vendor. A display convenience, carried because it is what
+    appears on some GP reports and a reconciliation against them needs it.
+  vendstts: >-
+    GP's vendor status -- active, inactive, temporary, hold. Recorded and never filtered:
+    a vendor on hold still owns payables history and must still resolve.
+  curncyid: >-
+    The vendor's default currency code. An identifier, not an amount.
+  pymtrmid: >-
+    The vendor's default payment terms code. An identifier, not an amount.
+
+sources:
+  - name: GP_VENDOR
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.pm00200
+    parent_keys:
+      supplier: [input_db, vendorid]
+    payload:
+      - vendname
+      - venddba
+      - vendshnm
+      - vendstts
+      - curncyid
+      - pymtrmid
+    applied_dts_column: dex_row_ts

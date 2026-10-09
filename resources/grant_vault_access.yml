@@ -1,0 +1,60 @@
+# ONE-OFF, MANUALLY TRIGGERED. Not scheduled, and deliberately NOT a task in
+# vault_load.
+#
+# WHY THIS EXISTS. On 27 September the vault's owner could see 5 of 15 raw_vault
+# tables and none of the 17 stable views. Nothing was broken: information_schema is
+# permission-filtered, and per-table SELECT on this platform comes from the ACCESS
+# REPO, which had only ever been given the five pre-versioning table names. The ten
+# tables added since, and every stable view published on 26 September, were never in
+# it. The `_rev1` rename did not lose anything -- UC grants follow a renamed
+# securable, which is exactly why those five survived it.
+#
+# WHY IT IS SEPARATE. --emit-data-grants is OFF in vault_load because the platform
+# team asked us to stop emitting data grants from the load (2 Sep 2026). That request
+# still stands for the LOAD. This job does not change it: the standing job definition
+# still grants nothing, and this exception is a file someone can read, run and
+# delete. Adding the flag to vault_load instead would have made every future load
+# re-assert access as a side effect of loading.
+#
+# WHAT IT EMITS. USE SCHEMA on the two vault schemas, and one GRANT SELECT per
+# declared object -- tables, staged logs, quarantine twins and stable views -- to
+# ${var.vault_privileged_group}. It emits NO schema-level SELECT: that is DEF-40, and
+# assert_no_broad_grant in vault_load fails the build if one ever appears. The list
+# comes from the same declared model factory.build emits from, so it cannot name an
+# object the pipeline did not create.
+resources:
+  jobs:
+    grant_vault_access:
+      name: "[${bundle.target}] hfig vault -- grant read access (manual)"
+      max_concurrent_runs: 1
+      email_notifications:
+        on_failure: ["${var.notification_email}"]
+      tasks:
+        - task_key: grant_vault_access
+          spark_python_task:
+            python_file: ../checks/apply_governance.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--vault-schema"
+              - "${var.vault_schema}"
+              - "--business-vault-schema"
+              - "${var.business_vault_schema}"
+              - "--bronze-catalog"
+              - "${var.bronze_catalog}"
+              - "--gold-catalog"
+              - "${var.gold_catalog}"
+              # A quarantine twin and a staged log exist only for an ACTIVE binding,
+              # so this needs the same activity list the pipeline was given or it
+              # will address a GRANT to a table that was never created.
+              - "--active-sources"
+              - "${var.active_sources}"
+              - "--privileged-group"
+              - "${var.vault_privileged_group}"
+              - "--emit-data-grants"
+          environment_key: checks
+      environments:
+        - environment_key: checks
+          spec:
+            client: "3"
+            dependencies: ["pyyaml"]

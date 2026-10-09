@@ -1,0 +1,98 @@
+column_meanings: staged = rows read from the delivered file; accepted = rows written
+  to <source>_raw
+generated_from: src/accelerator/control_standard.py
+invariant: staged = accepted + sum(discarded), per (job_run_id, table_name)
+layer: bronze
+owner: Bronze / ingestion team
+schema_name: control
+tables:
+  aud_load_run:
+    append_only: true
+    column_comments: {}
+    columns:
+      active_sources: STRING
+      job_run_id: STRING
+      phase: STRING
+      recorded_at: TIMESTAMP
+      target: STRING
+    note: records what happened and must never be rewritten
+  aud_table_discard:
+    append_only: true
+    column_comments: {}
+    columns:
+      discard_reason: STRING
+      discarded: BIGINT
+      job_run_id: STRING
+      recorded_at: TIMESTAMP
+      table_name: STRING
+    note: records what happened and must never be rewritten
+  aud_table_load:
+    append_only: true
+    column_comments: {}
+    columns:
+      accepted: BIGINT
+      job_run_id: STRING
+      pipeline_update_id: STRING
+      recorded_at: TIMESTAMP
+      staged: BIGINT
+      table_name: STRING
+      written_by: STRING
+    note: records what happened and must never be rewritten
+  ctl_delivery_manifest:
+    append_only: false
+    column_comments: {}
+    columns:
+      delivered_at: TIMESTAMP
+      delivered_by: STRING
+      delivered_count: BIGINT
+      manifest_id: STRING
+      source_system: STRING
+    note: records what should happen and must stay correctable
+  ctl_etl_run:
+    append_only: true
+    column_comments:
+      etl_run_id: 'RETRY RULE -- a retry re-registers this SAME etl_run_id and appends
+        a status event. It does not mint a new one. DEF-56 repair runs reuse {{job.run_id}},
+        so a new id would turn a retry into a second delivery with a second delivered_count
+        and reconciliation would balance twice. Opaque UUID, nothing parses it. STATED,
+        NOT ENFORCED: nothing writes this table yet.'
+      ingestion_mechanism: OPERATOR-FACING ONLY -- it says who to call. Never in identity,
+        never in reconciliation, never in control flow. A control that branches on
+        this stops being technology-independent and makes every new mechanism a code
+        change.
+      mechanism_native_run_id: The mechanism's own run id, recorded so an operator
+        can reach their log. Never joined on, and NULLABLE by intent -- a mechanism
+        that issues no id of its own is still a first-class member here.
+      producer: 'The job or pipeline that ran, DESCRIPTIVE ONLY. Same rule as ingestion_mechanism:
+        it is here so an operator knows what to look at, and no identity, reconciliation
+        or control flow may read it.'
+    columns:
+      created_at: TIMESTAMP
+      etl_run_id: STRING
+      ingestion_mechanism: STRING
+      mechanism_native_run_id: STRING
+      producer: STRING
+      source_system: STRING
+      started_at: TIMESTAMP
+    note: records what happened and must never be rewritten
+  ctl_etl_run_status:
+    append_only: true
+    column_comments:
+      recorded_at: OUR clock, and the ordering column. status_at is the mechanism
+        clock and is for the operator to read -- ordering by it would let clock skew
+        on a source host sort a STARTED event after a COMPLETED one.
+      status: 'One of PENDING, STARTED, COMPLETED or FAILED. DOCUMENTED, NOT ENFORCED:
+        nothing writes this table yet and no constraint rejects another value. The
+        status precedence that breaks a tie between two events sharing a timestamp
+        is declared with the current-status view, not here.'
+    columns:
+      etl_run_id: STRING
+      recorded_at: TIMESTAMP
+      status: STRING
+      status_at: TIMESTAMP
+      written_by: STRING
+    note: records what happened and must never be rewritten
+why_bronze_owns_the_manifest: Each layer's control schema records what THAT layer
+  did, and the downstream layer reads upstream's. Bronze records deliveries here rather
+  than writing into silver's control schema, and silver's loop-1 reconciliation reads
+  them from here.

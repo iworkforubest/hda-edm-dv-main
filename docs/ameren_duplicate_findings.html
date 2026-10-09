@@ -1,0 +1,345 @@
+<title>Ameren Duplicate Lines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+/* Tokens, type and components are the Bronze work-requests page's, deliberately: this is
+   the same kind of document -- a list of asks addressed to a team that is not us -- and a
+   reader who has seen one should recognise the other. Only the accent moves, because the
+   audience does.
+
+   THIS ONE CITES RATHER THAN ASKS. Every id on it is owned by another document, and
+   verify_repo asserts each still exists there -- so this page cannot outlive the questions
+   it summarises without failing the build. */
+:root{
+  --ground:#FAFAFB; --surface:#FFFFFF; --surface-2:#F3F4F7;
+  --ink:#1A1D24; --ink-soft:#5A6070; --ink-faint:#858B9A;
+  --rule:#E2E4E9; --rule-strong:#CDD1DA;
+  --accent:#2E5F7A; --accent-soft:#E9F0F5;
+  --blocked:#B4342F; --blocked-bg:#FBEDEC;
+  --ready:#2E6B4F;   --ready-bg:#EAF3EE;
+  --waiting:#8A6D2F; --waiting-bg:#F7F1E2;
+  --shadow:0 1px 2px rgba(26,29,36,.05), 0 8px 24px -12px rgba(26,29,36,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+    --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+    --rule:#2C313B; --rule-strong:#3A404C;
+    --accent:#8FBCD4; --accent-soft:#17222A;
+    --blocked:#E0736D; --blocked-bg:#2B1A1A;
+    --ready:#6BBF95;   --ready-bg:#152420;
+    --waiting:#C9A85F; --waiting-bg:#26200F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161B; --surface:#1B1E25; --surface-2:#22262F;
+  --ink:#E8EAEF; --ink-soft:#9AA1B0; --ink-faint:#767D8D;
+  --rule:#2C313B; --rule-strong:#3A404C;
+  --accent:#8FBCD4; --accent-soft:#17222A;
+  --blocked:#E0736D; --blocked-bg:#2B1A1A;
+  --ready:#6BBF95;   --ready-bg:#152420;
+  --waiting:#C9A85F; --waiting-bg:#26200F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem; margin:0 auto; padding:3.5rem 1.5rem 6rem; display:flex; flex-direction:column; gap:2.5rem}
+h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif; text-wrap:balance; margin:0; line-height:1.25}
+h1{font-size:2.4rem; font-weight:600; letter-spacing:-.015em}
+h2{font-size:1.35rem; font-weight:600}
+h3{font-size:1.05rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em}
+code{background:var(--surface-2); padding:.12em .38em; border-radius:3px; border:1px solid var(--rule)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:500}
+.lede{color:var(--ink-soft); max-width:66ch; font-size:1.05rem}
+header{display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem; border-bottom:1px solid var(--rule)}
+.meta{display:flex; flex-wrap:wrap; gap:.4rem 1.25rem; font-size:.82rem; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace}
+
+.strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:1rem 1.15rem; display:flex; flex-direction:column; gap:.15rem}
+.stat .n{font-family:"IBM Plex Serif",serif; font-size:1.9rem; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.stat .l{font-size:.76rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em}
+.stat.p1 .n{color:var(--blocked)} .stat.p2 .n{color:var(--waiting)} .stat.p3 .n{color:var(--ink-soft)}
+
+.tier{display:flex; flex-direction:column; gap:1.1rem}
+.tier-head{display:flex; align-items:baseline; gap:.75rem; flex-wrap:wrap}
+.tier-head .why{font-size:.9rem; color:var(--ink-soft)}
+
+.task{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--stripe,var(--rule-strong));
+      border-radius:6px; box-shadow:var(--shadow); padding:1.35rem 1.5rem; display:flex; flex-direction:column; gap:.9rem}
+.task.b{--stripe:var(--blocked)} .task.w{--stripe:var(--waiting)} .task.r{--stripe:var(--ready)}
+.task-top{display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap}
+.id{font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--accent); letter-spacing:.02em}
+.pill{font-size:.7rem; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.08em;
+      padding:.16rem .5rem; border-radius:99px; font-weight:500; white-space:nowrap}
+.pill.b{background:var(--blocked-bg); color:var(--blocked)}
+.pill.w{background:var(--waiting-bg); color:var(--waiting)}
+.pill.r{background:var(--ready-bg); color:var(--ready)}
+/* THE LABEL COLUMN IS CAPPED, and `auto` is why it had to be. A single long <dt> widened
+   the column for every row in its card and pushed the content column off the card's edge --
+   the labels are meant to be "Ask" or "Done when", and prose had crept into them. minmax
+   caps the damage and lets a long one wrap; min-width:0 on both cells is what lets a wide
+   .ev scroll inside its cell rather than opening the card. */
+dl{margin:0; display:grid; grid-template-columns:minmax(0,9.5rem) minmax(0,1fr); gap:.45rem 1.1rem; align-items:baseline}
+dt{font-size:.72rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:500; min-width:0; overflow-wrap:anywhere}
+dd{margin:0; color:var(--ink-soft); font-size:.94rem; min-width:0}
+dd strong{color:var(--ink); font-weight:600}
+@media (max-width:34rem){ dl{grid-template-columns:1fr; gap:.2rem} dt{margin-top:.5rem} }
+
+.ev{background:var(--surface-2); border:1px solid var(--rule); border-radius:5px; padding:.7rem .9rem;
+        font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-soft);
+    overflow-x:auto; white-space:pre; line-height:1.5}
+/* .ev SCROLLS ON SCREEN AND CANNOT IN PRINT, which is how these documents are actually
+   read once they are attached to an email. So the font is a notch smaller than the body's
+   monospace and the content is kept under ~90 columns by hand -- a clipped evidence block
+   is worse than no evidence block, because the reader cannot tell it was clipped. */
+
+.note{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+      border-radius:6px; padding:1.15rem 1.35rem; display:flex; flex-direction:column; gap:.5rem}
+.note.warn{background:var(--blocked-bg); border-left-color:var(--blocked)}
+.note h3{color:var(--ink)}
+.note p{font-size:.94rem; color:var(--ink-soft)}
+
+.closing{color:var(--ink-soft); font-size:.94rem; max-width:66ch}
+.tbl{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+table.status{border-collapse:collapse; width:100%; min-width:40rem; font-size:.9rem}
+table.status th{text-align:left; font-size:.71rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint);
+                font-weight:500; padding:.8rem .95rem; border-bottom:1px solid var(--rule-strong); white-space:nowrap}
+table.status td{padding:.75rem .95rem; border-bottom:1px solid var(--rule); color:var(--ink-soft); vertical-align:top}
+table.status tbody tr:last-child td{border-bottom:none}
+table.status td:first-child{color:var(--ink); font-weight:500; white-space:nowrap}
+/* The id column must not wrap. WDJ-10 broke across two lines as "WDJ-" / "10", which reads
+   as a different id -- and this table's whole job is to let a reader carry an id to the
+   document that owns it. The .sub underneath it still wraps, which is what it is for. */
+table.status td:first-child .sub{white-space:normal}
+table.status td.who{font-family:"IBM Plex Mono",monospace; font-size:.76rem; white-space:nowrap}
+.who.them{color:var(--blocked)} .who.us{color:var(--accent)} .who.ok{color:var(--ready)}
+.sub{display:block; font-size:.79rem; color:var(--ink-faint); margin-top:.15rem}
+ul.plain{margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.3rem; font-size:.94rem; color:var(--ink-soft)}
+
+footer{border-top:1px solid var(--rule); padding-top:1.5rem; font-size:.85rem; color:var(--ink-faint); display:flex; flex-direction:column; gap:.5rem}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Finding &middot; Ameren invoicing &middot; Data &amp; AI</p>
+    <h1>You were right about timesheets. The duplicates are something else &mdash; and they are real money.</h1>
+    <p class="lede">
+      Your instinct was exactly right: <strong>a second timesheet line always has
+      something different about it.</strong> We measured it &mdash; of 1,057 timesheet
+      rows in the live extract, not one is a duplicate. But that means the repeated rows
+      we were worried about are not timesheet lines at all, and the conclusion changes
+      completely: <strong>they must be kept, not removed.</strong>
+    </p>
+    <p class="meta">
+      <span>24 September 2026</span>
+      <span>For Amy Keser, Global Programme Manager</span>
+      <span>From <code>data_platform_operations</code></span>
+      <span>Measured against the live Fieldglass extract of 11 September</span>
+    </p>
+  </header>
+
+  <div class="strip">
+    <div class="stat"><span class="n">419</span><span class="l">Real invoices</span></div>
+    <div class="stat p3"><span class="n">0</span><span class="l">Timesheet duplicates</span></div>
+    <div class="stat p2"><span class="n">4</span><span class="l">Expense duplicates</span></div>
+    <div class="stat p1"><span class="n">304.99</span><span class="l">At risk if removed</span></div>
+  </div>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>First, a correction to what we told you</h2>
+    </div>
+    <div class="note warn">
+      <h3>Our earlier figure was wrong, and we should say so plainly</h3>
+      <p>
+        We previously reported that keeping every row would overstate three invoices by
+        around <strong>44,050</strong>. That number was real arithmetic on the wrong data.
+        The Bronze table we measured turned out to hold three separate loads, and two of
+        them are <strong>synthetic test data</strong> that someone loaded during platform
+        testing &mdash; 35 rows carrying fields no real invoice has, including one run
+        literally named <code>feeder_test_1</code>.
+      </p>
+      <p>
+        Those 35 test rows <em>are</em> the three invoices and essentially all of the
+        44,050. There was never a real overstatement. We have now excluded them, and the
+        live extract stands at <strong>419 invoices and 1,152,842.86</strong>.
+      </p>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>On the real data, keeping every row is exactly right</h2>
+      <span class="why">Each invoice states its own total &mdash; so we can simply check which answer matches.</span>
+    </div>
+    <div class="tbl">
+      <table class="status">
+        <thead>
+          <tr><th>Invoice</th><th>Total stated by Fieldglass</th><th>Keeping every row</th><th>Removing duplicates</th><th>Which one matches</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>AEE1IN00124913</td><td>736.23</td><td>736.23</td><td>646.23</td><td class="who ok">Keep every row</td></tr>
+          <tr><td>AEE1IN00125063</td><td>810.25</td><td>810.25</td><td>630.25</td><td class="who ok">Keep every row</td></tr>
+          <tr><td>AEE1IN00125150</td><td>362.66</td><td>362.66</td><td>352.66</td><td class="who ok">Keep every row</td></tr>
+          <tr><td>AEE1IN00125213</td><td>412.86</td><td>412.86</td><td>387.87</td><td class="who ok">Keep every row</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="closing">
+      All four match to the penny when every row is kept. Removing the duplicates loses
+      <strong>304.99</strong> &mdash; money the supplier is owed and Ameren has been
+      invoiced for.
+    </p>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>What the duplicates actually are</h2>
+      <span class="why">Every single one is an expense claim.</span>
+    </div>
+    <div class="tbl">
+      <table class="status">
+        <thead>
+          <tr><th>Invoice</th><th>Reference</th><th>Type</th><th>Repeats</th><th>Each</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>AEE1IN00124913</td><td class="who">AEE1ES00007656</td><td>Expense</td><td>3</td><td>45.00</td><td>food</td></tr>
+          <tr><td>AEE1IN00125063</td><td class="who">AEE1ES00007671</td><td>Expense</td><td>5</td><td>45.00</td><td>food</td></tr>
+          <tr><td>AEE1IN00125150</td><td class="who">AEE1ES00007639</td><td>Expense</td><td>2</td><td>10.00</td><td>Breakfast 8/13</td></tr>
+          <tr><td>AEE1IN00125213</td><td class="who">AEE1ES00007686</td><td>Expense</td><td>2</td><td>24.99</td><td>Dinner</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="closing">
+      A worker claiming three meals at 45.00 on one expense sheet is entirely ordinary.
+      The reason they look identical to us is that Fieldglass's line reference
+      (<code>AEE1ES00007656</code>) identifies the <strong>expense sheet</strong>, not the
+      individual claim on it &mdash; so three receipts on one sheet all arrive under the
+      same reference with nothing to tell them apart. There is no hidden field we are
+      missing; we checked all 169 columns.
+    </p>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>So we would like to change the recommendation</h2>
+    </div>
+    <div class="note">
+      <h3>Please don't remove them &mdash; and we no longer think we should build the removal step</h3>
+      <p>
+        You agreed to a process where duplicates are surfaced for manual review and then
+        selected for removal. On this evidence, that process would delete legitimate
+        expense claims: someone reviewing three identical <code>food</code> lines at 45.00
+        has no way to tell a genuine third meal from an accidental repeat, and the invoice
+        total says all three are genuine.
+      </p>
+      <p>
+        We would rather build the <strong>report without the delete button</strong>: a
+        weekly list of invoices carrying repeated expense lines, so you can see them and
+        raise anything that looks wrong with the supplier at source. If a real duplicate
+        ever does occur, it is a Fieldglass data issue to correct there, not something to
+        quietly drop on the way through. Does that work for you?
+      </p>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Your value analysis &mdash; we tested it against all 419 invoices</h2>
+      <span class="why">It holds on every one.</span>
+    </div>
+    <div class="tbl">
+      <table class="status">
+        <thead><tr><th>What your workbook says</th><th>Holds on</th></tr></thead>
+        <tbody>
+          <tr><td>Supplier line amounts add up to <code>Gross_Supplier_Invoice_Amount</code></td><td class="who ok">419 of 419</td></tr>
+          <tr><td>Client line amounts add up to <code>Gross_Invoice_Amount</code></td><td class="who ok">419 of 419</td></tr>
+          <tr><td>Supplier tax lines add up to <code>Supplier_Tax_Amount</code></td><td class="who ok">419 of 419</td></tr>
+          <tr><td><code>Net_Invoice_Amount</code> = gross + adjustment</td><td class="who ok">419 of 419</td></tr>
+          <tr><td><code>Gross_Invoice_Amount</code> = supplier total + MSP total</td><td class="who ok">419 of 419</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="closing">
+      Thank you for this &mdash; it saved us a great deal of guessing, and it is now the
+      basis for how the warehouse checks every invoice balances. Two things fell out of
+      testing it that you may not have seen.
+    </p>
+    <div class="note">
+      <h3>The Gross and Net column names are the wrong way round</h3>
+      <p>
+        <code>Net_Invoice_Amount</code> is the <em>larger</em> figure &mdash; it is gross
+        including tax. <code>Gross_Invoice_Amount</code> is the net. You spotted this on
+        your example invoice; we can now say it is true of the whole feed. It stays hidden
+        because only <strong>2 of the 419</strong> invoices carry any tax at all, so on the
+        other 417 the two columns are identical. Worth flagging to anyone who reads these
+        columns by name.
+      </p>
+    </div>
+  </section>
+
+  <section class="tier">
+    <div class="tier-head">
+      <h2>Two questions back for you</h2>
+      <span class="why">Thank you for the legal entity &mdash; that closes the first of the three rows your template marks Open.</span>
+    </div>
+    <div class="note warn">
+      <h3>Which total should the invoice to Ameren carry?</h3>
+      <p>
+        <strong>380 of the 419 invoices carry MSP lines, totalling 24,054.04.</strong> The
+        client-facing total is supplier lines <em>plus</em> MSP margin; the supplier total
+        alone is 1,152,842.86.
+      </p>
+      <p>
+        We need to know which figure the generated invoice should show and reconcile
+        against &mdash; the client total including MSP margin, or the supplier total. The
+        two differ by the margin on 380 invoices, so getting it wrong is not a rounding
+        matter. Everything else is built; this is the one answer we need before we can
+        generate the first invoice.
+      </p>
+    </div>
+    <div class="note">
+      <h3>And how is Guidant Global Inc spelled on the register?</h3>
+      <p>
+        Not a pedantic question, unfortunately. Our records currently carry
+        <code>Guidant Global, Inc.</code> &mdash; with a comma and a trailing period &mdash;
+        because that is the exact string the Delphi Technologies Fieldglass feed delivers in
+        its <code>buyer</code> field. You have written <code>Guidant Global Inc</code>.
+      </p>
+      <p>
+        A feed tells us what that feed sends, not how a company is registered, so we would
+        rather ask than pick: <strong>on the invoice document to Ameren AP and on the Workday
+        posting, the registered name is the name.</strong> Whichever of the two is correct,
+        we will use it everywhere and stop carrying the other.
+      </p>
+    </div>
+
+  </section>
+
+  <footer>
+    <p>
+      All figures measured on 24 September 2026 against the live Fieldglass extract loaded
+      11 September (<code>Buyer_Code = AEE1</code>), with the 35 synthetic test rows
+      excluded.
+    </p>
+    <p>
+      Detail and method: <code>2026-09-24-ameren-invoicing-duplicate-resolution.md</code>
+      in the accelerator repository.
+    </p>
+  </footer>
+
+</div>

@@ -1,0 +1,249 @@
+# PLACEHOLDER BRONZE TABLE, IN A FAKE CATALOG, DELIBERATELY -- see hub_invoice.yml for
+# the full reasoning; this file only records what differs.
+#
+# Task 1 built the Fieldglass invoice source union but did NOT declare it in
+# metadata/source_unions.yml, because a declared union with zero real tables behind it
+# makes checks/apply_source_unions.py return 1 on every run and takes the LIVE
+# fieldglass_us_job_posting load down with it -- a placeholder here must not be able to
+# do the same. Pointing bronze_table at the real union view name
+# (02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_invoice) would be exactly that: a
+# real-looking reference to a view nothing has created yet.
+#
+# So this binding names a table in the fake `hfig_usnc.bronze` PLACEHOLDER catalog
+# instead -- the SAME table hub_invoice.yml, hub_supplier.yml and the FIELDGLASS_US
+# bindings on hub_organisation.yml / hub_worker.yml already use
+# (02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_invoice). One fake table stands in for the one real
+# union view all five bindings will read once it exists, so the four parent keys below
+# stay derivable from the SAME row this line comes from -- exactly as they will be once
+# the real feed lands.
+#
+# REPOINT THIS AND DECLARE THE SOURCE UNION IN THE SAME CHANGE as hub_invoice.yml,
+# hub_supplier.yml and the FIELDGLASS_US bindings on hub_organisation.yml/hub_worker.yml.
+# Landing one half without the other reproduces the exact landmine Task 1 avoided.
+#
+# AN NHL, NOT A LINK PLUS SATELLITE. An invoice line is a transaction: it happens
+# once, it is never updated, and its payload is the event. That is what a
+# non-historised link is for, and it is the shape nhl_timesheet_line and
+# nhl_payroll_detail already use for the same reason.
+# VERSION 2, NOT AN ALTERATION OF VERSION 1. delta.appendOnly=true forbids widening an
+# existing vault table's shape in place, so the nine module columns below make this a
+# NEW physical table (naming.physical("nhl_invoice_line", 2) -> nhl_invoice_line_rev2)
+# rather than a change to nhl_invoice_line_rev1. The stable view `nhl_invoice_line` keeps
+# pointing at rev1 until checks/cutover_vault_version.py deliberately moves it -- that is
+# a separate, gated decision and is NOT part of declaring this shape.
+#
+# WHY THE SHAPE CHANGES AT ALL. metadata/source_unions.yml's fieldglass_us_invoice
+# conform profile DERIVES nine per-module columns (task_code / expenditure_type /
+# expenditure_organization, each split _ts/_es/_mi) from the CF_* custom fields, but v1's
+# payload never named them -- they were computed in the conform step and then discarded.
+# A later task needs task_number, expenditure_type, expenditure_organization and
+# project_number derived FROM this table, and cannot: none of their inputs survived
+# staging. The raw vault should record what the source delivered; v2 does.
+#
+# VERSION 4 SINCE 29 September 2026, AND THE PARAGRAPH ABOVE IS HISTORY. This entity is
+# the only one in the model with a version history, so read the numbers rather than the
+# prose: v2 added the nine module columns above, v3 was a clean rebuild on 28 September
+# (nhl_invoice_line_rev2 held 1,164 duplicate rows an in-stream dropDuplicates admitted
+# after a checkpoint reset), and it was cut over to nhl_invoice_line_rev3 that day -- so
+# unlike the other ten, THIS entity's predecessor is `_rev3` and not `_rev1`.
+#
+# v4 IS ONE BUMP SERVING BOTH REASONS, as on the seven entities beside it:
+#
+#   1. KEYED-KIND STAGING. This entity is no longer written directly by the SDP
+#      pipeline. It is a batch-loaded table checks/load_hubs.py builds from the staging
+#      log `stg_nhl_invoice_line_rev4` by anti-join, and a job task cannot INSERT into a
+#      streaming table -- so the loader needs a NEW physical table, not an altered one.
+#      This is the entity whose duplicate behaviour was actually measured, which is why
+#      the runbook migrates it first.
+#   2. THE HUB SPLIT. `organisation_hk` is now `client_hk` here -- a column rename,
+#      which `delta.appendOnly=true` forbids in place. The EXPRESSION did not move; only
+#      the name did, asserted against tests/golden_key_expressions.json.
+#
+# naming.physical("nhl_invoice_line", 4) -> nhl_invoice_line_rev4. The stable view keeps
+# pointing at nhl_invoice_line_rev3 until checks/cutover_vault_version.py deliberately
+# moves it. See docs/superpowers/plans/2026-09-29-keyed-kind-staging-runbook.md §7, whose
+# version table this number is asserted against.
+name: invoice_line
+kind: nhl
+domain: pay_bill
+key_style: federated
+version: 4
+parents: [invoice, supplier, worker, client]
+# THE SOURCE EMITS NO LINE IDENTIFIER, so this key is the line's own content plus its
+# position among identical siblings. `invoice_line_item_ref` looks like a line id and is
+# not: it is a timesheet or expense-sheet reference, 422 distinct across Ameren's 1,207
+# rows. Beneath one reference the rows differ by task code -- and on expense sheets not
+# even by that (AEE1ES00007667 carries three "Food" lines identical but for the amount,
+# so a fourth at a repeated amount is invisible to us).
+#
+# Measured 24 September 2026: these TEN columns are unique across 1,169 of the 1,207 rows.
+# They are the view's PARTITION columns with Invoice_ID dropped -- the invoice is already a
+# parent hub here, so repeating it in the transaction key would key it twice.
+#
+# THE ELEVENTH COLUMN WAS line_sibling_ordinal AND IT IS GONE, removed 25 September for two
+# reasons, either of which is sufficient.
+#
+# IT WAS NOT A DETERMINISTIC KEY. It was row_number() OVER (PARTITION BY <these ten plus
+# Invoice_ID> ORDER BY Invoice_ID) -- and within a sibling group every row carries the SAME
+# Invoice_ID, so the ORDER BY had nothing to order by. Which copy became ordinal 3 and which
+# became 5 was arbitrary, could differ between runs on identical data, and shifted whenever
+# a re-delivery grew the group. A transaction-key component that reassigns itself re-keys
+# the line: append_only sees inserts, the uniqueness check sees distinct keys, and the vault
+# quietly holds the same line twice.
+#
+# AND IT WAS NOT LEGAL IN A STREAM. factory.py:318 already says so about the loader's own
+# dedup -- "a partitioned ranking window is not a supported streaming operation" -- and this
+# was the same construct one layer up, in a view the streaming flow reads. It did not raise
+# there; it pinned the driver at 50-52% GC. raw_vault_pay_bill, the only domain reading this
+# view, never left INITIALIZING in three attempts totalling over an hour, while every domain
+# that does not read it finished in 1.2-2.0 minutes.
+#
+# WHAT IS LOST. 9 groups covering 38 rows are indistinguishable in every column -- same
+# invoice, same line ref, same amounts, same submit date, up to 7 copies -- and
+# dropDuplicates now collapses each group to one row. They are either genuinely repeated
+# invoice lines or the source-side duplication Amy's Ameren investigation is about; nothing
+# in the data tells them apart, and a key invented to keep them separate was inventing the
+# distinction rather than recording one.
+transaction_key:
+  # ONE COLUMN, NOT TEN, SINCE 25 September. The source emits no line identifier, so a line
+  # is identified by its content -- that has not changed. What changed is that the content
+  # is addressed once, in the conformance profile, instead of ten columns being carried
+  # through the transaction key, the dedup key, this entity's own hash key, and the
+  # reconstruction csat_invoice_line_gie performs of it.
+  #
+  # MEASURED: 1,169 distinct line_reference values across the 1,207 filtered rows, exactly
+  # the 1,169 the ten columns produce. Identical identity, identical grouping.
+  #
+  # WHY IT MATTERS HERE. raw_vault_pay_bill would not build its graph, and a bisect showed
+  # this entity alone was the cause: with invoice_line deactivated the pipeline completed in
+  # 95 seconds, and with it, four attempts never left INITIALIZING. Among the NHLs that do
+  # build -- journal_line and general_journal_line, both with comparable parents, masks and
+  # payload -- this was the outlier on exactly one axis: a ten-column transaction key
+  # against their one.
+  - line_reference
+# THE LINE'S MEASURES LIVE ON sat_invoice_line NOW, with the masks that go with them.
+#
+# A non-historised link carrying nineteen descriptive columns and five money masks is a
+# Data Vault compromise: README's own rule is that a link carries keys and descriptive
+# attributes belong on a satellite. Splitting it is the canonical shape and it leaves this
+# table doing one job -- asserting that an invoice, a supplier, a worker and an
+# organisation met on one line.
+#
+# WHAT STAYS is the transaction detail that identifies the line's KIND rather than its
+# value: which module it came from, the week it covers, and the currency those measures are
+# denominated in. None is sensitive, so this table declares no masks and therefore no
+# schema, which is the expensive half of building a masked streaming table.
+#
+# `an nhl with no payload should be a link` -- validation refuses an empty payload, and a
+# link in this model carries no transaction key, which this line needs. So it stays an NHL,
+# thin.
+#
+# THE NINE MODULE COLUMNS, ADDED IN v2. fieldglass_us_invoice's conform profile in
+# metadata/source_unions.yml derives task_code_{ts,es,mi}, expenditure_type_{ts,es,mi}
+# and expenditure_organization_{ts,es,mi} from the source's CF_* custom fields on EVERY
+# row regardless of which module (timesheet/expense-sheet/miscellaneous) produced the
+# line -- exactly one of the three siblings in each group is populated, the other two are
+# NULL, and business-vault logic (invoice_rules.module_value / AME012-013) selects the
+# populated one. None of the nine is sensitive: they are codes and identifiers, not
+# money, so no mask is added alongside them.
+payload:
+  - invoice_line_item_type
+  - weekending_date
+  - currency
+  - task_code_ts
+  - task_code_es
+  - task_code_mi
+  - expenditure_type_ts
+  - expenditure_type_es
+  - expenditure_type_mi
+  - expenditure_organization_ts
+  - expenditure_organization_es
+  - expenditure_organization_mi
+
+sources:
+  - name: FIELDGLASS_US
+    # READS THE BRONZE TABLE DIRECTLY, with the profile's filter and renames applied
+    # in the flow (conform:) instead of through a view. A masked entity reading a view
+    # cannot be built -- SDP reconciles the streaming plan against the declared schema
+    # at definition time and never finished. 25 September.
+    bronze_table: 01_usnc_bronze_dev.sap_fieldglass_raw.invoices
+    # GENERATION 2 since 28 September 2026. Bronze dropped and recreated this table
+    # (new Delta id 06b65224-ef33-44fb-beb5-6ca4892277fb), so the generation-1
+    # checkpoint names a Delta object that no longer exists and this flow fails at
+    # analysis with [DIFFERENT_DELTA_TABLE_READ_BY_STREAMING_SOURCE]. See
+    # SourceBinding.stream_generation: a fresh checkpoint re-reads the source and
+    # APPENDS, and the duplicate staging rows dissolve at the hub anti-join.
+    stream_generation: 2
+    conform: fieldglass_us_invoice
+    # WEEKLY, per Amy's 22 September template: "Invoice frequency: Weekly", delivered
+    # Thursdays by sFTP. NOT an exemption -- a 0 here means a feed that legitimately never
+    # re-delivers, and this one is meant to.
+    #
+    # IT WILL REPORT A BREACH TODAY, AND THAT IS THE POINT. Measured 24 September: this
+    # feed has landed three times -- 5 rows on 8 Sep, 30 on 9 Sep, 1,172 on 11 Sep -- and
+    # nothing in the thirteen days since. So it is not yet the weekly feed the template
+    # describes. Declaring the real SLA makes that visible; exempting it would hide a
+    # silent feed behind a decision that looks deliberate.
+    freshness_sla_hours: 168
+    # DEDUP ON THE TRANSACTION KEY, because re-delivery is not hypothetical: this feed
+    # landed three times in four days (8, 9 and 11 September) and the same invoice can
+    # arrive twice. The key already identifies a line uniquely, including the sibling
+    # ordinal, so this collapses only genuine re-deliveries and never two real lines.
+    #
+    # Ordered by the submit date, so the winner is the source's own latest statement about
+    # that line rather than whichever copy the reader happened to see first.
+    dedup_by: [line_reference]
+    dedup_order: [invoice_submit_date]
+    # EVERY MASKED COLUMN MUST DECLARE ITS TYPE, because the MASK clause is emitted INTO the
+    # CREATE STREAMING TABLE definition and a column cannot be masked without a type to mask.
+    # Measured 25 September: without this the pipeline raised SpecError naming all five and
+    # then RETRIED ON FAILURE for fifteen minutes, each attempt dying in under a minute --
+    # a job task that looks like it is running and is not.
+    #
+    # DECIMAL(18,2) TO MATCH governance.mask_money's PARAMETER TYPE. All five arrive as
+    # STRING from sap_fieldglass_raw.invoices, so these are real conversions, not the no-op
+    # casts nhl_general_journal_line declares -- that table already held DOUBLE and a real
+    # type change would have needed a refresh Delta refuses. This one has never loaded, so
+    # the conversion is free.
+    #
+    # MEASURED BEFORE DECLARING, over all 29,426 rows: client, supplier, tax and MSP amounts
+    # cast with ZERO losses. `rate` loses 4,491 -- every one of them the EMPTY STRING, none
+    # a malformed number. That is absence, and DECIMAL NULL is how absence should read: by
+    # line type, timesheet lines (TS) have NO blank rate at all, while expense (ES) and
+    # miscellaneous (MI) lines are blank to the last row. An hourly rate exists only where
+    # hours are worked. The alternative -- leaving them STRING -- would store '' and NULL as
+    # different values for the same fact.
+    #
+    # `rate` IS ALSO A TRANSACTION KEY COLUMN, so this changes how the key hashes. Safe only
+    # because nhl_invoice_line has never loaded: there is no stored key to disagree with.
+    # assert_key_derivation would catch it if that changed.
+    parent_keys:
+      invoice: [buyer_tenant, invoice_id]
+      supplier: [buyer_tenant, supplier_code]
+      worker: [worker_id]
+      client: [buyer_tenant]
+    # MUST MATCH THE ENTITY PAYLOAD ABOVE, COLUMN FOR COLUMN. factory.py and every other
+    # consumer read `src.payload or entity.payload` -- a NON-EMPTY binding payload wins
+    # OUTRIGHT, it does not merge with the entity's. Leaving this binding at the old three
+    # columns while the entity payload grew to twelve would silently keep hashing and
+    # staging only the three, and the nine module columns would be discarded exactly as
+    # before -- the v2 bump would exist on paper and do nothing physically.
+    payload:
+      - invoice_line_item_type
+      - weekending_date
+      - currency
+      - task_code_ts
+      - task_code_es
+      - task_code_mi
+      - expenditure_type_ts
+      - expenditure_type_es
+      - expenditure_type_mi
+      - expenditure_organization_ts
+      - expenditure_organization_es
+      - expenditure_organization_mi
+    applied_dts_column: invoice_submit_date
+    # REVIEW FOCUS 1. Measured on the timesheet feed, which is the only supplier data
+    # that exists: 4,287 of 182,914 rows carry a blank supplier. A blank hashed into a
+    # business key produces one hub row that silently collects every unattributable
+    # line, and every join to it succeeds. Quarantine instead.
+    expectations: [supplier_code_present, invoice_line_item_amount_client_non_negative]

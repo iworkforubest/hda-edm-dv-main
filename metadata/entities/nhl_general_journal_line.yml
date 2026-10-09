@@ -1,0 +1,240 @@
+# THE GENERAL LEDGER LINE, OPEN YEAR. Dynamics GP is the book of record.
+#
+# ---------------------------------------------------------------------------------------
+# READ THIS BEFORE QUERYING: ONE JOURNAL LINE LIVES IN TWO VAULT TABLES.
+#
+#     nhl_general_journal_line               <- gl20000, GP's OPEN-YEAR table
+#     nhl_general_journal_line_closed_year   <- gl30000, GP's history
+#
+# GP's annual close MOVES a row out of gl20000 and into gl30000. The vault is
+# INSERT-ONLY, so this table keeps the line forever after the close, and the closed-year
+# table loads it again from gl30000. Over its lifetime a line therefore exists in BOTH
+# tables -- not as an error, but by construction.
+#
+# BOTH TABLES CARRY THE SAME general_journal_line_hk FOR THE SAME LINE. The two entities
+# declare identical parents, identical transaction_key and key_style: authored, so the
+# hash is computed from the same values on both sides. That is the property that makes
+# them unionable, and it is deliberate.
+#
+# ANY CONSUMER READING THE GENERAL LEDGER MUST UNION THE TWO AND DEDUPLICATE ON
+# general_journal_line_hk:
+#
+#     SELECT * FROM (
+#       SELECT * FROM nhl_general_journal_line
+#       UNION ALL
+#       SELECT * FROM nhl_general_journal_line_closed_year
+#     ) QUALIFY ROW_NUMBER() OVER (
+#       PARTITION BY general_journal_line_hk ORDER BY load_dts DESC) = 1
+#
+# Reading either table alone is wrong in a specific, quiet way: this one alone stops at
+# the open year (no history before 2025); the closed-year one alone is missing everything
+# not yet closed. Reading both without deduplicating double-counts every migrated line,
+# and the totals stay plausible.
+#
+# WHY IT IS A READ-TIME CONCERN AND NOT A LOAD FAILURE. Both GP tables were once bound to
+# ONE entity. The close then re-delivered a migrated row under an UNCHANGED authored key
+# from the second binding, and factory._stage's dropDuplicates is per binding -- nothing
+# compares across flows -- so checks/append_only_check.py's NHL uniqueness assertion
+# failed annually, by construction, on exactly the rows that migrated. Splitting into two
+# entities with one binding each resolves it STRUCTURALLY: a migrated row now arrives in a
+# DIFFERENT table, so nothing collides, and no cross-binding deduplication or filter
+# capability had to be built. It also mirrors the source, which is what decision E1 asks
+# of the whole design -- bronze is 1:1 with its sources and GP genuinely has two tables.
+# The duplicate did not disappear; it moved to where it is cheap and visible.
+# ---------------------------------------------------------------------------------------
+#
+# WHY THIS IS A SEPARATE ENTITY FROM nhl_journal_line. gl20000 is the GENERAL ledger:
+# payables, receivables, payroll and everything else, undifferentiated. Payroll-originated
+# entries are not distinguishable -- trxsorce is GLTR on essentially every row -- and there
+# is NO pay-period column, only periodid, which is a FISCAL period. Posting to GP loses the
+# pay period. nhl_journal_line declares aggregates_from: payroll_detail and is the PAYROLL
+# journal; this is the general one. Sub-project 3a spec E3a-2.
+#
+# DEF-22 -- THE TWO GP TABLES ARE NOT THE SAME SHAPE. Both are 72 columns, and 71 match:
+#
+#     only in gl20000: ['openyear']      <- this entity
+#     only in gl30000: ['hstyear']       <- nhl_general_journal_line_closed_year
+#
+# Same concept, different name. Since the split, each entity names ONLY its own table's
+# column and the two can no longer be confused inside one file. Naming `hstyear` here
+# fails at pipeline analysis -- loudly, which is the good case.
+#
+# KEY STYLE IS AUTHORED, and after the split it is what makes the two tables unionable
+# rather than what caused the collision. Under federated the SOURCE NAME enters the hash,
+# so GP_US and GP_US_HIST would mint two identities for one line and the same line would
+# carry a different key either side of a year-end close -- re-keyed purely because a year
+# closed. Authored keys the line on what it is: journal, organisation, account, line
+# sequence.
+#
+# NO pay_period PARENT. GP does not carry one. Declaring one would mean inventing it.
+#
+# UNIT OF WORK: journal + organisation + ledger account. Split these into narrower links and
+# "which account did BRPLM post against in journal entry 12345" becomes unanswerable.
+#
+# THE FISCAL YEAR IS NOT IN THIS ENTITY'S PAYLOAD. It moved into the accounting_journal
+# parent key (a GP journal entry number is reused across fiscal years -- 128 collisions
+# across six years of gl30000), so it reaches this link through parent_keys rather than as
+# a descriptive column. The binding still lists its own year column in its own payload; the
+# entity-level payload is IDENTICAL to the closed-year entity's, which is the structural
+# half of the unionability property above.
+#
+# TRANSACTION KEY IS seqnumbr -- GP's name for the line order. The generator projects
+# nothing and renames nothing: _link_key_expr interpolates transaction_key entries into the
+# hash expression as bare column references, and _mask_clauses emits mask columns into the
+# table definition, so every name here must exist in gl20000 as delivered. There is no
+# rename capability, so the entity carries GP's names: seqnumbr IS line_order, debitamt IS
+# debit_amount, crdtamnt IS credit_amount. The `accounting:` block below is how
+# checks/journal_integrity_check.py learns that, instead of hardcoding one source's
+# vocabulary and silently asserting nothing about the other's.
+#
+# RE-DELIVERY. 4,444,172 rows against 2,453,131 distinct
+# (input_db, openyear, jrnentry, seqnumbr) across 7 file deliveries: every business row is
+# present roughly 1.8 times. An NHL has no hashdiff to collapse a repeat behind, so without
+# dedup_by this fails NHL uniqueness on its first load. Of those 2,453,131 keys only 22 have
+# copies differing in any business column.
+#
+# DOUBLE AMOUNTS. debitamt and crdtamnt arrive as DOUBLE and a DOUBLE's string rendering is
+# not stable across loads, so identical amounts can hash differently. Cast to DECIMAL(18,2)
+# at the staging boundary, replacing the column by name -- hashdiff_expr hashes payload by
+# NAME, so a cast into a new column would be invisible to it.
+name: general_journal_line
+kind: nhl
+domain: finance
+# VERSION 2, AND ONE BUMP SERVES BOTH REASONS. That is the whole benefit of combining
+# the keyed-kind staging migration with the hub split instead of running them in
+# sequence: separately, the eleven keyed non-hub entities would each have been versioned
+# twice -- twenty version operations rather than thirteen, and two cutovers per entity
+# on a stable view whose grants are dropped by every one of them (runbook §2.1).
+#
+#   1. KEYED-KIND STAGING. This entity is no longer written directly by the SDP
+#      pipeline. It is a batch-loaded table that checks/load_hubs.py builds from the
+#      staging log `stg_nhl_general_journal_line_rev2` by anti-join, and a job task
+#      cannot INSERT into a streaming table -- so the loader needs a NEW physical table,
+#      not an altered one.
+#   2. THE HUB SPLIT. `organisation_hk` is now `operating_company_hk` here. A column
+#      rename is a schema migration and `delta.appendOnly=true` forbids one in place.
+#
+# NOT ONE HASH-KEY EXPRESSION MOVED, only the column NAME -- asserted byte for byte
+# against tests/golden_key_expressions.json, which was rendered before the split. A
+# rename is recoverable; a digest change is not, and the two are distinguished by
+# comparing the expression under the renamed identity rather than the identity itself.
+#
+# naming.physical("nhl_general_journal_line", 2) -> nhl_general_journal_line_rev2, and
+# the stable view `nhl_general_journal_line` keeps pointing at
+# nhl_general_journal_line_rev1 until checks/cutover_vault_version.py deliberately moves
+# it -- a separate, gated decision that is NOT part of declaring this version. The
+# operator sequence is docs/superpowers/plans/2026-09-29-keyed-kind-staging-runbook.md;
+# its §7 carries the version table this number is asserted against, so bumping it here
+# without amending that table reds tests/test_accelerator.py.
+version: 2
+grain: transaction
+key_style: authored
+parents: [accounting_journal, operating_company, ledger_account]
+transaction_key: [seqnumbr]
+sensitivity: financial
+
+# THE CONSEQUENCE ALSO GOES INTO notes:, NOT ONLY INTO THIS COMMENT. factory._table_comment
+# appends notes to the generated table's Unity Catalog comment, so the person who meets
+# this table in the catalog -- who never opens this file -- is told before they write a
+# query. A modelling consequence that lives only in repository YAML reaches the people who
+# already know it.
+notes: >-
+  OPEN-YEAR HALF OF A PAIR. GP's year-end close MOVES a line from gl20000 to gl30000, and
+  this insert-only table KEEPS it, so over its lifetime a journal line exists in BOTH
+  nhl_general_journal_line and nhl_general_journal_line_closed_year, with the SAME
+  general_journal_line_hk in each. Read the general ledger by UNIONing the two and
+  deduplicating on general_journal_line_hk (QUALIFY ROW_NUMBER() OVER (PARTITION BY
+  general_journal_line_hk ORDER BY load_dts DESC) = 1). This table alone stops at the open
+  year; the other alone misses it; both without deduplication double-count every closed
+  line and the totals still look plausible.
+
+masks:
+  debitamt: governance.mask_money
+  crdtamnt: governance.mask_money
+  # ADDED 27 Aug. ordbtamt and orcrdamt are THE SAME MONEY in the originating currency and
+  # were unmasked while the functional amounts were masked, so the protection on debitamt and
+  # crdtamnt was defeasible from columns in the same row. Measured as a non-admitted identity:
+  # debitamt 0 rows visible, these two fully visible across 8,539,625 rows over both GL
+  # entities. For history lines whose functional amount is zero, this was the only place the
+  # value existed.
+  #
+  # mask_money_double, not mask_money, because factory.py requires a masked column to declare
+  # its type and re-typing these to DECIMAL(18,2) would need a full refresh that Delta refuses
+  # on an appendOnly table. The cast: block below declares DOUBLE -- what they already are --
+  # so the DDL requirement is met with no data rewrite.
+  ordbtamt: governance.mask_money_double
+  orcrdamt: governance.mask_money_double
+
+# Which columns play which accounting role, for checks/journal_integrity_check.py.
+# IDENTICAL to nhl_general_journal_line_closed_year's -- same source system, same names.
+accounting:
+  journal: accounting_journal
+  debit: debitamt
+  credit: crdtamnt
+  line_order: seqnumbr
+
+payload:
+  - seqnumbr
+  - debitamt
+  - crdtamnt
+  - curncyid
+  - xchgrate
+  - denxrate
+  - ordbtamt
+  - orcrdamt
+  - periodid
+  - trxsorce
+  - correcting_je
+  - back_out_je
+  - original_je
+  - voided
+
+sources:
+  # OPEN YEAR: 2025-2026. ONE BINDING, and that is the whole point of the split -- see the
+  # block at the top. gl30000 is bound by nhl_general_journal_line_closed_year.
+  - name: GP_US
+    bronze_table: 01_usnc_bronze_dev.great_plains_raw.gl20000
+    # GENERATION 2 since 29 September 2026, with every other binding that reads
+    # gl20000. Bronze dropped and recreated that table; the full account and the two
+    # Delta ids are on hub_accounting_journal's GP_US binding, which is the flow that
+    # actually failed. Declared here because the generation belongs to the TABLE, not
+    # to the entity: a partial bump leaves some reader pointing at a Delta object that
+    # no longer exists, and tests/test_accelerator.py refuses a mixed generation.
+    stream_generation: 2
+    parent_keys:
+      # hub_accounting_journal is COMPANY- AND YEAR-SCOPED: jrnentry restarts per GP
+      # company database (entry 64 exists in five of them) AND is reused across fiscal
+      # years (128 collisions over six years), so input_db and openyear are both key
+      # positions, not context.
+      accounting_journal: [input_db, openyear, jrnentry]
+      operating_company: [input_db]
+      # hub_ledger_account is company-scoped: actindx is a per-database surrogate --
+      # 361,706 distinct values against 1,906,775 distinct (input_db, actindx).
+      ledger_account: [input_db, actindx]
+    payload:
+      - seqnumbr
+      - debitamt
+      - crdtamnt
+      - curncyid
+      - xchgrate
+      - denxrate
+      - ordbtamt
+      - orcrdamt
+      - openyear
+      - periodid
+      - trxsorce
+      - correcting_je
+      - back_out_je
+      - original_je
+      - voided
+    applied_dts_column: dex_row_ts
+    dedup_by: [input_db, openyear, jrnentry, seqnumbr]
+    dedup_order: [dex_row_ts, input_file_name]
+    cast:
+      debitamt: DECIMAL(18,2)
+      crdtamnt: DECIMAL(18,2)
+      # A NO-OP CAST, declared only so the MASK clause can be emitted. These columns are
+      # already DOUBLE, so CAST(... AS DOUBLE) rewrites nothing -- which is the point: the
+      # alternative was DECIMAL(18,2), a real type change needing a refresh Delta refuses.
+      ordbtamt: DOUBLE
+      orcrdamt: DOUBLE

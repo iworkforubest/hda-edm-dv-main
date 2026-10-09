@@ -1,0 +1,39 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# Split by SENSITIVITY as well as by source: money lives apart from descriptions so the
+# column mask covers a whole table that Gold need never project.
+#
+# Only Striive carries commercials in this example. When another source does, add a
+# binding here -- the mask declaration below applies to every generated table.
+name: job_request_commercials
+kind: sat
+domain: job
+parents: [job_request]
+sensitivity: financial
+change_detection: cdc
+
+# Masks are declared HERE and emitted by the factory into each generated table's
+# definition. Row filters and column masks on streaming tables must be set through the
+# table definition, so an ALTER TABLE afterwards would not survive a pipeline update.
+masks:
+  pay_min: governance.mask_money
+  pay_max: governance.mask_money
+
+payload: [pay_min, pay_max, currency, charge_basis]
+
+sources:
+  - name: STRIIVE_EU
+    bronze_table: hfig_eu.bronze.striive_job_request
+    # parent_keys, ADDED WITH THE tenant_scoped RE-KEY. Without it this binding takes
+    # factory's fallback -- hash_key(key_columns) -- which knows nothing about the
+    # NOT_APPLICABLE literal hub_job_request now supplies for its tenant position, so the
+    # foreign key would hash one component where the hub hashes two. Declaring the parent
+    # routes the derivation through spec.parent_key_components, which looks the literal up
+    # on the HUB's binding for the same source and folds it in -- which is what makes this
+    # key identical to the hub's by construction rather than by careful copying.
+    parent_keys:
+      job_request: [reference_code]
+    key_columns: [reference_code]
+    payload: [pay_min, pay_max, currency, charge_basis]
+    applied_dts_column: last_modified_at
+    cdc_op_column: _cdc_op

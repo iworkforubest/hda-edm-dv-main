@@ -1,0 +1,25 @@
+{
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "ctl_approval_manifest"
+      },
+      {
+        "identifier": "ref_dq_expectation"
+      },
+      {
+        "identifier": "aud_table_load"
+      },
+      {
+        "identifier": "aud_table_discard"
+      },
+      {
+        "identifier": "aud_load_run"
+      },
+      {
+        "identifier": "ctl_quarantine_superseded"
+      }
+    ]
+  },
+  "version": 2
+}

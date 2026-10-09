@@ -1,0 +1,93 @@
+# BUSINESS VAULT -- computed satellite. Its input is the vault, not a feed.
+#
+# WHAT IT DECODES.
+# UKG packs classification into one string, which arrives in the journal as UserDefined1
+# and on the register as payroll_code:
+#
+#     N -  Net Cash
+#     D - EAP2  - Ded - EAP
+#     T - WAPMLEE - Tax - WA Paid Medical Leave- EE
+#     T - MNSLMER - Tax - MN State Paid Medical Leave-ER
+#
+# Splitting a delimited field is a HARD rule and could sit in staging. But INTERPRETING
+# the parts is soft and will be revisited:
+#   * N / D / T -> net cash, deduction, tax
+#   * the EE / ER suffix -> whose money it is (worker withholding vs employer cost)
+#   * mapping a code to a liability class and a GL account
+#
+# Whose money it is drives margin, so Finance will change their mind about edge cases.
+# That is the definition of a soft rule, so it lives here with a rule_version -- which is
+# what lets HFIG answer "what did we report in March, under March's rule" after the rule
+# changes.
+#
+# NOT a replacement for the raw payload. nhl_payroll_detail keeps the source string
+# verbatim; this adds an interpretation beside it.
+name: payroll_line_classification
+kind: csat
+domain: payroll
+parents: [payroll_detail]
+sensitivity: financial
+
+masks:
+  employer_cost_amount: governance.mask_money
+  worker_withholding_amount: governance.mask_money
+
+payload:
+  - code_type              # N | D | T
+  - code_class             # net_cash | deduction | tax | earning
+  - liability_party        # employee | employer | none
+  - employer_cost_amount
+  - worker_withholding_amount
+  - mapped_ledger_account
+  - rule_version
+
+descriptions:
+  code_type: One of N, D or T -- the payroll code's type as the source classifies it.
+  code_class: >-
+    What the code does to money: net_cash, deduction, tax or earning. The classification
+    this satellite exists to compute.
+  liability_party: >-
+    Who bears the cost -- employee, employer or none. Decides which side of the GL the
+    amount belongs on.
+  employer_cost_amount: >-
+    The portion of this payroll line borne by the employer rather than the worker. Masked
+    by governance.mask_money, so it reads NULL to an identity outside
+    usnc_data_analyst_finance or scope_unmask_currency_values.
+  worker_withholding_amount: >-
+    The portion withheld from the worker's pay. Masked by governance.mask_money, so it
+    reads NULL to an identity outside
+    usnc_data_analyst_finance or scope_unmask_currency_values.
+  mapped_ledger_account: >-
+    The GL account this classification posts to. The mapping is what this satellite
+    computes; the raw payroll line carries no account of its own.
+  rule_version: >-
+    The version of the classification rules this row was computed under, so a figure can be
+    traced back to the rules that produced it rather than to today's.
+
+sources:
+  - name: BUSINESS_VAULT
+    # This satellite reads nhl_payroll_detail, whose rows were loaded under UKG_US, so its
+    # parent key must hash under UKG_US to equal the NHL's own key.
+    #
+    # WITHOUT THIS it hashed under 'BUSINESS_VAULT' -- the binding name, which is the
+    # federated default -- and nhl_payroll_detail is only ever keyed under UKG_US. Every row
+    # would have pointed at a link row that does not exist, silently: both tables load and
+    # the join returns nothing.
+    key_scope: UKG_US
+    bronze_table: 02_usnc_silver_edm_dev.raw_vault.nhl_payroll_detail
+    parent_keys:
+      # hub_worker.business_keys is ONE position (worker_reference), so one
+      # column. Two columns here hashed a component the hub never hashes --
+      # a silent orphan FK, invisible because hub_worker declares no
+      # key_literals and parent_key_components therefore skips the count.
+      worker: [worker_reference_id]
+      operating_company: [company_reference_id]
+      pay_period: [pay_period_start_date, pay_period_end_date]
+    payload:
+      - code_type
+      - code_class
+      - liability_party
+      - employer_cost_amount
+      - worker_withholding_amount
+      - mapped_ledger_account
+      - rule_version

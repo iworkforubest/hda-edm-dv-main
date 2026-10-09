@@ -1,0 +1,40 @@
+# WHEN EACH WORKDAY REFERENCE VALUE WAS OFFERED, driven on the reference itself.
+#
+# Get_References returns the COMPLETE current set for a type, so each retrieval is a
+# snapshot and absence carries meaning: a value that stops being returned has been
+# withdrawn. Without this, a Company or Tax Code inactivated in Workday would go on
+# validating new rows forever, because nothing ever said otherwise.
+#
+# DRIVEN ON THE HUB'S OWN KEY: at most one window open per reference at a time.
+# spec.py requires exactly one thing of an esat -- that it names a driving_key -- and
+# exempts esat from needing a payload. Nothing requires an esat's parent to be a link;
+# every existing one here happens to hang off one.
+#
+# THE CLOSE ROWS ARE DERIVED, NOT DELIVERED. accelerator.wd_reference.effectivity_rows()
+# diffs consecutive snapshots and emits the retirement row, so this satellite sees
+# ordinary delivered rows and checks/load_satellites.py is unchanged.
+name: wd_reference_effectivity
+kind: esat
+domain: reference
+sensitivity: internal
+
+parents: [wd_reference]
+payload: [reference_status]
+driving_key: wd_reference_hk
+
+notes: >
+  Validity window per Workday reference value. Opened when a value first appears in a
+  snapshot, closed when a later snapshot for the same type no longer returns it.
+
+descriptions:
+  reference_status: >-
+    Whether Workday still offers this reference value. A withdrawal is delivered as a
+    new row saying so, never as an update.
+
+sources:
+  - name: WORKDAY
+    bronze_table: 02_usnc_silver_edm_dev.workday_landing.wd_reference_effectivity
+    parent_keys:
+      wd_reference: [reference_id_type, reference_id]
+    payload: [reference_status]
+    applied_dts_column: effective_from

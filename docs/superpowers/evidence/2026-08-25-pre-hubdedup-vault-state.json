@@ -1,0 +1,66 @@
+{
+ "counts": {
+  "raw_vault.hub_accounting_journal": "2759294",
+  "raw_vault.hub_job_request": "1",
+  "raw_vault.hub_ledger_account": "1906877",
+  "raw_vault.hub_organisation": "24",
+  "raw_vault.hub_pay_period": "2",
+  "raw_vault.hub_worker": "1"
+ },
+ "hk": {
+  "hub_accounting_journal.accounting_journal_hk": {
+   "max_hk": "FFFFFD804366A198811132C21082ABD9707B941EB4FE92588ECFA072ABD64727",
+   "md5sum_all": "1590601934512778668595222",
+   "md5sum_distinct": "1280159575918877905131538",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2221108",
+   "n_rows": "2759294",
+   "sum_all": "5924898515274100"
+  },
+  "hub_job_request.job_request_hk": {
+   "max_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "md5sum_all": "76186672665289772",
+   "md5sum_distinct": "76186672665289772",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "1",
+   "n_rows": "1",
+   "sum_all": "884073675"
+  },
+  "hub_ledger_account.ledger_account_hk": {
+   "max_hk": "FFFFFFB92C802601349899ECF312143975D3C2C9E7B7CBB8926B1AE9988039B7",
+   "md5sum_all": "1099058090544990483121143",
+   "md5sum_distinct": "1099058090544990483121143",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "1906877",
+   "n_rows": "1906877",
+   "sum_all": "4096104912632735"
+  },
+  "hub_organisation.organisation_hk": {
+   "max_hk": "D7DF05A99F4B916A6151D3B93B8FD7752094A9B9E26DBC90E68628E1F6FCD4F6",
+   "md5sum_all": "14995202278613873869",
+   "md5sum_distinct": "7239922711186292125",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "12",
+   "n_rows": "24",
+   "sum_all": "58980722468"
+  },
+  "hub_pay_period.pay_period_hk": {
+   "max_hk": "88BE224E883EDAE47D42CC789216C03EDE7C045B8B8BEBB2A9BC47D2B98950B6",
+   "md5sum_all": "635323650930437518",
+   "md5sum_distinct": "635323650930437518",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "2",
+   "n_rows": "2",
+   "sum_all": "2223132431"
+  },
+  "hub_worker.worker_hk": {
+   "max_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "md5sum_all": "76186672665289772",
+   "md5sum_distinct": "76186672665289772",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "1",
+   "n_rows": "1",
+   "sum_all": "884073675"
+  }
+ }
+}

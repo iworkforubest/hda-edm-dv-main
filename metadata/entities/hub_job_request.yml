@@ -1,0 +1,87 @@
+# FEDERATED-BY-SOURCE AND SCOPED-BY-TENANT. No system is authoritative for a job request,
+# so the source scope is part of identity -- three source references for the same real-world
+# job produce three hub rows deliberately, and resolution happens in the registry and Gold.
+#
+# WHY key_style CHANGED FROM federated TO tenant_scoped, 4 September 2026.
+# Fieldglass is multi-tenant: every onboarded client is its own tenant, 200+ in the US alone,
+# and a posting reference is unique only WITHIN a tenant. Keying on (source, reference) alone
+# would merge two clients' postings into one hub row whenever their references collide -- and
+# that failure is SILENT: the row count stays plausible and every gate passes. spec.py's
+# tenant_key docstring has described this exact failure since the field was added; this is the
+# first entity to need it.
+#
+# THE TENANT IS A KEY POSITION, NOT A PAYLOAD COLUMN, because it is part of what makes the
+# reference mean anything. A tenant carried alongside the key would let the same hash stand
+# for two clients.
+#
+# WHAT THIS COST. The change re-keys every row already loaded: 45,516 hub rows and the 46,889
+# satellite rows pointing at them, measured in usnc_tds on 4 Sep. Both tables are append-only,
+# so it is a truncate and reload, not an update -- see DEPLOY.md.
+#
+# THE THREE NON-TENANTED SOURCES SUPPLY A LITERAL for the tenant position. Striive, Bullhorn
+# and ProUnity are single-tenant from our side: there is no client dimension in their
+# references. NOT_APPLICABLE is the same convention hub_accounting_journal already uses for
+# a position a source does not carry, and it is a key COMPONENT, so it is declared as a
+# key_literal rather than left absent.
+name: job_request
+kind: hub
+domain: job
+key_style: tenant_scoped
+business_keys: [job_request_tenant, job_request_reference]
+tenant_key: [job_request_tenant]
+sensitivity: internal
+
+sources:
+  - name: STRIIVE_EU
+    bronze_table: hfig_eu.bronze.striive_job_request
+    key_literals:
+      job_request_tenant: NOT_APPLICABLE
+    key_columns: [reference_code]
+    applied_dts_column: last_modified_at
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+
+  - name: BULLHORN_EU
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 01_usnc_bronze_dev.bullhorn_native_raw.joborders
+    key_literals:
+      job_request_tenant: NOT_APPLICABLE
+    key_columns: [joborderid]
+    applied_dts_column: datelastmodified
+    dedup_by: [joborderid]
+    dedup_order: [timestamp, input_file_name]
+
+  - name: PROUNITY_EU
+    bronze_table: hfig_eu.bronze.prounity_request
+    key_literals:
+      job_request_tenant: NOT_APPLICABLE
+    key_columns: [request_ref]
+    applied_dts_column: modified_ts
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+
+  # FIELDGLASS_US -- the binding this whole change exists for, and the one that carries a
+  # REAL tenant. `buyer` fills the tenant position and `job_posting_id` the reference, so
+  # both key positions come from columns and no literal is needed.
+  #
+  # IT READS A UNION VIEW, NOT A TABLE. Fieldglass delivers one table per tenant -- 30 live
+  # io_distributed_jobposting_<tenant> tables and one more per client onboarded --
+  # so checks/apply_source_unions.py builds the view this binds, rebuilding it from
+  # information_schema every run so a newly onboarded client cannot silently miss.
+  # A union view is a valid streaming source: measured, readStream resolves it to one
+  # DeltaSource per underlying table and executes.
+  #
+  # NOT FIELDGLASS_EU, WHICH NEVER EXISTED. The binding this replaces was named for an EU
+  # instance there is no such thing as -- and because a source name is hashed INTO a
+  # federated key, that name was part of the identity of every row it would have loaded.
+  # The instances are US, UK and APAC. Only US is declared here: UK and APAC get bindings
+  # when their lakes' Fieldglass bronze is confirmed, because declaring a binding to a
+  # source nobody has verified is the mistake being corrected.
+  - name: FIELDGLASS_US
+    # Daily feed. Measured against the last successful LOAD, not the last
+    # row -- a delivery of nothing is fresh; a pipeline that stopped is not.
+    freshness_sla_hours: 24
+    bronze_table: 02_usnc_silver_edm_dev.raw_vault.v_fieldglass_us_job_posting
+    key_columns: [buyer, job_posting_id]

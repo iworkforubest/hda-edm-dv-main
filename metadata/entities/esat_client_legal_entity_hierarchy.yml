@@ -1,0 +1,97 @@
+# EFFECTIVITY SATELLITE -- when each ownership edge was actually true.
+#
+# The hierarchical link records that an edge EXISTS. It cannot record that it stopped
+# being true, because a link is insert-only and immutable: nothing in it can be end-dated.
+# That is what an effectivity satellite is for in DV 2.0, and it is the piece that makes
+# the whole design survive the rebrand rather than break on it.
+#
+# THE DRIVING KEY IS THE CHILD, and choosing it is the one real modelling decision in this
+# file. A driving key names the leg that stays fixed while the other moves. A company has
+# one owner at a time and changes owner; an owner has many companies. So for a given
+# CHILD, at most one parent edge is effective at any moment -- and that is the constraint
+# the effectivity satellite enforces when a new edge arrives: find the open row for this
+# child, close it, open the new one.
+#
+# Get this backwards -- driving on the parent -- and the loader would close every OTHER
+# child of a parent each time one child moved. Silent, plausible, and catastrophic to any
+# rollup.
+#
+# WHAT THE REBRAND LOOKS LIKE HERE. Impellam Group and HeadFirst Group unify. Two edges
+# open: new_brand -> impellam_group, new_brand -> headfirst_group, each with its own
+# effective_from. Nothing closes, because neither group previously had a parent. Guidant
+# Global's edge to Impellam is untouched -- it is still a child of Impellam, which is now
+# itself a child of the new brand. The rollup gets one level deeper and no existing row
+# changes. If instead a company MOVES between groups, its open row closes and a new one
+# opens, and history stays intact on both sides.
+#
+# THE PAYLOAD IS THE EDGE'S STATUS, AND IT HAS TO EXIST. spec.validate permits an esat
+# with no payload; hashing.hashdiff_expr refuses one -- "a satellite must declare a
+# non-empty payload to hashdiff". Measured 5 Sep 2026: the offline suites accepted a
+# payload-free esat and the Spark suite raised on it, which is the two halves of the model
+# disagreeing about the same entity. Declaring the status resolves it in the direction
+# that is also correct: a satellite with nothing to hashdiff has no change to detect, so
+# it could only ever hold one row per edge and could never record that an edge ENDED --
+# which is the entire job of an effectivity satellite.
+#
+# So the payload is `relationship_status`, and end-dating is a delivery rather than an
+# update: the source re-sends the same (parent, child) pair with a status of ended and a
+# new effective_from, the hashdiff moves, and a second version lands. Nothing is rewritten
+# and the edge's whole history stays queryable -- which is what lets "who owned this in
+# March" and "who owns this today" both be answered from one table.
+#
+# Anything DESCRIPTIVE about the relationship -- why it changed, which transaction
+# authorised it -- is a separate satellite, not this one.
+name: client_legal_entity_hierarchy_effectivity
+kind: esat
+domain: reference
+sensitivity: internal
+
+parents: [client_legal_entity_hierarchy]
+payload: [relationship_status]
+
+# The FK column of the leg this satellite drives on. Written as the generated column name
+# rather than the role, because that is the name a loader and a reader both see on the
+# table -- and the role prefix is what makes it unambiguous which leg is meant.
+driving_key: child_legal_entity_hk
+
+notes: >
+  Effectivity of each parent/child edge in client_legal_entity_hierarchy, driven on the child:
+  for any child, at most one parent edge is open at a time. Closing and opening are both
+  inserts -- nothing here is updated. Query the hierarchy through this satellite whenever
+  the question is "who owns this today" or "who owned this in March"; query the link alone
+  only when the question is "has this relationship ever existed".
+
+descriptions:
+  relationship_status: >-
+    Whether this parent/child ownership edge is in force. An edge that ends is delivered as
+    a new row saying so, never an update, which is what keeps "who owned this in March"
+    answerable.
+
+sources:
+
+  # THE REAL SOURCE, declared 25 September 2026. Reads the same filtered view as the link,
+  # which is what keeps the two in step: an effectivity row can only exist for an edge the
+  # link also saw.
+  #
+  # ITS VALUE IS THE DATE, NOT THE STATUS. Hubspot carries no status for the relationship --
+  # `lifecyclestage` is the COMPANY's CRM stage, not a statement about the parent-child
+  # edge -- so the view derives a constant and the satellite's real content is when the edge
+  # was last asserted. Recorded in source_unions.yml rather than dressed up here.
+  - name: HUBSPOT
+    # READS THE BRONZE TABLE DIRECTLY, with the profile's filter and renames applied
+    # in the flow (conform:) instead of through a view. A masked entity reading a view
+    # cannot be built -- SDP reconciles the streaming plan against the declared schema
+    # at definition time and never finished. 25 September.
+    bronze_table: 01_usnc_bronze_dev.hubspot_raw.companies
+    conform: hubspot_client_legal_entity_parent
+    parent_keys:
+      parent: [parent_legal_entity_code]
+      child: [child_legal_entity_code]
+    payload: [relationship_status]
+    # NO dedup_by, AND THE GATE CAUGHT ME ADDING ONE. A satellite that dedupes on its
+    # parent key stores ONE version per key for ever: the rows are dropped before the
+    # hashdiff that would have detected a real change is computed. The hub legitimately
+    # dedupes on its key -- one row per company is exactly what a hub is -- and I copied
+    # that onto the satellite without re-deriving whether it applied. It does not.
+    applied_dts_column: hs_lastmodifieddate
+    freshness_sla_hours: 24

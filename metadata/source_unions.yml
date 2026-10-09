@@ -1,0 +1,368 @@
+# BRONZE CONFORMANCE: one view per tenant-partitioned source, so Silver can bind a table.
+#
+# WHY THIS FILE EXISTS. Fieldglass does not deliver one table per entity. It delivers ONE
+# TABLE PER TENANT -- measured 4 September 2026, 30 live io_distributed_jobposting_<tenant>
+# tables in 01_usnc_bronze_dev.fieldglass_raw, and one more every time a client is onboarded.
+# Silver binds a table, not a pattern. One binding per tenant would put 30 satellite tables
+# per entity in each of eight lakes and make onboarding a client a change to the data model,
+# which is the churn csat_job_request_custom_promoted's design notes explicitly refuse.
+#
+# A VIEW IS A VALID STREAMING SOURCE, WHICH IS WHY THIS WORKS. Measured on usnc_tds
+# serverless: spark.readStream on a union view was accepted AND executed, resolving to one
+# DeltaSource per underlying table (2 sources, 5,605 rows), with a single-table control
+# passing beside it. So the existing pipeline binds the view with no generator change.
+#
+# THE TENANT LIST IS DISCOVERED, NOT LISTED HERE, and that is deliberate. A committed list of
+# 30 tables silently omits client 31: onboarding would drop a client out of the vault with
+# nothing failing -- the same unfailable-gate shape this repo has met a dozen times.
+# checks/apply_source_unions.py rebuilds each view from information_schema on every run and
+# records the tenant list it used, so a new client is picked up automatically AND the change
+# is visible afterwards rather than invisible.
+
+unions:
+  - name: fieldglass_us_job_posting
+    # WHERE THE VIEW LIVES, declared here rather than passed as a job parameter, because
+    # TWO things need it: checks/apply_source_unions.py creates it, and verify_repo's
+    # active_sources gate has to recognise a binding that reads it as REAL IN THIS LAKE
+    # rather than as a placeholder. That gate's rule is "reads 01_usnc_bronze_dev. ⇒ real",
+    # and a view we build in our own catalog is real too -- it just is not Bronze's. Two
+    # copies of this name would be a duplicate authority, which is the shape this repo has
+    # been bitten by four times.
+    #
+    # NOT in the bronze catalog, and not in a schema of its own, and neither is a
+    # preference -- both were tried and refused. Measured 4 Sep: we hold USE_CATALOG on
+    # 01_usnc_bronze_dev but not CREATE SCHEMA, and we do not hold CREATE SCHEMA on our OWN
+    # silver catalog either, despite owning the four schemas already in it. A dedicated
+    # `bronze_union` schema therefore needs the platform team, and blocking a load on that
+    # would be the wrong trade.
+    #
+    # raw_vault is the least-wrong home that exists today, and it is defensible rather than
+    # merely convenient: this view is an INPUT to the raw vault, and raw_vault already holds
+    # the stg_ staging logs, which are also pre-vault inputs, and already holds a view
+    # (sat_job_request_details_bullhorn_eu_v1). append_only_check's VAULT_PREFIXES are
+    # hub_/sat_/msat_/csat_/esat_/nhl_/hal_/lnk_/qtn_/stg_, so a v_-prefixed name is outside
+    # every one of them and no vault gate mistakes it for a vault table -- checked, not
+    # assumed. Revisit if a conformance schema is ever granted.
+    view_schema: raw_vault
+    # WHY THE *DISTRIBUTED* FAMILY AND NOT io_jobposting. Both exist (30 live vs 34 live) and
+    # share 43 columns, but io_distributed_jobposting carries 39 the other does not --
+    # job_posting_distribution_date/_status, the requisition and assignment distribution
+    # columns, and the max requested/template bill rates. Those are the columns that exist
+    # because a posting was distributed TO A SUPPLIER, which is what HFIG is: a job request is
+    # a posting we were asked to fill, not every posting a buyer ever raised.
+    # FLAGGED FOR REVIEW rather than settled: if the intent is every buyer posting regardless
+    # of distribution, this is the wrong family and the fix is this one line.
+    source_schema: fieldglass_raw
+    table_pattern: io_distributed_jobposting_%
+    # BACKFILL IS EXCLUDED, AND THAT IS NOT TIDINESS -- IT IS BRZ-14.
+    # Every DOUBLE-typed column in this estate is in a _backfill table (153 instances; zero
+    # in a live table), because the backfill path infers types per file. Live tables are
+    # type-uniform: measured, ZERO columns carry two types across the 30 live tables, so this
+    # union needs no casts at all. Including backfill would need 15 casts AND would import
+    # values already lost -- 556 ZIP codes in cencora_backfill alone are under five digits
+    # because a DOUBLE cannot hold 00965.
+    # History is therefore NOT in this view yet. Including it is gated on BRZ-14 being fixed
+    # and the affected tables reloaded, not on anything in this repo.
+    exclude_pattern: '%_backfill'
+    # The tenant, as a column value. Present in all 30 live tables (measured), which is what
+    # makes the union keyable: hub_job_request keys on (tenant, reference) once it becomes
+    # key_style: tenant_scoped.
+    tenant_column: buyer
+    # Must exist in every unioned table or the view cannot be keyed. Asserted at apply time,
+    # not assumed -- a view that silently lost its key column would produce a well-formed
+    # stream of unjoinable rows.
+    required_columns: [buyer, job_posting_id]
+
+# --------------------------------------------------------------------------------------- #
+
+  # THE AMEREN INVOICE FEED. Declared 24 September 2026, replacing the DEFERRED block that
+  # stood here while we believed no invoice feed existed. It does:
+  # 01_usnc_bronze_dev.sap_fieldglass_raw.invoices, 169 columns, 29,426 rows.
+  #
+  # WHY DECLARING IT IS SAFE NOW AND WAS NOT BEFORE. The deferral existed because a union
+  # matching ZERO tables makes coverage_findings emit NO_TABLES, main() return 1, and
+  # vault_job's ALL_SUCCESS dependency take raw_vault down -- stopping the live job-posting
+  # load with it. This pattern matches ONE REAL TABLE, so that failure cannot occur. The
+  # deferral was right for the facts it had and is resolved by better facts, not waived.
+  #
+  # IT IS NOT A UNION, AND THAT IS THE SURPRISE. Fieldglass delivers job postings as one
+  # table per tenant, which is why this mechanism exists. Invoices arrive as ONE WIDE TABLE
+  # FOR TWELVE CLIENTS instead -- so what was planned as a UNION over many tables is a
+  # FILTER over one. The mechanism still fits: a view in raw_vault that Silver can bind.
+  - name: fieldglass_us_invoice
+    view_schema: raw_vault
+    source_schema: sap_fieldglass_raw
+    table_pattern: invoices
+    exclude_pattern: '%_backfill'
+    tenant_column: Buyer_Code
+    required_columns: [Buyer_Code, Invoice_ID, Invoice_Line_Item_Ref, Supplier_Code, Worker_ID]
+    # SCOPED TO AMEREN, and on TWO predicates rather than one. Measured 24 September: of
+    # 29,426 rows only AEE1 carries rows with an Invoice_ID -- the other 28,219 have no
+    # Invoice_ID, no Supplier_Code and no Invoice_Line_Item_Ref. Loading them would hash
+    # blanks into business keys and build one hub row collecting every unattributable line
+    # from eleven other clients.
+    #
+    # CORRECTED 25 September: the ABSENCE was right and the REASON given for it was wrong.
+    # This said the other clients "carry no invoice-shaped rows" because each populates a
+    # different subset of the 169 columns. They do carry invoices -- in a DIFFERENT SHAPE.
+    # Ten of the twelve buyer codes populate Consolidated_Invoice_ID and
+    # Underlying_Invoice_Id on EVERY row and Invoice_ID on none; AEE1 does the exact
+    # opposite; GCAP has neither. Measured: no row anywhere carries both.
+    #
+    #   AEE1     1,207 rows   Invoice_ID on all      Consolidated on none
+    #   MXDG        77 rows   Invoice_ID on none     Consolidated on all
+    #   ... eight more the same as MXDG, up to 22 underlying invoices per consolidated one
+    #
+    # So this filter does not merely exclude clients whose columns are sparse. It excludes
+    # THE CONSOLIDATED INVOICE MODEL, which is what ten of twelve clients actually use, and
+    # hub_invoice's key -- (tenant, invoice_reference) over Invoice_ID -- has no value to
+    # hash for any of them. Ameren is the exception this model was built on, not the
+    # example. Onboarding client thirteen is a modelling question, not a filter change.
+    # See docs/superpowers/OPEN_ITEMS.md, 25 September.
+    #
+    # The Invoice_ID predicate is the one that will still be right later: keying only on
+    # the buyer would silently exclude client thirteen the day they arrive, while "has an
+    # invoice id" admits any client whose rows are actually invoices. The Buyer_Code
+    # predicate stays beside it because this is scoped to Ameren today and saying so is
+    # better than implying otherwise.
+    #
+    # AND SYNTHETIC ROWS ARE EXCLUDED, because bronze carries test scaffolding mixed in
+    # with the real extract. Measured 24 September against
+    # 01_usnc_bronze_dev.sap_fieldglass_raw.invoices: of 1,207 AEE1 rows, 35 come from two
+    # synthetic loads -- date 2026-09-08 (5 rows) and META_run_id 'feeder_test_1' (30 rows,
+    # 43,143.12). They carry columns no invoice has: Is_Test, Mike_Tester ('test_value_4'),
+    # PO_2 ('collision-test-row4').
+    #
+    # Those 35 rows are why the first duplicate measurement read "keeping every row invents
+    # 44,050.32 across 3 invoices". The 3 invoices were the synthetic ones. On the real
+    # extract alone, keeping every row is EXACTLY RIGHT: all 4 invoices with repeated keys
+    # reconcile to the penny against Gross_Supplier_Invoice_Amount when every row is kept,
+    # and lose 304.99 when deduplicated. The duplicates are real money.
+    #
+    # The predicate filters on the MARKERS, not on the two load dates. Both express the same
+    # 35 rows today (measured: 0 disagreements), but a date list silently stops working the
+    # next time someone feeds this table, while the markers keep naming what they are.
+    row_filter: >-
+      Buyer_Code = 'AEE1' AND Invoice_ID IS NOT NULL AND trim(Invoice_ID) <> ''
+      AND lower(coalesce(Is_Test, '')) <> 'true'
+      AND coalesce(Mike_Tester, '') = ''
+      AND lower(coalesce(META_run_id, '')) NOT LIKE '%test%'
+      AND lower(coalesce(PO_2, '')) NOT LIKE '%test%'
+    # ALIASES, so the vault carries its own column names rather than a source system's.
+    # The model should not have to spell CF_Miscellaneous_Invoice_Expenditure_Organization.
+    # ALIASES, FOR GENUINE RENAMES ONLY -- and the "only" is the whole lesson.
+    #
+    # This block first carried an alias for EVERY column, lowercasing the source's names so
+    # the model would not have to spell CF_Miscellaneous_Invoice_Expenditure_Organization.
+    # Most of those were case-only, and Databricks rejected the view outright:
+    #
+    #   [AMBIGUOUS_REFERENCE] Reference `invoice_line_item_ref` is ambiguous,
+    #   could be: [`invoice_line_item_ref`, `invoice_line_item_ref`]
+    #
+    # Spark resolves identifiers CASE-INSENSITIVELY, so `Invoice_Line_Item_Ref AS
+    # invoice_line_item_ref` emits two columns it cannot tell apart. The alias was not just
+    # unnecessary -- it was the defect. Verified against the lake: `SELECT invoice_id,
+    # supplier_code, cf_time_sheet_expenditure_type FROM ...` resolves without any alias
+    # at all, so the entity YAML can name columns in lower case regardless.
+    #
+    # What remains are renames a case fold cannot do: the nine per-module custom fields
+    # AME011-013 select between, the buyer code, and the supplier's name.
+    derived_columns:
+      # NAMED `buyer_tenant`, NOT `buyer`. The source carries `Buyer` (a display name),
+      # `Buyer_Code` and `Buyer_Name`, and Spark resolves identifiers case-insensitively,
+      # so `buyer` here is the SAME identifier as the source's `Buyer` -- the view emitted
+      # it twice and Databricks refused the CREATE with COLUMN_ALREADY_EXISTS. Measured 25
+      # September, at task five of the load, with 1,213 offline checks green.
+      #
+      # THE SILENT VERSION WAS WORSE THAN THE ERROR. Had the collision resolved instead of
+      # raising, every invoice-family key would have been hashed from `Buyer` -- the
+      # account-holder DISPLAY NAME, the thing hub_legal_entity.yml exists because it is
+      # not an identifier -- rather than from the code. Well-formed BINARY(32) keys, and
+      # not one of them equal to the key the job-posting family builds for the same tenant.
+      buyer_tenant: Buyer_Code
+      # THE CLIENT-SIDE LINE AMOUNT, renamed because the source calls it `Invoice_Amount`
+      # and it is not the invoice's amount -- it is ONE LINE's amount, inclusive of MSP
+      # margin. Gold emits a field Ameren's template also calls `Invoice Amount`, and that
+      # one IS the invoice total repeated on every line (AME003). Two different grains
+      # under one name, in a lake where Spark resolves identifiers case-insensitively, is
+      # the AMBIGUOUS_REFERENCE this repo already hit once -- and worse than the error is
+      # the silent version, a projection that puts the whole invoice's value on every line.
+      # Named for its supplier twin, `invoice_line_item_amount_supplier`.
+      invoice_line_item_amount_client: Invoice_Amount
+      expenditure_organization_es: CF_Expense_Sheet_Expenditure_Organization
+      expenditure_organization_mi: CF_Miscellaneous_Invoice_Expenditure_Organization
+      expenditure_organization_ts: CF_Task_Code_Expenditure_Organization_1
+      expenditure_type_es: CF_Expense_Sheet_Expenditure_Type
+      expenditure_type_mi: CF_Miscellaneous_Invoice_Expenditure_Type
+      expenditure_type_ts: CF_Time_Sheet_Expenditure_Type
+      # AN EMPTY STRING IS NOT A RATE, AND SAYING SO IS THE POINT.
+      #
+      # 4,491 of 29,426 source rows carry '' in Rate -- measured, and by line type it falls
+      # exactly where absence belongs: timesheet lines (TS) have none blank, expense (ES)
+      # and miscellaneous (MI) lines are blank to the last row. An hourly rate exists only
+      # where hours are worked.
+      #
+      # The binding casts rate to DECIMAL(18,2) for its mask, and that cast turns every one
+      # of those into NULL. source_conformance called it correctly -- "try_cast destroys
+      # 4491 row(s) that are not null today" -- and it only became visible when this
+      # profile stopped being a view and the gate could see the real column at last.
+      #
+      # Normalising here makes the conversion a DECLARED modelling statement rather than a
+      # side effect of a cast: '' means no rate, and NULL is how the vault says that. The
+      # cast then converts nothing that was ever a value. TRIM as well as the empty test,
+      # because a whitespace-only rate is the same absence wearing a different byte.
+      # THE LINE'S IDENTITY, AS ONE COLUMN. The source emits no line identifier --
+      # Invoice_Line_Item_Ref is a timesheet or expense-sheet id, 422 distinct across 1,207
+      # rows -- so a line is identified by its CONTENT. That was ten transaction-key
+      # columns; this is the same ten, hashed once.
+      #
+      # MEASURED BEFORE ADOPTING: 1,169 distinct line_reference values across 1,207 filtered
+      # rows, exactly matching the 1,169 the ten columns produce. Same identity, same
+      # grouping, same collapse of the nine sibling groups -- one column instead of ten in
+      # the transaction key, the dedup key, and every hash composed from them.
+      #
+      # NORMALISED BY THE RULEBOOK'S OWN RULE, not a second one: each component is
+      # hashing.normalise's COALESCE(NULLIF(TRIM(CAST(x AS STRING)),''),'^^') and the
+      # separator is hashing.DELIMITER. A test asserts this expression equals what
+      # hashing would generate for these ten columns, so the two cannot drift.
+      #
+      # SHA2 not UNHEX(SHA2(...)): this is a BUSINESS key that goes on to be hashed with
+      # everything else, so it stays a readable 64-char string rather than becoming binary.
+      line_reference: >-
+        SHA2(CONCAT_WS('||', COALESCE(NULLIF(TRIM(CAST(Invoice_Line_Item_Ref AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Invoice_Line_Item_Type AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Task_Code AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Rate_Category AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Hours AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Rate AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Invoice_Line_Item_Amount_Supplier AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Weekending_Date AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Worker_ID AS STRING)), ''), '^^'), COALESCE(NULLIF(TRIM(CAST(Project_Code AS STRING)), ''), '^^')), 256)
+      rate: NULLIF(TRIM(Rate), '')
+      supplier_name: Supplier
+      task_code_es: CF_Expense_Sheet_Task_Code
+      task_code_mi: CF_Miscellaneous_Invoice_Task_Code
+      task_code_ts: CF_Time_Sheet_Project_Code
+
+# --------------------------------------------------------------------------------------- #
+
+  # THE CLIENT LEGAL-ENTITY HIERARCHY, from the CRM. Declared 25 September 2026, replacing
+  # the PLACEHOLDER.reference.legal_entity_hierarchy that hal_client_legal_entity_hierarchy
+  # was written against and that has never existed.
+  #
+  # WHY A VIEW AT ALL, FOR ONE TABLE WITH NO RENAMES TO DO. A source binding cannot express
+  # a WHERE -- it names a table, its key columns and its payload -- and this source needs
+  # one. `hubspot_raw.companies` holds 2,457 companies of which only 144 carry a
+  # hs_parent_company_id. Binding the link straight to the table would emit a hierarchy row
+  # for all 2,457, and the 2,313 without a parent would hash a NULL into the parent leg:
+  # well-formed BINARY(32) keys asserting that two thousand companies are children of
+  # nothing. The filter is the difference between a 144-edge hierarchy and a corrupt one.
+  - name: hubspot_client_legal_entity_parent
+    source_schema: hubspot_raw
+    table_pattern: companies
+    view_schema: raw_vault
+    # THE SAME EXCLUSION EVERY UNION CARRIES. hubspot_raw holds no `%_backfill` table today
+    # -- checked -- so this excludes nothing now. It is declared anyway because the rule is
+    # estate-wide and a backfill landing later must not silently widen this view.
+    exclude_pattern: '%_backfill'
+    # NO tenant_column, AND THAT IS A STATEMENT RATHER THAN AN OMISSION. A tenant column
+    # exists so a union can be keyed PER CLIENT, which is what the Fieldglass unions need:
+    # their consumers are key_style: tenant_scoped. Legal entities are reference data --
+    # hub_legal_entity is key_style: authored, one identifier space, no tenant. Naming a
+    # tenant here would require inventing one.
+    # MEASURED 25 September over all 7,328 rows: 144 carry a parent, across 63 distinct
+    # parents. Both halves of the filter are needed -- the column is STRING and the source
+    # writes the empty string, not NULL, for "no parent", so `IS NOT NULL` alone keeps
+    # every row. Counted both ways before writing it.
+    row_filter: >-
+      hs_parent_company_id IS NOT NULL AND hs_parent_company_id <> ''
+      AND hs_object_id IS NOT NULL AND hs_object_id <> ''
+    # Asserted at apply time. A view that silently lost either of these would produce a
+    # stream of edges that cannot be keyed.
+    required_columns: [hs_object_id, hs_parent_company_id]
+    derived_columns:
+      # THE ROLES THE LINK NAMES. hal_client_legal_entity_hierarchy keys its two legs by
+      # ROLE -- both legs are hub_legal_entity, so a hub-keyed mapping would resolve both
+      # to one entry and collapse the edge. The names here are the ones its parent_keys
+      # already declare, so the link is repointed without changing how it is keyed.
+      child_legal_entity_code: hs_object_id
+      parent_legal_entity_code: hs_parent_company_id
+      # THE SOURCE CARRIES NO STATUS FOR THE RELATIONSHIP, and this records that honestly
+      # rather than borrowing a field that means something else. `lifecyclestage` was the
+      # candidate and it is the COMPANY's CRM stage -- a lead, a customer -- not a statement
+      # about the parent-child edge. Within this view every row has a parent by
+      # construction, so what the source asserts is presence, and that is what is stored.
+      #
+      # The effectivity satellite's value is therefore in its DATE, not its status: the edge
+      # is dated by hs_lastmodifieddate, which is the source's own statement of when the
+      # company record last changed.
+      relationship_status: CAST('ASSERTED' AS STRING)
+
+# --------------------------------------------------------------------------------------- #
+
+  # THE GIE DERIVATION -- DEF-58. csat_invoice_line_gie declares 11 payload columns and
+  # nhl_invoice_line provides none of them, so they are computed here.
+  #
+  # THESE EXPRESSIONS ARE A SECOND IMPLEMENTATION OF src/accelerator/invoice_rules.py,
+  # and that is permitted ONLY because checks/ame_parity_check.py proves the two agree
+  # over tests/golden_ame_vectors.json. That is the same bargain hash_parity_check.py
+  # strikes for hashing -- a pure-Python reference and real Spark, measured against
+  # golden vectors, as gate zero. Change a rule in one place and the gate goes red.
+  #
+  # NOT HAND-WRITTEN, AND NOT ALLOWED TO BE. Every expression below is one of
+  # ame_parity_check.RULES' SQL templates with nhl_invoice_line's COLUMN NAMES
+  # substituted for the rule's input names -- the same templates the gate substitutes
+  # SQL LITERALS into. tests/test_accelerator.py composes them and compares character
+  # for character, so an expression edited here and not there fails offline, before any
+  # Spark runs. Without that tie the gate measures SQL that resembles the pipeline's
+  # rather than SQL that IS the pipeline's, and a parity gate over the wrong string is
+  # the unfailable shape this repo keeps meeting.
+  #
+  # FIVE OF ELEVEN PAYLOAD COLUMNS, NOT TEN. The plan expected only invoice_amount
+  # (AME003) to resist. Measured against the model instead of assumed, SIX resist, and
+  # for two different reasons -- both recorded on the satellite's binding as well:
+  #
+  #   description, line_description   AME004/AME005 need the invoice id and the worker's
+  #                                   first and last name. nhl_invoice_line carries
+  #                                   invoice_hk and worker_hk, which are BINARY(32)
+  #                                   digests, not the values. derived_columns runs over
+  #                                   ONE read table (factory._stage_full) and cannot
+  #                                   join, so no expression over this source can
+  #                                   produce either column.
+  #   amount                          AME008 needs invoice_line_item_amount_client. The
+  #                                   fieldglass_us_invoice profile derives it during
+  #                                   staging but invoice_line's payload never names it,
+  #                                   so it is not persisted on nhl_invoice_line.
+  #   project_number                  AME010 needs Project_Code. It reaches the vault
+  #                                   only inside the line_reference hash, never as a
+  #                                   column of its own.
+  #   invoice_amount                  AME003 is the invoice gross repeated on every
+  #                                   line, from sat_invoice_header. A window or a join,
+  #                                   not a row-local expression -- AND invoice_rules.py
+  #                                   has no AME003 function to be parity-checked
+  #                                   against.
+  #   accounting_date                 AME009. weekending_date IS on this source, so the
+  #                                   input is here -- but invoice_rules.py has no
+  #                                   AME009 function, and the satellite's own
+  #                                   description says "see the open question on its
+  #                                   format". Writing SQL for it would mint a rule
+  #                                   nobody authorised and leave it unmeasured, since
+  #                                   there is no reference to measure it against.
+  #
+  # The five that CAN be computed are computed. The six are named in
+  # tests/test_accelerator.py as an exact list, so the gap cannot quietly widen and
+  # closing any one of them forces the list to shrink in the same change.
+  - name: fieldglass_us_invoice_gie
+    # VAULT-SOURCED, AND THIS FLAG IS WHY THE TASK DOES NOT DIE ON IT.
+    # checks/apply_source_unions.py walks every entry in this list and reads
+    # union["source_schema"] against the BRONZE catalog's information_schema. This
+    # profile's input is 02_usnc_silver_edm_dev.raw_vault.nhl_invoice_line -- the vault,
+    # not Bronze. Left unflagged it is a KeyError in the task. Given a bronze-shaped
+    # declaration it matches zero tables, coverage_findings emits NO_TABLES, main()
+    # returns 1 and vault_job's ALL_SUCCESS dependency takes raw_vault down with the
+    # live job-posting load. Neither failure is visible to the offline suites, which is
+    # the pipeline-only shape this repo has shipped before. The flag makes the task skip
+    # it explicitly and say so.
+    vault_sourced: true
+    derived_columns:
+      expenditure_organization: >-
+        CASE UPPER(REGEXP_REPLACE(COALESCE(invoice_line_item_type, ''), '^\\s+|\\s+$', '')) WHEN 'TS' THEN expenditure_organization_ts WHEN 'ES' THEN expenditure_organization_es WHEN 'MI' THEN expenditure_organization_mi ELSE NULL END
+      expenditure_type: >-
+        CASE UPPER(REGEXP_REPLACE(COALESCE(invoice_line_item_type, ''), '^\\s+|\\s+$', '')) WHEN 'TS' THEN expenditure_type_ts WHEN 'ES' THEN expenditure_type_es WHEN 'MI' THEN expenditure_type_mi ELSE NULL END
+      line_type: >-
+        CASE WHEN UPPER(REGEXP_REPLACE(COALESCE(invoice_line_item_type, ''), '^\\s+|\\s+$', '')) = 'TAX' THEN 'TAX' ELSE 'ITEM' END
+      rule_version: "'1.0.0'"
+      task_number: >-
+        CASE WHEN REGEXP_REPLACE(COALESCE(CASE UPPER(REGEXP_REPLACE(COALESCE(invoice_line_item_type, ''), '^\\s+|\\s+$', '')) WHEN 'TS' THEN task_code_ts WHEN 'ES' THEN task_code_es WHEN 'MI' THEN task_code_mi ELSE NULL END, ''), '^\\s+|\\s+$', '') = '' THEN NULL ELSE REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(CASE UPPER(REGEXP_REPLACE(COALESCE(invoice_line_item_type, ''), '^\\s+|\\s+$', '')) WHEN 'TS' THEN task_code_ts WHEN 'ES' THEN task_code_es WHEN 'MI' THEN task_code_mi ELSE NULL END, ''), '^\\s+|\\s+$', ''), '^[^|]*[|]', ''), '[)]+$', ''), '^\\s+|\\s+$', '') END

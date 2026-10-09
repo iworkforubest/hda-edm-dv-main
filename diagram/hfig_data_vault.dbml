@@ -1,0 +1,1004 @@
+// GENERATED from metadata/entities/ by tools/emit_dbml_diagram.py.
+// Do not hand-edit: verify_repo.py fails the build if regenerating this differs.
+//
+// Paste into https://dbdiagram.io to explore. Hubs are conformed business concepts,
+// links and NHLs are relationships between them, satellites carry attributes over
+// time. Every arrow is a parent declared in the model, not a guess.
+//
+// 49 tables, 672 columns, 56 relationships.
+
+Table business_vault.csat_invoice_line_gie {
+  invoice_line_hk BINARY(32) [pk, note: 'Foreign key to nhl_invoice_line, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  description source_derived [note: 'AME004 -- invoice id, worker as Last First, week-ending and line ref, pipe delimited.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  line_description source_derived [note: 'AME005 -- the same without the invoice id.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  line_type source_derived [note: 'AME007 -- TAX where the source type is Tax, otherwise ITEM.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  amount DECIMAL(18,2) [note: 'AME008 -- the line amount for an ITEM line, being the CLIENT amount: invoice_line_item_amount_client from the raw vault, which is the supplier cost plus that line\'s MSP margin. Not the supplier figure. Tax is aggregated onto the final TAX line and all lines sum to the invoice gross. Named `amount` because Ameren\'s template names the column `Amount`; the thirteen gold field names are the customer\'s contract and are not ours to rename. Masked by governance.mask_money.; classification financial; MASKED by governance.mask_money']
+  invoice_amount DECIMAL(18,2) [note: 'AME003 -- the invoice gross, repeated on every line of the invoice, from sat_invoice_header.gross_invoice_amount. The reconciliation target. A DIFFERENT GRAIN FROM `amount` AND FROM THE RAW VAULT\'S LINE COLUMN: this is the whole invoice\'s value on every line, which is what Ameren\'s template asks for and what AME008 checks the lines against. The raw vault\'s per-line client amount is called invoice_line_item_amount_client precisely so that these two cannot be confused by a projection -- Spark resolves identifiers case-insensitively, so one name for two grains is either an AMBIGUOUS_REFERENCE or, worse, a silent pick. Masked by governance.mask_money.; classification financial; MASKED by governance.mask_money']
+  accounting_date source_derived [note: 'AME009 -- from the week-ending date. See the open question on its format.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  project_number source_derived [note: 'AME010 -- the source project code, unchanged.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_number source_derived [note: 'AME011 -- the value after the pipe in the module\'s task code, trailing parenthesis removed. A code with no pipe yields the whole code rather than a blank.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type source_derived [note: 'AME012 -- the expenditure type belonging to the line\'s module.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization source_derived [note: 'AME013 -- the expenditure organization belonging to the line\'s module.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  rule_version source_derived [note: 'The version of src/accelerator/invoice_rules.py that produced this row. Present so a rule change is visible in the data rather than only in git history.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'csat in the pay_bill domain; declared sensitivity financial'
+}
+
+Table business_vault.csat_job_request_custom_promoted {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  client_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  cost_centre_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  project_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  purchase_order_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  approver_email_domain source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  promoted_field_count source_derived [note: 'How many custom fields the registry had promoted when this row was built. A count of the shape, not of anything in the business.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  registry_version source_derived [note: 'The version of ref_fieldglass_custom_field this pivot was built from.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  rule_version source_derived [note: 'The registry version the promotion ran under, which is what lets HFIG answer "which fields were promoted when we reported that figure".; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'csat in the job domain; declared sensitivity internal'
+}
+
+Table business_vault.csat_payroll_line_classification {
+  payroll_detail_hk BINARY(32) [pk, note: 'Foreign key to nhl_payroll_detail, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  code_type source_derived [note: 'One of N, D or T -- the payroll code\'s type as the source classifies it.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  code_class source_derived [note: 'What the code does to money: net_cash, deduction, tax or earning. The classification this satellite exists to compute.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  liability_party source_derived [note: 'Who bears the cost -- employee, employer or none. Decides which side of the GL the amount belongs on.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  employer_cost_amount source_derived [note: 'The portion of this payroll line borne by the employer rather than the worker. Masked by governance.mask_money, so it reads NULL to an identity outside usnc_data_analyst_finance or scope_unmask_currency_values.; classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  worker_withholding_amount source_derived [note: 'The portion withheld from the worker\'s pay. Masked by governance.mask_money, so it reads NULL to an identity outside usnc_data_analyst_finance or scope_unmask_currency_values.; classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  mapped_ledger_account source_derived [note: 'The GL account this classification posts to. The mapping is what this satellite computes; the raw payroll line carries no account of its own.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  rule_version source_derived [note: 'The version of the classification rules this row was computed under, so a figure can be traced back to the rules that produced it rather than to today\'s.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'csat in the payroll domain; declared sensitivity financial'
+}
+
+Table raw_vault.esat_client_contracting_entity_effectivity_client_portal {
+  client_contracting_entity_hk BINARY(32) [pk, note: 'Foreign key to lnk_client_contracting_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  relationship_status source_derived [note: 'Whether this contracting relationship is in force. A relationship that ends is delivered as a new row saying so, never an update.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'esat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.esat_client_legal_entity_hierarchy_effectivity_hubspot {
+  client_legal_entity_hierarchy_hk BINARY(32) [pk, note: 'Foreign key to hal_client_legal_entity_hierarchy, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  relationship_status source_derived [note: 'Whether this parent/child ownership edge is in force. An edge that ends is delivered as a new row saying so, never an update, which is what keeps "who owned this in March" answerable.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'esat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.esat_consolidation_hierarchy_effectivity_workday {
+  consolidation_hierarchy_hk BINARY(32) [pk, note: 'Foreign key to hal_consolidation_hierarchy, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  relationship_status source_derived [note: 'Whether this containment edge is in force. An edge that ends is delivered as a new row saying so, never an update.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'esat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.esat_legal_entity_consolidation_effectivity_workday {
+  legal_entity_consolidation_hk BINARY(32) [pk, note: 'Foreign key to lnk_legal_entity_consolidation, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  relationship_status source_derived [note: 'Whether this membership is in force. A membership that ends is delivered as a new row saying so, never an update.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'esat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.esat_wd_reference_effectivity_workday {
+  wd_reference_hk BINARY(32) [pk, note: 'Foreign key to hub_wd_reference, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  reference_status source_derived [note: 'Whether Workday still offers this reference value. A withdrawal is delivered as a new row saying so, never as an update.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'esat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.hal_client_legal_entity_hierarchy {
+  client_legal_entity_hierarchy_hk BINARY(32) [pk, note: 'Hash key: this hal\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  parent_legal_entity_hk BINARY(32) [note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  child_legal_entity_hk BINARY(32) [note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hal in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.hal_consolidation_hierarchy {
+  consolidation_hierarchy_hk BINARY(32) [pk, note: 'Hash key: this hal\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  parent_consolidation_group_hk BINARY(32) [note: 'Foreign key to hub_consolidation_group, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  child_consolidation_group_hk BINARY(32) [note: 'Foreign key to hub_consolidation_group, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hal in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_accounting_journal {
+  accounting_journal_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  reference_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  organisation_reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  fiscal_year source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  accounting_journal_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- accounting_journal_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the finance domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_client {
+  client_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  reference_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  client_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- client_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_consolidation_group {
+  consolidation_group_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  consolidation_group_reference source_derived [note: 'Workday\'s Organization_Reference_ID for a Company_Hierarchy organisation, such as Impellam_UK_Limited_Consolidated. Federated on the source because Workday assigns it.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  consolidation_group_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- consolidation_group_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_invoice {
+  invoice_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  invoice_tenant source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  invoice_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  invoice_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- invoice_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the pay_bill domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_job_request {
+  job_request_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  job_request_tenant source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  job_request_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  job_request_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- job_request_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_ledger_account {
+  ledger_account_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  organisation_reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  ledger_account_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  ledger_account_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- ledger_account_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the finance domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_legal_entity {
+  legal_entity_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  legal_entity_code source_derived [note: 'The identifier HFIG assigns to a legal entity, stable across every rename and rebrand. Authored rather than federated, so one company is one row whatever feed observed it. Whether this stays an HFIG-assigned code or becomes (jurisdiction, company_number) is LEG-1 in docs/legal_entity_questions.html and is not yet decided.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  legal_entity_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- legal_entity_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_operating_company {
+  operating_company_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  reference_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  operating_company_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- operating_company_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_pay_period {
+  pay_period_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  pay_period_start_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  pay_period_end_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  pay_period_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- pay_period_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the payroll domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_supplier {
+  supplier_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  supplier_tenant source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  supplier_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  supplier_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- supplier_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_wd_reference {
+  wd_reference_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  reference_id_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  wd_reference_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- wd_reference_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.hub_worker {
+  worker_hk BINARY(32) [pk, note: 'Hash key: this hub\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  worker_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  worker_bk source_derived [note: 'The business key of this hub in readable form, for a human reading a row. Never joined on -- worker_hk is the join.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'hub in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.lnk_client_contracting_entity {
+  client_contracting_entity_hk BINARY(32) [pk, note: 'Hash key: this link\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  engaging_legal_entity_hk BINARY(32) [note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  contracting_legal_entity_hk BINARY(32) [note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'link in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.lnk_client_job_request {
+  client_job_request_hk BINARY(32) [pk, note: 'Hash key: this link\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  client_hk BINARY(32) [note: 'Foreign key to hub_client, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  job_request_hk BINARY(32) [note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'link in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.lnk_legal_entity_consolidation {
+  legal_entity_consolidation_hk BINARY(32) [pk, note: 'Hash key: this link\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  legal_entity_hk BINARY(32) [note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  consolidation_group_hk BINARY(32) [note: 'Foreign key to hub_consolidation_group, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'link in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.msat_client_address_gp_customer {
+  client_hk BINARY(32) [pk, note: 'Foreign key to hub_client, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  mas_key source_derived [pk, note: 'The sub-key that makes a multi-active satellite\'s rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  adrscode source_derived [note: 'GP\'s address code -- BILL TO, SHIP TO, PRIMARY and the like. The multi-active sub-key: a customer holds several of these at once and none of them supersedes the others.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  address1 source_derived [note: 'First line of the address as GP holds it. Unparsed.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  address2 source_derived [note: 'Second line of the address as GP holds it. Unparsed, and frequently empty.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  city source_derived [note: 'The city as GP holds it. Not reconciled against any reference list.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  country source_derived [note: 'The country as GP holds it -- a free-text name, not an ISO code. Unlike sat_legal_entity_details.jurisdiction, nothing normalises this, so it is carried verbatim and any consumer wanting ISO must map it.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  phone1 source_derived [note: 'The first of GP\'s phone numbers for this address slot.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  cntcprsn source_derived [note: 'The named contact person at the customer for this address slot. A person\'s name at a company, recorded because the receivables process uses it; if the customer roster ever carries private individuals, this column is the reason to revisit the entity\'s sensitivity.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'msat in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.msat_job_request_custom_field_fieldglass_us {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  mas_key source_derived [pk, note: 'The sub-key that makes a multi-active satellite\'s rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  custom_field_name source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  custom_field_value source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  custom_field_label source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  declared_data_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  client_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'msat in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.msat_journal_line_external_code_ukg_us {
+  journal_line_hk BINARY(32) [pk, note: 'Foreign key to nhl_journal_line, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  mas_key source_derived [pk, note: 'The sub-key that makes a multi-active satellite\'s rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  code_name source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  code_value source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'msat in the finance domain; declared sensitivity internal'
+}
+
+Table raw_vault.msat_journal_line_worktag_ukg_us {
+  journal_line_hk BINARY(32) [pk, note: 'Foreign key to nhl_journal_line, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  mas_key source_derived [pk, note: 'The sub-key that makes a multi-active satellite\'s rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  worktag_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  worktag_value source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  is_balancing_worktag source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'msat in the finance domain; declared sensitivity internal'
+}
+
+Table raw_vault.msat_worker_skills_hr_eu {
+  worker_hk BINARY(32) [pk, note: 'Foreign key to hub_worker, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  mas_key source_derived [pk, note: 'The sub-key that makes a multi-active satellite\'s rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  competency_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  level source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  assessed_on source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'msat in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.msat_worker_skills_striive_eu {
+  worker_hk BINARY(32) [pk, note: 'Foreign key to hub_worker, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  mas_key source_derived [pk, note: 'The sub-key that makes a multi-active satellite\'s rows distinct within one parent and one load -- a skill code or phone type, in preference to a generated sequence.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  skill_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  proficiency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  verified_at source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'msat in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.nhl_general_journal_line {
+  general_journal_line_hk BINARY(32) [pk, note: 'Hash key: this nhl\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  accounting_journal_hk BINARY(32) [note: 'Foreign key to hub_accounting_journal, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  operating_company_hk BINARY(32) [note: 'Foreign key to hub_operating_company, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  ledger_account_hk BINARY(32) [note: 'Foreign key to hub_ledger_account, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  seqnumbr source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  debitamt DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  crdtamnt DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  curncyid source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  xchgrate source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  denxrate source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  ordbtamt DOUBLE [note: 'classification financial; MASKED by governance.mask_money_double']
+  orcrdamt DOUBLE [note: 'classification financial; MASKED by governance.mask_money_double']
+  openyear source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  periodid source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  trxsorce source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  correcting_je source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  back_out_je source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  original_je source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  voided source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'nhl in the finance domain; declared sensitivity financial'
+}
+
+Table raw_vault.nhl_general_journal_line_closed_year {
+  general_journal_line_closed_year_hk BINARY(32) [pk, note: 'Hash key: this nhl\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  accounting_journal_hk BINARY(32) [note: 'Foreign key to hub_accounting_journal, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  operating_company_hk BINARY(32) [note: 'Foreign key to hub_operating_company, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  ledger_account_hk BINARY(32) [note: 'Foreign key to hub_ledger_account, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  seqnumbr source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  debitamt DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  crdtamnt DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  curncyid source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  xchgrate source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  denxrate source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  ordbtamt DOUBLE [note: 'classification financial; MASKED by governance.mask_money_double']
+  orcrdamt DOUBLE [note: 'classification financial; MASKED by governance.mask_money_double']
+  hstyear source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  periodid source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  trxsorce source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  correcting_je source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  back_out_je source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  original_je source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  voided source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'nhl in the finance domain; declared sensitivity financial'
+}
+
+Table raw_vault.nhl_invoice_line {
+  invoice_line_hk BINARY(32) [pk, note: 'Hash key: this nhl\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  invoice_hk BINARY(32) [note: 'Foreign key to hub_invoice, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  supplier_hk BINARY(32) [note: 'Foreign key to hub_supplier, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  worker_hk BINARY(32) [note: 'Foreign key to hub_worker, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  client_hk BINARY(32) [note: 'Foreign key to hub_client, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  line_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  invoice_line_item_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  weekending_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  currency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code_ts source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code_es source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code_mi source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type_ts source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type_es source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type_mi source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization_ts source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization_es source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization_mi source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'nhl in the pay_bill domain; declared sensitivity internal'
+}
+
+Table raw_vault.nhl_journal_line {
+  journal_line_hk BINARY(32) [pk, note: 'Hash key: this nhl\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  accounting_journal_hk BINARY(32) [note: 'Foreign key to hub_accounting_journal, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  operating_company_hk BINARY(32) [note: 'Foreign key to hub_operating_company, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  ledger_account_hk BINARY(32) [note: 'Foreign key to hub_ledger_account, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  pay_period_hk BINARY(32) [note: 'Foreign key to hub_pay_period, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  userdefined1 source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  debit DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  credit DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  paycheckdate source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  currencyid source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  sourcedocument source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  transactiontype source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'nhl in the finance domain; declared sensitivity financial'
+}
+
+Table raw_vault.nhl_payroll_detail {
+  payroll_detail_hk BINARY(32) [pk, note: 'Hash key: this nhl\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  worker_hk BINARY(32) [note: 'Foreign key to hub_worker, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  operating_company_hk BINARY(32) [note: 'Foreign key to hub_operating_company, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  pay_period_hk BINARY(32) [note: 'Foreign key to hub_pay_period, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  payroll_register_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  line_sequence source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  payroll_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  payroll_code_category source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  ee_er_indicator source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  amount source_derived [note: 'classification restricted; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  gross_amount source_derived [note: 'classification restricted; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  taxable_amount source_derived [note: 'classification restricted; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  ytd_amount source_derived [note: 'classification restricted; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  hours source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  rate source_derived [note: 'classification restricted; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  currency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  gl_account_as_asserted source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  pay_check_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  pay_check_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  work_state_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  tax_authority_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'nhl in the payroll domain; declared sensitivity restricted'
+}
+
+Table raw_vault.nhl_timesheet_line {
+  timesheet_line_hk BINARY(32) [pk, note: 'Hash key: this nhl\'s identity, SHA-256 over its declared key components. This is what everything joins on.; classification internal']
+  worker_hk BINARY(32) [note: 'Foreign key to hub_worker, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  job_request_hk BINARY(32) [note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  client_hk BINARY(32) [note: 'Foreign key to hub_client, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  timesheet_reference source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  line_no source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  week_ending source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  units source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  unit_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  rate source_derived [note: 'classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  amount source_derived [note: 'classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  currency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  time_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  Note: 'nhl in the pay_bill domain; declared sensitivity financial'
+}
+
+Table raw_vault.sat_accounting_journal_header_ukg_us {
+  accounting_journal_hk BINARY(32) [pk, note: 'Foreign key to hub_accounting_journal, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  company_reference_id source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  currency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  ledger_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  accounting_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  journal_source source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  journal_number source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  journal_entry_memo source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  book_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  adjustment_journal source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  create_reversal source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  reversal_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  control_total_amount source_derived [note: 'classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the finance domain; declared sensitivity financial'
+}
+
+Table raw_vault.sat_client_details_gp_customer {
+  client_hk BINARY(32) [pk, note: 'Foreign key to hub_client, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  custname source_derived [note: 'The customer\'s name as Great Plains holds it. Spelling is not normalised and is not reliable as a key -- KCCA is "KIMBERLY CLARK CANADA" in one company database and "Kimberly Clark Canada" in another. The customer NUMBER is the identity.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  custclas source_derived [note: 'GP\'s customer class -- VMS, GROUP FILL, TPV and others. Carried verbatim. Nothing in the raw vault decides what a class means; that reading belongs downstream where it can be changed without re-keying.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  inactive source_derived [note: 'GP\'s inactive flag, set on real records in this extract. Recorded and never filtered: an inactive customer still owns receivables history and must still resolve.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  curncyid source_derived [note: 'The customer\'s default currency code. An identifier, not an amount.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  pymtrmid source_derived [note: 'The customer\'s default payment terms code. An identifier, not an amount.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the party domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_invoice_header_fieldglass_us {
+  invoice_hk BINARY(32) [pk, note: 'Foreign key to hub_invoice, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  invoice_type source_derived [note: 'Fieldglass invoice type, IN in the sample. Retained because a credit note is a different document and must not be released as an invoice.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  gross_invoice_amount DECIMAL(18,2) [note: 'The invoice total CHARGED TO THE CLIENT, inclusive of MSP margin and before tax. AME003 repeats this on every line and AME008 asserts the lines sum to it -- so this column is the reconciliation target, not a convenience copy. Settled 24 September 2026: the client total is what Ameren is invoiced, and the supplier total (gross_supplier_invoice_amount) is the underlying cost. The two differ by the MSP margin, measured at 24,054.04 across 380 of 419 invoices. Masked by governance.mask_money.; classification financial; MASKED by governance.mask_money']
+  net_invoice_amount DECIMAL(18,2) [note: 'THE SOURCE\'S NAMES ARE INVERTED AND THIS IS THE LARGER FIGURE. Despite being called "net", this is the invoice total INCLUDING tax: measured across all 419 real invoices, net_invoice_amount = gross_invoice_amount + invoice_adjustment_amount, without exception. Independently confirmed by Amy Keser\'s `Ameren Invoice Value Analysis` of 24 September, which reaches the same reading from the client\'s own figures. The columns keep the source\'s spelling because the raw vault records what the source sent; this description is where the trap is named, because only 2 of the 419 invoices carry any tax, so on the other 417 the two columns are equal and the inversion is invisible. Masked by governance.mask_money.; classification financial; MASKED by governance.mask_money']
+  currency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  invoice_submit_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  original_invoice_id source_derived [note: 'Present when this invoice supersedes another. Carried so a reissue can be distinguished from a first issue, which the issuance ledger in Task 6 needs.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the pay_bill domain; declared sensitivity financial'
+}
+
+Table raw_vault.sat_invoice_line_details_fieldglass_us {
+  invoice_line_hk BINARY(32) [pk, note: 'Foreign key to nhl_invoice_line, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  invoice_line_item_amount_client DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  invoice_line_item_amount_supplier DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  tax_amount DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  msp_line_amount DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  rate DECIMAL(18,2) [note: 'classification financial; MASKED by governance.mask_money']
+  hours source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  invoice_line_item_ref source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  rate_category source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  worker_first_name source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  worker_last_name source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  project_code source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code_ts source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code_es source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  task_code_mi source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type_ts source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type_es source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_type_mi source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization_ts source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization_es source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  expenditure_organization_mi source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the pay_bill domain; declared sensitivity financial'
+}
+
+Table raw_vault.sat_job_request_commercials_striive_eu {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  pay_min source_derived [note: 'classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  pay_max source_derived [note: 'classification financial; type read from the bound bronze column at load time, not declared in the model; MASKED by governance.mask_money']
+  currency source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  charge_basis source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the job domain; declared sensitivity financial'
+}
+
+Table raw_vault.sat_job_request_details_bullhorn_eu {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  title source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  city source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  countrycode source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  employmenttype source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  numopenings source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  status source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  dateclosed source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_job_request_details_fieldglass_us {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  posting_title source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  work_location_city source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  work_location_country source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  worker_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  quantity source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  posting_status source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  application_close_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_job_request_details_prounity_eu {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  request_title source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  location_city source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  location_country source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  engagement_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  headcount source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  request_state source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  valid_until source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_job_request_details_striive_eu {
+  job_request_hk BINARY(32) [pk, note: 'Foreign key to hub_job_request, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  job_title source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  city source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  country source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  contract_type source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  positions source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  status source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  closing_date source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the job domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_legal_entity_details_client_portal {
+  legal_entity_hk BINARY(32) [pk, note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  registered_name source_derived [note: 'The company\'s name as registered, not as traded. "Lorien" is a brand; the entity behind it has a longer name. Recorded as an attribute so a rename is a new version rather than a new company.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  company_number source_derived [note: 'The company\'s registration number in its jurisdiction. Unique within that jurisdiction and not across one, which is why both are recorded.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  jurisdiction source_derived [note: 'Where the company is registered, ISO 3166-1 alpha-2. GB, IE, US, AU, NL and BE appear in the roster today.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  registered_status source_derived [note: 'Active, dormant or dissolved. Recorded and never filtered: a dissolved company still owns history and must still resolve. Gold decides what to show.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_legal_entity_profile_hubspot {
+  legal_entity_hk BINARY(32) [pk, note: 'Foreign key to hub_legal_entity, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  name source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  domain source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  country source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  city source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  state source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  company_industry source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  hs_industry_group source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  regional_group source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  regional_group_global source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  lifecyclestage source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  numberofemployees source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  annualrevenue source_derived [note: 'classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the reference domain; declared sensitivity internal'
+}
+
+Table raw_vault.sat_supplier_details_gp_vendor {
+  supplier_hk BINARY(32) [pk, note: 'Foreign key to hub_supplier, hashed exactly as that table\'s own loader hashes it -- so the join holds by construction rather than by careful copying.; classification internal']
+  hashdiff BINARY(32) [note: 'SHA-256 over this satellite\'s payload. Change detection: a new version is written only when this differs from the row before it, so an unchanged re-delivery costs nothing.; classification internal']
+  vendname source_derived [note: 'The vendor\'s name as Great Plains holds it, within one company\'s books. Not a key and not reliable as one: 630 vendor ids carry different names in different operating companies, which is why the id is scoped rather than the name normalised.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  venddba source_derived [note: 'The vendor\'s trading name -- "doing business as" -- where GP holds one. Frequently empty and frequently a different spelling of vendname rather than a different company.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  vendshnm source_derived [note: 'GP\'s short name for the vendor. A display convenience, carried because it is what appears on some GP reports and a reconciliation against them needs it.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  vendstts source_derived [note: 'GP\'s vendor status -- active, inactive, temporary, hold. Recorded and never filtered: a vendor on hold still owns payables history and must still resolve.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  curncyid source_derived [note: 'The vendor\'s default currency code. An identifier, not an amount.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  pymtrmid source_derived [note: 'The vendor\'s default payment terms code. An identifier, not an amount.; classification internal; type read from the bound bronze column at load time, not declared in the model']
+  load_dts TIMESTAMP [pk, note: 'When WE learned this row, set by the load and monotonic within a run. Not when it happened in the source -- that is applied_dts.; classification internal']
+  applied_dts TIMESTAMP [note: 'When this row\'s change happened in the SOURCE. May arrive late, and may be NULL where a feed ships no business clock. Type-2 end-dating runs on this, never on load_dts.; classification internal']
+  sub_seq INT [pk, note: 'Intra-batch ordering, used only to break a tie when two rows share a load_dts. Carries no business meaning and is never a business key.; classification internal']
+  rec_src STRING [note: 'Which feed delivered this row. Provenance, NOT identity -- never join on it. The source name is already hashed into a federated key, so joining on both would be asserting the same thing twice.; classification internal']
+  batch_id STRING [note: 'The load run that wrote this row, for tracing a value back to the run that produced it.; classification internal']
+  manifest_id STRING [note: 'The delivery manifest this row was approved under. Loop-1 reconciliation compares what a manifest approved against what landed and what was quarantined.; classification internal']
+  cdc_op STRING [note: 'The change operation Bronze delivered: I, U or D. What the SOURCE said happened, not what this vault did with it.; classification internal']
+  Note: 'sat in the party domain; declared sensitivity internal'
+}
+
+// Relationships, from contract.foreign_keys() -- the same derivation the
+// published data contracts use.
+Ref: business_vault.csat_invoice_line_gie.invoice_line_hk > raw_vault.nhl_invoice_line.invoice_line_hk
+Ref: business_vault.csat_job_request_custom_promoted.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: business_vault.csat_payroll_line_classification.payroll_detail_hk > raw_vault.nhl_payroll_detail.payroll_detail_hk
+Ref: raw_vault.esat_client_contracting_entity_effectivity_client_portal.client_contracting_entity_hk > raw_vault.lnk_client_contracting_entity.client_contracting_entity_hk
+Ref: raw_vault.esat_client_legal_entity_hierarchy_effectivity_hubspot.client_legal_entity_hierarchy_hk > raw_vault.hal_client_legal_entity_hierarchy.client_legal_entity_hierarchy_hk
+Ref: raw_vault.esat_consolidation_hierarchy_effectivity_workday.consolidation_hierarchy_hk > raw_vault.hal_consolidation_hierarchy.consolidation_hierarchy_hk
+Ref: raw_vault.esat_legal_entity_consolidation_effectivity_workday.legal_entity_consolidation_hk > raw_vault.lnk_legal_entity_consolidation.legal_entity_consolidation_hk
+Ref: raw_vault.esat_wd_reference_effectivity_workday.wd_reference_hk > raw_vault.hub_wd_reference.wd_reference_hk
+Ref: raw_vault.hal_client_legal_entity_hierarchy.child_legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.hal_client_legal_entity_hierarchy.parent_legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.hal_consolidation_hierarchy.child_consolidation_group_hk > raw_vault.hub_consolidation_group.consolidation_group_hk
+Ref: raw_vault.hal_consolidation_hierarchy.parent_consolidation_group_hk > raw_vault.hub_consolidation_group.consolidation_group_hk
+Ref: raw_vault.lnk_client_contracting_entity.contracting_legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.lnk_client_contracting_entity.engaging_legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.lnk_client_job_request.client_hk > raw_vault.hub_client.client_hk
+Ref: raw_vault.lnk_client_job_request.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.lnk_legal_entity_consolidation.consolidation_group_hk > raw_vault.hub_consolidation_group.consolidation_group_hk
+Ref: raw_vault.lnk_legal_entity_consolidation.legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.msat_client_address_gp_customer.client_hk > raw_vault.hub_client.client_hk
+Ref: raw_vault.msat_job_request_custom_field_fieldglass_us.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.msat_journal_line_external_code_ukg_us.journal_line_hk > raw_vault.nhl_journal_line.journal_line_hk
+Ref: raw_vault.msat_journal_line_worktag_ukg_us.journal_line_hk > raw_vault.nhl_journal_line.journal_line_hk
+Ref: raw_vault.msat_worker_skills_hr_eu.worker_hk > raw_vault.hub_worker.worker_hk
+Ref: raw_vault.msat_worker_skills_striive_eu.worker_hk > raw_vault.hub_worker.worker_hk
+Ref: raw_vault.nhl_general_journal_line.accounting_journal_hk > raw_vault.hub_accounting_journal.accounting_journal_hk
+Ref: raw_vault.nhl_general_journal_line.ledger_account_hk > raw_vault.hub_ledger_account.ledger_account_hk
+Ref: raw_vault.nhl_general_journal_line.operating_company_hk > raw_vault.hub_operating_company.operating_company_hk
+Ref: raw_vault.nhl_general_journal_line_closed_year.accounting_journal_hk > raw_vault.hub_accounting_journal.accounting_journal_hk
+Ref: raw_vault.nhl_general_journal_line_closed_year.ledger_account_hk > raw_vault.hub_ledger_account.ledger_account_hk
+Ref: raw_vault.nhl_general_journal_line_closed_year.operating_company_hk > raw_vault.hub_operating_company.operating_company_hk
+Ref: raw_vault.nhl_invoice_line.client_hk > raw_vault.hub_client.client_hk
+Ref: raw_vault.nhl_invoice_line.invoice_hk > raw_vault.hub_invoice.invoice_hk
+Ref: raw_vault.nhl_invoice_line.supplier_hk > raw_vault.hub_supplier.supplier_hk
+Ref: raw_vault.nhl_invoice_line.worker_hk > raw_vault.hub_worker.worker_hk
+Ref: raw_vault.nhl_journal_line.accounting_journal_hk > raw_vault.hub_accounting_journal.accounting_journal_hk
+Ref: raw_vault.nhl_journal_line.ledger_account_hk > raw_vault.hub_ledger_account.ledger_account_hk
+Ref: raw_vault.nhl_journal_line.operating_company_hk > raw_vault.hub_operating_company.operating_company_hk
+Ref: raw_vault.nhl_journal_line.pay_period_hk > raw_vault.hub_pay_period.pay_period_hk
+Ref: raw_vault.nhl_payroll_detail.operating_company_hk > raw_vault.hub_operating_company.operating_company_hk
+Ref: raw_vault.nhl_payroll_detail.pay_period_hk > raw_vault.hub_pay_period.pay_period_hk
+Ref: raw_vault.nhl_payroll_detail.worker_hk > raw_vault.hub_worker.worker_hk
+Ref: raw_vault.nhl_timesheet_line.client_hk > raw_vault.hub_client.client_hk
+Ref: raw_vault.nhl_timesheet_line.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.nhl_timesheet_line.worker_hk > raw_vault.hub_worker.worker_hk
+Ref: raw_vault.sat_accounting_journal_header_ukg_us.accounting_journal_hk > raw_vault.hub_accounting_journal.accounting_journal_hk
+Ref: raw_vault.sat_client_details_gp_customer.client_hk > raw_vault.hub_client.client_hk
+Ref: raw_vault.sat_invoice_header_fieldglass_us.invoice_hk > raw_vault.hub_invoice.invoice_hk
+Ref: raw_vault.sat_invoice_line_details_fieldglass_us.invoice_line_hk > raw_vault.nhl_invoice_line.invoice_line_hk
+Ref: raw_vault.sat_job_request_commercials_striive_eu.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.sat_job_request_details_bullhorn_eu.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.sat_job_request_details_fieldglass_us.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.sat_job_request_details_prounity_eu.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.sat_job_request_details_striive_eu.job_request_hk > raw_vault.hub_job_request.job_request_hk
+Ref: raw_vault.sat_legal_entity_details_client_portal.legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.sat_legal_entity_profile_hubspot.legal_entity_hk > raw_vault.hub_legal_entity.legal_entity_hk
+Ref: raw_vault.sat_supplier_details_gp_vendor.supplier_hk > raw_vault.hub_supplier.supplier_hk
+
+// Grouped by the domain each entity declares, so the diagram opens on
+// something legible rather than 25 tables in a row.
+TableGroup finance {
+  raw_vault.hub_accounting_journal
+  raw_vault.hub_ledger_account
+  raw_vault.msat_journal_line_external_code_ukg_us
+  raw_vault.msat_journal_line_worktag_ukg_us
+  raw_vault.nhl_general_journal_line
+  raw_vault.nhl_general_journal_line_closed_year
+  raw_vault.nhl_journal_line
+  raw_vault.sat_accounting_journal_header_ukg_us
+}
+
+TableGroup job {
+  business_vault.csat_job_request_custom_promoted
+  raw_vault.hub_job_request
+  raw_vault.lnk_client_job_request
+  raw_vault.msat_job_request_custom_field_fieldglass_us
+  raw_vault.sat_job_request_commercials_striive_eu
+  raw_vault.sat_job_request_details_bullhorn_eu
+  raw_vault.sat_job_request_details_fieldglass_us
+  raw_vault.sat_job_request_details_prounity_eu
+  raw_vault.sat_job_request_details_striive_eu
+}
+
+TableGroup party {
+  raw_vault.hub_client
+  raw_vault.hub_operating_company
+  raw_vault.hub_supplier
+  raw_vault.hub_worker
+  raw_vault.msat_client_address_gp_customer
+  raw_vault.msat_worker_skills_hr_eu
+  raw_vault.msat_worker_skills_striive_eu
+  raw_vault.sat_client_details_gp_customer
+  raw_vault.sat_supplier_details_gp_vendor
+}
+
+TableGroup pay_bill {
+  business_vault.csat_invoice_line_gie
+  raw_vault.hub_invoice
+  raw_vault.nhl_invoice_line
+  raw_vault.nhl_timesheet_line
+  raw_vault.sat_invoice_header_fieldglass_us
+  raw_vault.sat_invoice_line_details_fieldglass_us
+}
+
+TableGroup payroll {
+  business_vault.csat_payroll_line_classification
+  raw_vault.hub_pay_period
+  raw_vault.nhl_payroll_detail
+}
+
+TableGroup reference {
+  raw_vault.esat_client_contracting_entity_effectivity_client_portal
+  raw_vault.esat_client_legal_entity_hierarchy_effectivity_hubspot
+  raw_vault.esat_consolidation_hierarchy_effectivity_workday
+  raw_vault.esat_legal_entity_consolidation_effectivity_workday
+  raw_vault.esat_wd_reference_effectivity_workday
+  raw_vault.hal_client_legal_entity_hierarchy
+  raw_vault.hal_consolidation_hierarchy
+  raw_vault.hub_consolidation_group
+  raw_vault.hub_legal_entity
+  raw_vault.hub_wd_reference
+  raw_vault.lnk_client_contracting_entity
+  raw_vault.lnk_legal_entity_consolidation
+  raw_vault.sat_legal_entity_details_client_portal
+  raw_vault.sat_legal_entity_profile_hubspot
+}

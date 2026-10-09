@@ -1,0 +1,747 @@
+<title>How Hard Is Fieldglass?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  /* Tokens inherited from the sibling briefs in docs/ so this page reads as one body of
+     work with them. One token is new: --wait. "Blocked on another team" is genuinely a
+     third state here, distinct from bad (--signal) and done (--ok), and the whole
+     argument of this page turns on that distinction. */
+  :root {
+    --ground:      #f7f8fa;
+    --surface:     #ffffff;
+    --surface-alt: #eef1f5;
+    --ink:         #1c2230;
+    --ink-soft:    #38414f;
+    --muted:       #5c6779;
+    --rule:        #d8dee7;
+    --accent:      #2f5d8c;
+    --accent-soft: #e6edf5;
+    --signal:      #9c3b2e;
+    --signal-soft: #f7e9e6;
+    --wait:        #8a5a12;
+    --wait-soft:   #f7efdf;
+    --ok:          #2f6b4f;
+    --ok-soft:     #e4f0ea;
+
+    --sans:  "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono:  "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #12161d;
+      --surface:     #1a1f28;
+      --surface-alt: #222834;
+      --ink:         #e7ecf3;
+      --ink-soft:    #c3cbd7;
+      --muted:       #8d99aa;
+      --rule:        #2f3846;
+      --accent:      #7fb0dd;
+      --accent-soft: #1c2836;
+      --signal:      #e0897a;
+      --signal-soft: #2e1f1d;
+      --wait:        #d6a75a;
+      --wait-soft:   #2b2417;
+      --ok:          #7dbb9c;
+      --ok-soft:     #1a2822;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #12161d;
+    --surface:     #1a1f28;
+    --surface-alt: #222834;
+    --ink:         #e7ecf3;
+    --ink-soft:    #c3cbd7;
+    --muted:       #8d99aa;
+    --rule:        #2f3846;
+    --accent:      #7fb0dd;
+    --accent-soft: #1c2836;
+    --signal:      #e0897a;
+    --signal-soft: #2e1f1d;
+    --wait:        #d6a75a;
+    --wait-soft:   #2b2417;
+    --ok:          #7dbb9c;
+    --ok-soft:     #1a2822;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  /* ------------------------------------------------------------- masthead */
+  .masthead { display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(1.85rem, 4.4vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.018em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .standfirst {
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 38rem;
+  }
+
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  /* ------------------------------------------------------------- sections */
+  section { display: flex; flex-direction: column; gap: 1rem; }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: 1.18rem;
+    font-weight: 600;
+    letter-spacing: -0.008em;
+    margin: 0;
+    padding-bottom: 0.55rem;
+    border-bottom: 2px solid var(--rule);
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.4rem 0 0;
+  }
+
+  p { margin: 0; max-width: 40rem; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface-alt);
+    padding: 0.08em 0.32em;
+    border-radius: 2px;
+  }
+
+  strong { font-weight: 600; }
+
+  /* -------------------------------------------------------------- verdict */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 1.3rem 1.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .verdict p { max-width: none; }
+  .verdict .lede {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  /* --------------------------------------------------------------- tables */
+  .scroll { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--sans);
+    font-size: 0.87rem;
+    min-width: 30rem;
+  }
+  thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 0.7rem 0.5rem 0;
+    vertical-align: bottom;
+  }
+  tbody td {
+    padding: 0.62rem 0.7rem 0.62rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  thead th:last-child, tbody td:last-child { padding-right: 0; }
+  .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  tfoot td {
+    padding: 0.62rem 0.7rem 0 0;
+    border-top: 2px solid var(--rule);
+    font-weight: 600;
+  }
+  tfoot td:last-child { padding-right: 0; }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .pill-wait   { background: var(--wait-soft);   color: var(--wait); }
+  .pill-stop   { background: var(--signal-soft); color: var(--signal); }
+  .pill-ok     { background: var(--ok-soft);     color: var(--ok); }
+  .pill-us     { background: var(--accent-soft); color: var(--accent); }
+
+  /* ------------------------------------------------------------- blockers */
+  .blockers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .blockers > li {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.05rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .blockers > li.is-stop { border-left: 3px solid var(--signal); }
+  .blockers > li.is-wait { border-left: 3px solid var(--wait); }
+
+  .blocker-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.55rem;
+  }
+  .blocker-title {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .blocker-ref {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+  .blockers p { font-size: 0.95rem; max-width: none; }
+
+  .cost {
+    font-family: var(--sans);
+    font-size: 0.87rem;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--rule);
+    padding-top: 0.55rem;
+  }
+  .cost b {
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--signal);
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  /* ---------------------------------------------------------------- risks */
+  .risk {
+    background: var(--signal-soft);
+    border-left: 3px solid var(--signal);
+    border-radius: 3px;
+    padding: 1.05rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .risk p { max-width: none; font-size: 0.97rem; }
+  .risk h3 { margin-top: 0; }
+
+  /* ----------------------------------------------------------- assumption */
+  .assume {
+    font-family: var(--sans);
+    font-size: 0.83rem;
+    color: var(--muted);
+    background: var(--surface-alt);
+    border-radius: 3px;
+    padding: 0.9rem 1.1rem;
+  }
+  .assume p { max-width: none; font-size: inherit; }
+  .assume ul { margin: 0.5rem 0 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.28rem; }
+
+  /* -------------------------------------------------------------- ask */
+  .ask-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    counter-reset: ask;
+  }
+  .ask-list li {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.7rem;
+    align-items: baseline;
+  }
+  .ask-list li::before {
+    counter-increment: ask;
+    content: counter(ask);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent);
+    border-top: 2px solid var(--accent);
+    padding-top: 0.2rem;
+  }
+  .ask-list p { font-size: 0.97rem; }
+
+  footer {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 1.1rem;
+  }
+  footer p { max-width: none; }
+
+  @media (max-width: 34rem) {
+    body { font-size: 16px; }
+    .page { padding: 2rem 1.1rem 3rem; gap: 2.25rem; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Data &amp; AI &middot; readiness assessment</p>
+    <h1>How hard is Fieldglass, really?</h1>
+    <p class="standfirst">
+      The plumbing was easy and it is already done. What is hard is that some of these tenants
+      are not ours to extract from at all, and the ones that are give us no stable client
+      identity, no business clock and no history. None of that is fixable by engineering.
+    </p>
+    <p class="meta">
+      HFIG Data Vault accelerator &middot; 5 September 2026 &middot; every figure below is
+      measured against <code>01_usnc_bronze_dev</code>, not estimated
+    </p>
+  </header>
+
+  <div class="verdict">
+    <p class="lede">
+      Getting Fieldglass bytes into the vault took about a week, and it reconciles to the
+      row. That is the part &ldquo;easy to integrate&rdquo; describes, and it is finished.
+    </p>
+    <p>
+      The <code>hub_job_request</code> load went live on 4 September: <strong>328,172</strong>
+      source rows in, <strong>270,286</strong> staged, <strong>57,886</strong> quarantined,
+      holding exactly <strong>7,230</strong> distinct job requests. Nothing lost, nothing
+      invented, every gate green.
+    </p>
+    <p>
+      Everything after that is blocked on decisions other people own. This page is what those
+      decisions are, what they cost if we skip them, and what the whole programme looks like in
+      quarters.
+    </p>
+  </div>
+
+  <section>
+    <h2>First, the number that reframes the question</h2>
+    <p>
+      Integrating Fieldglass perfectly does not give us client coverage. It gives us
+      <strong>thirty clients</strong>.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Vendor management system</th>
+            <th class="num">Clients with data</th>
+            <th class="num">Rows in Bronze</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Fieldglass</td><td class="num">30</td><td class="num">3,305,159</td></tr>
+          <tr><td>Fieldglass, client-owned instance</td><td class="num">1</td><td class="num">1,047,275</td></tr>
+          <tr><td>VNDLY</td><td class="num">4</td><td class="num">1,376,905</td></tr>
+          <tr><td>Beeline</td><td class="num">12</td><td class="num">841,555</td></tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Distinct clients, all three systems</td>
+            <td class="num">46</td>
+            <td class="num">6,570,894</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p>
+      Against a book of <strong>200+ clients</strong>, every VMS we have put together covers
+      roughly a quarter of them, and Fieldglass alone covers about fifteen percent. Nine further
+      Fieldglass clients &mdash; <code>everbank</code>, <code>lyondellbasell</code> and seven
+      others &mdash; have tables that hold zero rows.
+    </p>
+    <p>
+      So &ldquo;Fieldglass is easy&rdquo; and &ldquo;Fieldglass gets us client coverage&rdquo;
+      are two different claims. Only the first is true.
+    </p>
+    <p>
+      And the second row of that table is not a rounding error. It is the
+      <strong>largest single feed in the whole estate</strong>, and it sits in a separate
+      schema because the client runs that tenant, not us.
+    </p>
+  </section>
+
+  <section>
+    <h2>Five blockers, and who owns each</h2>
+    <p>
+      Each has been raised. None can be closed by engineering effort on our side, and they are
+      listed in the order they bite: whether we can get the data at all, then whether we can
+      tell whose it is, then whether we can read it correctly.
+    </p>
+
+    <ul class="blockers">
+      <li class="is-stop">
+        <div class="blocker-head">
+          <span class="blocker-title">We do not run every tenant, so not every tenant is ours to extract</span>
+          <span class="pill pill-stop">per client &middot; commercial</span>
+          <span class="blocker-ref">BRZ-13 asks this as a scope question &mdash; it is not one</span>
+        </div>
+        <p>
+          In some programmes the client runs the Fieldglass tenant and we participate in their
+          instance rather than operating our own. The data is theirs to release, so getting it
+          is a conversation with that client, not a pipeline change &mdash; and it is a separate
+          conversation per client, with its own commercial and contractual answer.
+        </p>
+        <p>
+          Bronze already reflects this. <code>fieldglass_client_owned</code> is a schema of its
+          own, and the one client in it with data is <strong>Bayer, at 1,047,275 rows</strong>
+          &mdash; larger than any tenant we manage. We have been treating &ldquo;is the
+          client-owned family in scope?&rdquo; as a question about tables. It is a question
+          about data rights, and the answer differs client by client.
+        </p>
+        <p>
+          <strong>The classification does not exist anywhere we can read.</strong> Nothing in
+          Bronze marks which of the thirty tenants we operate and which we do not, so we cannot
+          size this from data. It is the one input on this page that has to come from the
+          business.
+        </p>
+        <p class="cost">
+          <b>If we ship without it</b>
+          A worse failure than a missing client: a partial one. Where we are a participant we
+          are likely to receive only the slice covering our own placements, not the whole
+          programme &mdash; so a client-run tenant and a tenant we operate have
+          <em>different denominators</em>. Added together and labelled &ldquo;Fieldglass job
+          postings&rdquo;, the total is a number nobody can interpret, and it looks entirely
+          normal.
+        </p>
+      </li>
+
+      <li class="is-stop">
+        <div class="blocker-head">
+          <span class="blocker-title">The <code>buyer</code> column is not the client</span>
+          <span class="pill pill-stop">business decision</span>
+          <span class="blocker-ref">BRZ-2 &middot; answered, and the answer was no</span>
+        </div>
+        <p>
+          It holds whoever owns the VMS account, and that is not always the client. In the
+          <code>delphi_tech</code> feed it is <strong>Guidant Global, Inc.</strong> &mdash; one
+          of our own Impellam companies, running the programme for Delphi &mdash; across 12,459
+          rows. In <code>commonspirit_health</code> it is <strong>Dignity Health</strong>, the
+          pre-merger name. The same feed also carries <strong>BorgWarner</strong>, who acquired
+          Delphi Technologies.
+        </p>
+        <p>
+          Three identities for one client, none of them stable. We asked Bronze for a stable
+          code; there isn&rsquo;t one. The <code>BuyerId</code> that exists is generated inside
+          the reporting SQL Server, not by the VMS, and inside one tenant database there is no
+          client id at all because everything in it belongs to one client.
+        </p>
+        <p class="cost">
+          <b>If we ship without it</b>
+          We key the vault on a display name. See the two silent failures below &mdash; both are
+          already visible in today&rsquo;s data.
+        </p>
+      </li>
+
+      <li class="is-wait">
+        <div class="blocker-head">
+          <span class="blocker-title">A sixth of the feed arrives with no tenant</span>
+          <span class="pill pill-wait">Bronze</span>
+          <span class="blocker-ref">BRZ-13</span>
+        </div>
+        <p>
+          <strong>57,380 of 328,172 rows</strong> &mdash; 17.5% &mdash; have a blank
+          <code>buyer</code>. Rio Tinto alone contributes 15,335. Those rows are quarantined
+          rather than loaded, which is the control working: we refuse to hash a null into the
+          tenant position of a key. But nobody has explained why a sixth of a feed arrives
+          without saying who it belongs to.
+        </p>
+        <p class="cost">
+          <b>If we ship without it</b>
+          We silently report on 82% of Fieldglass and call it Fieldglass.
+        </p>
+      </li>
+
+      <li class="is-wait">
+        <div class="blocker-head">
+          <span class="blocker-title">There is no business clock</span>
+          <span class="pill pill-wait">Bronze</span>
+          <span class="blocker-ref">BRZ-15</span>
+        </div>
+        <p>
+          Fieldglass ships no modification timestamp. All four candidates were measured over the
+          270,286 valid rows and every one is disqualified:
+          <code>job_posting_create_date</code> and <code>uploaded</code> are constant per
+          posting, <code>job_posting_distribution_date</code> is <strong>42.4% null</strong>, and
+          <code>timestamp</code> is a delivery clock frozen across
+          <strong>562 of the 1,127 postings that actually change</strong>.
+        </p>
+        <p>
+          Without one, the satellite cannot tell a real change from a re-delivery. This is why
+          the hub is live and the detail table is not. Bronze already emit a
+          <code>revision</code> column on 62 of their worker tables; we have asked for the same
+          here.
+        </p>
+        <p class="cost">
+          <b>If we ship without it</b>
+          Half the changed postings read as unchanged, and every version reads as current. Rate
+          and requirement history would be wrong in a way no report would show.
+        </p>
+      </li>
+
+      <li class="is-wait">
+        <div class="blocker-head">
+          <span class="blocker-title">There is no history &mdash; and it is being lost now</span>
+          <span class="pill pill-wait">Bronze &middot; rebuild</span>
+          <span class="blocker-ref">BRZ-14</span>
+        </div>
+        <p>
+          Every <code>DOUBLE</code>-typed column in the Fieldglass estate sits in a
+          <code>_backfill</code> table &mdash; 153 instances, none in a live table &mdash;
+          because those tables infer their types instead of declaring them. The consequence is
+          concrete: <strong>556 of 12,491 postal codes</strong> in one backfill are under five
+          digits, because a <code>DOUBLE</code> cannot hold <code>00965</code>.
+        </p>
+        <p>
+          So the union deliberately excludes backfill, and <strong>Fieldglass history is not in
+          the vault</strong>. This is the only blocker that is a rebuild rather than an answer,
+          and the only one getting more expensive while it waits.
+        </p>
+        <p class="cost">
+          <b>If we ship without it</b>
+          Adding history later is a drop-and-reload of the Fieldglass satellite, not an append:
+          change detection orders by load time, so late-arriving older versions would fabricate
+          new ones.
+        </p>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Two ways this fails silently if we are told to ship anyway</h2>
+    <p>
+      Both are already present in the data. Neither raises an error, fails a gate, or looks
+      wrong in a report.
+    </p>
+
+    <div class="risk">
+      <h3>A silent merge &mdash; two clients become one</h3>
+      <p>
+        The vault currently keys on <code>buyer</code>, so Delphi&rsquo;s 12,459 job postings are
+        stored under &ldquo;Guidant Global, Inc.&rdquo;. There is no collision today because
+        Guidant appears in exactly one feed. The day a second Guidant-managed programme lands in
+        Fieldglass, two different clients share one tenant key and merge into a single set of
+        job requests. Every count, rate and margin computed across them is then wrong, and
+        nothing distinguishes the merged rows from correct ones.
+      </p>
+    </div>
+
+    <div class="risk">
+      <h3>A silent re-key &mdash; one client becomes two</h3>
+      <p>
+        <code>buyer</code> is a display name, and display names change. When a client rebrands,
+        merges, or is acquired, the key changes with it: the vault gains a second, unrelated
+        client, and every historical row stays behind under the old one. We do not have to
+        imagine this. <code>commonspirit_health</code> still carries &ldquo;Dignity
+        Health&rdquo; and <code>delphi_tech</code> now carries &ldquo;BorgWarner&rdquo;. Both
+        renames have already happened; we simply have not loaded through one yet.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it takes, in quarters</h2>
+    <p>
+      Build effort is not the constraint on any line below. The pacing column is.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Track</th>
+            <th class="num">Build effort</th>
+            <th>Realistic elapsed</th>
+            <th>Paced by</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Fieldglass job postings</td>
+            <td class="num">~1 wk</td>
+            <td><span class="pill pill-ok">live 4 Sep</span></td>
+            <td>&mdash;</td>
+          </tr>
+          <tr>
+            <td>Tenants we do not run &mdash; classify, then ask each client</td>
+            <td class="num">days, per client</td>
+            <td><strong>unbounded</strong></td>
+            <td><span class="pill pill-stop">client relationship</span></td>
+          </tr>
+          <tr>
+            <td>Remaining Fieldglass families and their detail tables</td>
+            <td class="num">4&ndash;6 wks</td>
+            <td>~1 quarter</td>
+            <td><span class="pill pill-wait">BRZ-13, BRZ-15</span></td>
+          </tr>
+          <tr>
+            <td>Fieldglass history</td>
+            <td class="num">~1 wk</td>
+            <td>unknown</td>
+            <td><span class="pill pill-wait">BRZ-14 rebuild</span></td>
+          </tr>
+          <tr>
+            <td>Client identity mapped through to finance</td>
+            <td class="num">1&ndash;2 wks</td>
+            <td>blocked</td>
+            <td><span class="pill pill-stop">business decision</span></td>
+          </tr>
+          <tr>
+            <td>Beeline and VNDLY on the same pattern</td>
+            <td class="num">6&ndash;8 wks</td>
+            <td>+1 quarter</td>
+            <td><span class="pill pill-wait">same four, worse identity</span></td>
+          </tr>
+          <tr>
+            <td>Gold reporting layer, first domain</td>
+            <td class="num">4&ndash;6 wks</td>
+            <td><strong>can start now</strong></td>
+            <td><span class="pill pill-stop">catalog grant</span></td>
+          </tr>
+          <tr>
+            <td>Gold, all domains</td>
+            <td class="num">&mdash;</td>
+            <td>2&ndash;3 quarters</td>
+            <td>trails each vault domain by ~1 quarter</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The roll-up</h3>
+    <p>
+      <strong>Fieldglass for the tenants we run: about one quarter.</strong> All three vendor
+      systems in the vault: <strong>two to three quarters</strong>. Gold trailing each vault
+      domain by roughly a quarter &mdash; but startable today on the domains already loading,
+      and not waiting on Fieldglass at all.
+    </p>
+    <p>
+      <strong>&ldquo;Fieldglass complete&rdquo; has no date, and cannot be given one from here.</strong>
+      Every estimate above covers the tenants we operate. The rest arrive when each client agrees
+      to release their data, one client at a time, and no amount of engineering capacity moves
+      that. A schedule that promises all of Fieldglass by a date is promising something the data
+      team does not control.
+    </p>
+
+    <div class="assume">
+      <p><strong>What these numbers assume.</strong> State them back to me if any is wrong &mdash; each one moves the estimate.</p>
+      <ul>
+        <li>One engineer at the pace this project has actually run: 21 modelled entities, 38 source bindings and 10 source systems between 24 August and 5 September.</li>
+        <li>Every figure covers only the tenants we operate. We cannot yet say how many of the thirty those are &mdash; the distinction is commercial and appears nowhere in the data. If it turns out most Fieldglass clients run their own tenants, this stops being a data-engineering plan and becomes an account-management one.</li>
+        <li>Blockers answered within about two weeks of being asked. Recent evidence is mixed &mdash; a data question came back the same day, a permissions fix took four days, and two admin requests raised on 25 August are still open eleven days later.</li>
+        <li>BRZ-14 is a rebuild by the Bronze team, not a fix by us. If it is not prioritised, Fieldglass history does not arrive at all and the eventual reload gets larger every week.</li>
+        <li>Beeline is scoped at Fieldglass&rsquo;s difficulty. It is probably worse: every one of its 12 client feeds carries both a code and a display name in the same column &mdash; <code>KC</code> alongside <code>Kimberly-Clark</code> alongside <code>Kimberly-Clark Corp (Consolidated)</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>The thing worth deciding this week</h2>
+    <p>
+      <strong>Gold is not waiting on Fieldglass.</strong> The pressure to finish Fieldglass
+      assumes it sits on the critical path to reporting. It does not. Gold does &mdash; and Gold
+      is blocked on a single Unity Catalog grant.
+    </p>
+    <p>
+      <code>03_usnc_gold_edm_dev</code> exists, we hold no <code>USE CATALOG</code> on it, and
+      four sibling gold catalogs are visible to us while ours is not. Until that is resolved,
+      every consumer request has no answer regardless of how many vendor systems are loaded.
+      The domains that could start today &mdash; GL journals, workers, Bullhorn job requests
+      &mdash; are already live in the vault.
+    </p>
+
+    <h3>What we need from you</h3>
+    <ol class="ask-list">
+      <li><p><strong>The catalog grant.</strong> One permission, and it unblocks the layer business users actually read.</p></li>
+      <li><p><strong>Which tenants do we run?</strong> A list, thirty rows, one column: do we operate this Fieldglass instance or does the client. It is the cheapest thing on this page to produce and the only one that decides whether the rest of the plan is a quarter of work or a year of conversations. Where the answer is the client, we also need to know who owns that relationship and whether asking for the data is even on the table.</p></li>
+      <li><p><strong>A ruling on client identity.</strong> Is the feed name the client, or is <code>buyer</code>? They disagree in at least four feeds, and the mapping to finance is not one-to-one &mdash; <code>bayer</code> is at least two GP customers, <code>BAYCL</code> and <code>BAYP</code>. The mapping worksheet has 65 rows and none of them are filled in.</p></li>
+      <li><p><strong>Priority for BRZ-14 with the Bronze team.</strong> It is the one blocker that costs more the longer it waits.</p></li>
+      <li><p><strong>Agreement on what &ldquo;done&rdquo; means.</strong> If it means bytes in the vault, Fieldglass is close. If it means numbers someone can act on by client, it needs all four answers above first.</p></li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>
+      Prepared by the HFIG Data Vault accelerator. Full technical record in the repository at
+      <code>docs/superpowers/OPEN_ITEMS.md</code>; the per-client census with the unfilled
+      mapping columns is <code>docs/client_mapping_worksheet.csv</code>. Estimates are ballpark
+      and carry the assumptions listed above; every measured figure is reproducible against
+      <code>01_usnc_bronze_dev</code>.
+    </p>
+  </footer>
+
+</div>

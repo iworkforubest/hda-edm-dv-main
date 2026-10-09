@@ -1,0 +1,46 @@
+{
+ "counts": {
+  "raw_vault.hub_job_request": "45517",
+  "raw_vault.sat_job_request_details_bullhorn_eu": "46889",
+  "raw_vault.stg_hub_job_request": "45517",
+  "raw_vault.stg_sat_job_request_details_bullhorn_eu": "69208"
+ },
+ "hk": {
+  "hub_job_request.job_request_hk": {
+   "max_hk": "FFFFFBED9418D5D23486D04BAE80505F1D20154E7BCA22D6D70FD86D78970BFD",
+   "md5sum_all": "26255377225885642574364",
+   "md5sum_distinct": "26255377225885642574364",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "45517",
+   "n_rows": "45517",
+   "sum_all": "97601320235334"
+  },
+  "sat_job_request_details_bullhorn_eu.job_request_hk": {
+   "max_hk": "FFFFFBED9418D5D23486D04BAE80505F1D20154E7BCA22D6D70FD86D78970BFD",
+   "md5sum_all": "27046160420270126110167",
+   "md5sum_distinct": "26255301039212977284592",
+   "min_hk": "00008D378561AF819AD379046F766E263F6FDCB2FF11701D6739DB4B2B709E73",
+   "n_distinct": "45516",
+   "n_rows": "46889",
+   "sum_all": "100492530537670"
+  },
+  "stg_hub_job_request.job_request_hk": {
+   "max_hk": "FFFFFBED9418D5D23486D04BAE80505F1D20154E7BCA22D6D70FD86D78970BFD",
+   "md5sum_all": "26255377225885642574364",
+   "md5sum_distinct": "26255377225885642574364",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "45517",
+   "n_rows": "45517",
+   "sum_all": "97601320235334"
+  },
+  "stg_sat_job_request_details_bullhorn_eu.job_request_hk": {
+   "max_hk": "FFFFFBED9418D5D23486D04BAE80505F1D20154E7BCA22D6D70FD86D78970BFD",
+   "md5sum_all": "39914100284846692667347",
+   "md5sum_distinct": "26255377225885642574364",
+   "min_hk": "0000000000000000000000000000000000000000000000000000000000000000",
+   "n_distinct": "45517",
+   "n_rows": "69208",
+   "sum_all": "148293064972825"
+  }
+ }
+}

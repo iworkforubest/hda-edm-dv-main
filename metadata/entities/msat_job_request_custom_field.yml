@@ -1,0 +1,95 @@
+# PLACEHOLDER BRONZE TABLES -- see DEPLOY.md Phase 0a.
+#
+# THE HIGH-VARIABILITY SOURCE EXTENSION PATTERN.
+#
+# Fieldglass gives each client a standard column set PLUS their own custom columns --
+# 300+ clients, each with their own. Three approaches were rejected before this one:
+#
+#   ONE WIDE SATELLITE per source. Thousands of columns at ~99% sparsity, and the column
+#   NAMES are client business information: `acme_project_code` in a shared table exposes
+#   Acme's taxonomy to anyone who can see the schema, and a column mask cannot hide a
+#   column's existence. Onboarding client 301 becomes a schema change to a table serving
+#   the other 300.
+#
+#   ONE SATELLITE PER CLIENT. 300 satellites per entity, 300 flows, and the client ends up
+#   in the physical model -- so onboarding requires a deploy.
+#
+#   A VARIANT / JSON COLUMN. Hashdiff over JSON is unstable unless key order is
+#   canonicalised first, or identical content yields different checksums and every load
+#   inserts spurious change rows. And a column mask cannot be applied to a field INSIDE a
+#   variant, so any sensitive custom field becomes unmaskable -- which fails the
+#   governance requirement outright.
+#
+# SO: split by STABILITY, not by client.
+#   * standard columns -> sat_job_request_details_fieldglass_eu (typed, all clients)
+#   * custom columns   -> here, multi-active on the field name
+#
+# Onboarding a client adds ROWS, not columns. No schema evolution, no hashdiff churn, one
+# row filter on client handles tenant isolation for all 300, and field_value is maskable
+# like any other column.
+#
+# WHAT MAKES THIS TRACTABLE RATHER THAN A SWAMP: ref_fieldglass_custom_field, a governed
+# registry of (client, field name, data type, meaning, sensitivity). Platform-owned config
+# estate -- the generator reads it by join and never creates it. Without a registry, a
+# key-value bag has no owner and no meaning.
+#
+# THE PROMOTION PATH: when a field matters for reporting or is shared across clients, it is
+# promoted to a typed column in csat_job_request_custom_promoted, driven by the registry.
+# Raw stays schema-agnostic and faithful; the schema churn moves to the Business Vault
+# where a rebuild is free. That is the hard/soft rule split doing real work.
+#
+# TYPING IS LOST HERE, DELIBERATELY. field_value is a string because the source's own
+# custom fields are weakly typed and their declared type can change. The registry records
+# the intended type and the promotion applies it.
+name: job_request_custom_field
+kind: msat
+domain: job
+parents: [job_request]
+sensitivity: internal
+change_detection: cdc
+
+# The field name is the NATURAL multi-active key. A generated sequence would reorder
+# whenever the source emits fields in a different order, producing phantom changes.
+mas_key: [custom_field_name]
+
+payload:
+  - custom_field_name
+  - custom_field_value
+  - custom_field_label
+  - declared_data_type
+  - client_code
+
+sources:
+  # FIELDGLASS_US, renamed for the same reason as the details satellite: no EU instance
+  # exists and the source name is part of the key.
+  #
+  # THE SOURCE TABLE IS STILL A PLACEHOLDER AND IS NOW KNOWN TO BE ONE. Searched 4 Sep:
+  # there is NO custom-field table in any Fieldglass schema in 01_usnc_bronze_dev -- not in
+  # fieldglass_raw, fieldglass, or the client-owned family. BRZ-13 asks whether they exist
+  # anywhere or whether the per-tenant extra columns ARE what "custom field" means here.
+  # Renaming fixes the scope so this satellite's key matches the hub; it does not conjure a
+  # feed, and this binding cannot load until that question is answered.
+  - name: FIELDGLASS_US
+    # THE PLACEHOLDER CATALOG IS LOAD-BEARING. verify_repo treats any bronze_table starting
+    # 01_usnc_bronze_dev. as REAL in this lake and therefore required in active_sources --
+    # "a placeholder left active fails the pipeline at definition time, and a real binding
+    # left out silently loads nothing". Pointing this at the real catalog made the gate
+    # demand it be activated, for a table that does not exist. hfig_usnc is the US
+    # placeholder catalog seven other deferred bindings already use.
+    bronze_table: hfig_usnc.bronze.fieldglass_job_posting_custom_field
+    key_columns: [buyer, job_posting_id]
+    payload:
+      - custom_field_name
+      - custom_field_value
+      - custom_field_label
+      - declared_data_type
+      - client_code
+    applied_dts_column: last_updated_utc
+    cdc_op_column: _cdc_op
+    manifest_column: _manifest_id
+    # one_field_per_name_per_posting is the multi-active equivalent of Workday's
+    # "only one worktag for each type" rule -- it is what makes mas_key valid.
+    expectations:
+      - custom_field_name_in_registry
+      - one_field_per_name_per_posting
+      - custom_field_value_length_within_bound

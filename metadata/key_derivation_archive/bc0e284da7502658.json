@@ -1,0 +1,630 @@
+{
+  "keys": {
+    "accounting_journal/GP_US/accounting_journal_hk": {
+      "components": [
+        "'GP_Journal_Entry'",
+        "input_db",
+        "openyear",
+        "jrnentry"
+      ],
+      "kind": "hub",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "accounting_journal/GP_US_HIST/accounting_journal_hk": {
+      "components": [
+        "'GP_Journal_Entry'",
+        "input_db",
+        "hstyear",
+        "jrnentry"
+      ],
+      "kind": "hub",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "accounting_journal/UKG_US/accounting_journal_hk": {
+      "components": [
+        "'UKG_Batch_ID'",
+        "company",
+        "'NOT_APPLICABLE'",
+        "batchid"
+      ],
+      "kind": "hub",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "accounting_journal_header/UKG_US/accounting_journal_hk": {
+      "components": [
+        "'UKG_Batch_ID'",
+        "company_reference_id",
+        "'NOT_APPLICABLE'",
+        "journal_external_reference_id"
+      ],
+      "kind": "sat",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "client_job_request/STRIIVE_EU/client_job_request_hk": {
+      "components": [
+        "'Portal_Client_Code'",
+        "client_code",
+        "'NOT_APPLICABLE'",
+        "reference_code"
+      ],
+      "kind": "link",
+      "scope_from": "client_job_request",
+      "scope_key_style": "federated",
+      "source_scope": "STRIIVE_EU"
+    },
+    "client_job_request/STRIIVE_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "reference_code"
+      ],
+      "kind": "link",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "STRIIVE_EU"
+    },
+    "client_job_request/STRIIVE_EU/organisation_hk": {
+      "components": [
+        "'Portal_Client_Code'",
+        "client_code"
+      ],
+      "kind": "link",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line/GP_US/accounting_journal_hk": {
+      "components": [
+        "'GP_Journal_Entry'",
+        "input_db",
+        "openyear",
+        "jrnentry"
+      ],
+      "kind": "nhl",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line/GP_US/general_journal_line_hk": {
+      "components": [
+        "'GP_Journal_Entry'",
+        "input_db",
+        "openyear",
+        "jrnentry",
+        "'Organization_Reference_ID'",
+        "input_db",
+        "input_db",
+        "actindx",
+        "seqnumbr"
+      ],
+      "kind": "nhl",
+      "scope_from": "general_journal_line",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line/GP_US/ledger_account_hk": {
+      "components": [
+        "input_db",
+        "actindx"
+      ],
+      "kind": "nhl",
+      "scope_from": "ledger_account",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line/GP_US/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "input_db"
+      ],
+      "kind": "nhl",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line_closed_year/GP_US_HIST/accounting_journal_hk": {
+      "components": [
+        "'GP_Journal_Entry'",
+        "input_db",
+        "hstyear",
+        "jrnentry"
+      ],
+      "kind": "nhl",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line_closed_year/GP_US_HIST/general_journal_line_closed_year_hk": {
+      "components": [
+        "'GP_Journal_Entry'",
+        "input_db",
+        "hstyear",
+        "jrnentry",
+        "'Organization_Reference_ID'",
+        "input_db",
+        "input_db",
+        "actindx",
+        "seqnumbr"
+      ],
+      "kind": "nhl",
+      "scope_from": "general_journal_line_closed_year",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line_closed_year/GP_US_HIST/ledger_account_hk": {
+      "components": [
+        "input_db",
+        "actindx"
+      ],
+      "kind": "nhl",
+      "scope_from": "ledger_account",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "general_journal_line_closed_year/GP_US_HIST/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "input_db"
+      ],
+      "kind": "nhl",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "job_request/BULLHORN_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "joborderid"
+      ],
+      "kind": "hub",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "BULLHORN_EU"
+    },
+    "job_request/FIELDGLASS_US/job_request_hk": {
+      "components": [
+        "buyer",
+        "job_posting_id"
+      ],
+      "kind": "hub",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "FIELDGLASS_US"
+    },
+    "job_request/PROUNITY_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "request_ref"
+      ],
+      "kind": "hub",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "PROUNITY_EU"
+    },
+    "job_request/STRIIVE_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "reference_code"
+      ],
+      "kind": "hub",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "STRIIVE_EU"
+    },
+    "job_request_commercials/STRIIVE_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "reference_code"
+      ],
+      "kind": "sat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "STRIIVE_EU"
+    },
+    "job_request_custom_field/FIELDGLASS_US/job_request_hk": {
+      "components": [
+        "buyer",
+        "job_posting_id"
+      ],
+      "kind": "msat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "FIELDGLASS_US"
+    },
+    "job_request_custom_promoted/BUSINESS_VAULT/job_request_hk": {
+      "components": [
+        "buyer",
+        "job_posting_id"
+      ],
+      "kind": "csat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "FIELDGLASS_US"
+    },
+    "job_request_details/BULLHORN_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "joborderid"
+      ],
+      "kind": "sat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "BULLHORN_EU"
+    },
+    "job_request_details/FIELDGLASS_US/job_request_hk": {
+      "components": [
+        "buyer",
+        "job_posting_id"
+      ],
+      "kind": "sat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "FIELDGLASS_US"
+    },
+    "job_request_details/PROUNITY_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "request_ref"
+      ],
+      "kind": "sat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "PROUNITY_EU"
+    },
+    "job_request_details/STRIIVE_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "reference_code"
+      ],
+      "kind": "sat",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "STRIIVE_EU"
+    },
+    "journal_line/UKG_US/accounting_journal_hk": {
+      "components": [
+        "'UKG_Batch_ID'",
+        "company",
+        "'NOT_APPLICABLE'",
+        "batchid"
+      ],
+      "kind": "nhl",
+      "scope_from": "accounting_journal",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "journal_line/UKG_US/journal_line_hk": {
+      "components": [
+        "'UKG_Batch_ID'",
+        "company",
+        "'NOT_APPLICABLE'",
+        "batchid",
+        "'Organization_Reference_ID'",
+        "company",
+        "company",
+        "account",
+        "payperiodstartdate",
+        "payperiodenddate",
+        "userdefined1"
+      ],
+      "kind": "nhl",
+      "scope_from": "journal_line",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "journal_line/UKG_US/ledger_account_hk": {
+      "components": [
+        "company",
+        "account"
+      ],
+      "kind": "nhl",
+      "scope_from": "ledger_account",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "journal_line/UKG_US/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "company"
+      ],
+      "kind": "nhl",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "journal_line/UKG_US/pay_period_hk": {
+      "components": [
+        "payperiodstartdate",
+        "payperiodenddate"
+      ],
+      "kind": "nhl",
+      "scope_from": "pay_period",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "journal_line_external_code/UKG_US/journal_line_hk": {
+      "components": [
+        "'UKG_Batch_ID'",
+        "company",
+        "'NOT_APPLICABLE'",
+        "batchid",
+        "'Organization_Reference_ID'",
+        "company",
+        "company",
+        "account",
+        "payperiodstartdate",
+        "payperiodenddate",
+        "userdefined1"
+      ],
+      "kind": "msat",
+      "scope_from": "journal_line",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "journal_line_worktag/UKG_US/journal_line_hk": {
+      "components": [
+        "'UKG_Batch_ID'",
+        "company",
+        "'NOT_APPLICABLE'",
+        "batchid",
+        "'Organization_Reference_ID'",
+        "company",
+        "company",
+        "account",
+        "payperiodstartdate",
+        "payperiodenddate",
+        "userdefined1"
+      ],
+      "kind": "msat",
+      "scope_from": "journal_line",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "ledger_account/GP_US/ledger_account_hk": {
+      "components": [
+        "input_db",
+        "actindx"
+      ],
+      "kind": "hub",
+      "scope_from": "ledger_account",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "ledger_account/UKG_US/ledger_account_hk": {
+      "components": [
+        "company",
+        "account"
+      ],
+      "kind": "hub",
+      "scope_from": "ledger_account",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "organisation/BUSINESS_VAULT/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "company_reference_id"
+      ],
+      "kind": "hub",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "organisation/CLIENT_PORTAL/organisation_hk": {
+      "components": [
+        "'Portal_Client_Code'",
+        "client_code"
+      ],
+      "kind": "hub",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "organisation/GP_US/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "input_db"
+      ],
+      "kind": "hub",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "organisation/GP_US_HIST/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "input_db"
+      ],
+      "kind": "hub",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "organisation/STRIIVE_EU/organisation_hk": {
+      "components": [
+        "'Portal_Client_Code'",
+        "client_code"
+      ],
+      "kind": "hub",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "organisation/UKG_US/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "company"
+      ],
+      "kind": "hub",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "pay_period/UKG_US/pay_period_hk": {
+      "components": [
+        "payperiodstartdate",
+        "payperiodenddate"
+      ],
+      "kind": "hub",
+      "scope_from": "pay_period",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "payroll_detail/UKG_US/organisation_hk": {
+      "components": [
+        "'Organization_Reference_ID'",
+        "company_reference_id"
+      ],
+      "kind": "nhl",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "payroll_detail/UKG_US/pay_period_hk": {
+      "components": [
+        "pay_period_start_date",
+        "pay_period_end_date"
+      ],
+      "kind": "nhl",
+      "scope_from": "pay_period",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "payroll_detail/UKG_US/payroll_detail_hk": {
+      "components": [
+        "worker_reference_id",
+        "'Organization_Reference_ID'",
+        "company_reference_id",
+        "pay_period_start_date",
+        "pay_period_end_date",
+        "payroll_register_reference",
+        "line_sequence"
+      ],
+      "kind": "nhl",
+      "scope_from": "payroll_detail",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "payroll_detail/UKG_US/worker_hk": {
+      "components": [
+        "worker_reference_id"
+      ],
+      "kind": "nhl",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "payroll_line_classification/BUSINESS_VAULT/payroll_detail_hk": {
+      "components": [
+        "worker_reference_id",
+        "'Organization_Reference_ID'",
+        "company_reference_id",
+        "pay_period_start_date",
+        "pay_period_end_date",
+        "payroll_register_reference",
+        "line_sequence"
+      ],
+      "kind": "csat",
+      "scope_from": "payroll_detail",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "timesheet_line/STRIIVE_EU/job_request_hk": {
+      "components": [
+        "'NOT_APPLICABLE'",
+        "job_reference"
+      ],
+      "kind": "nhl",
+      "scope_from": "job_request",
+      "scope_key_style": "tenant_scoped",
+      "source_scope": "STRIIVE_EU"
+    },
+    "timesheet_line/STRIIVE_EU/organisation_hk": {
+      "components": [
+        "'Portal_Client_Code'",
+        "client_code"
+      ],
+      "kind": "nhl",
+      "scope_from": "organisation",
+      "scope_key_style": "authored",
+      "source_scope": null
+    },
+    "timesheet_line/STRIIVE_EU/timesheet_line_hk": {
+      "components": [
+        "worker_ref",
+        "'NOT_APPLICABLE'",
+        "job_reference",
+        "'Portal_Client_Code'",
+        "client_code",
+        "timesheet_reference",
+        "line_no"
+      ],
+      "kind": "nhl",
+      "scope_from": "timesheet_line",
+      "scope_key_style": "federated",
+      "source_scope": "STRIIVE_EU"
+    },
+    "timesheet_line/STRIIVE_EU/worker_hk": {
+      "components": [
+        "worker_ref"
+      ],
+      "kind": "nhl",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "STRIIVE_EU"
+    },
+    "worker/HR_EU/worker_hk": {
+      "components": [
+        "employee_number"
+      ],
+      "kind": "hub",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "HR_EU"
+    },
+    "worker/STRIIVE_EU/worker_hk": {
+      "components": [
+        "worker_ref"
+      ],
+      "kind": "hub",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "STRIIVE_EU"
+    },
+    "worker/UKG_US/worker_hk": {
+      "components": [
+        "worker_reference_id"
+      ],
+      "kind": "hub",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "UKG_US"
+    },
+    "worker_skills/HR_EU/worker_hk": {
+      "components": [
+        "employee_number"
+      ],
+      "kind": "msat",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "HR_EU"
+    },
+    "worker_skills/STRIIVE_EU/worker_hk": {
+      "components": [
+        "worker_ref"
+      ],
+      "kind": "msat",
+      "scope_from": "worker",
+      "scope_key_style": "federated",
+      "source_scope": "STRIIVE_EU"
+    }
+  },
+  "rulebook_version": "1.0.0"
+}
