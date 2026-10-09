@@ -9143,55 +9143,59 @@ check("the two Bronze request documents ask for the SAME thing",
 # retyping a password. A convenience that quietly accepts a world-readable file is worse
 # than no convenience, so both failure modes exit rather than print a warning -- and both
 # are exercised here, because a refusal nobody has seen fire is a refusal nobody can trust.
-import subprocess as _cred_sp  # noqa: E402
-import tempfile as _cred_tmp  # noqa: E402
+if os.name == "nt":
+      check("POSIX credential-file mode checks are skipped on Windows", True,
+              "Path.chmod does not set POSIX group/other permission bits on Windows")
+else:
+      import subprocess as _cred_sp  # noqa: E402
+      import tempfile as _cred_tmp  # noqa: E402
 
-sys.path.insert(0, str(ROOT / "tools"))
-import fetch_workday_references as _fwr  # noqa: E402
+      sys.path.insert(0, str(ROOT / "tools"))
+      import fetch_workday_references as _fwr  # noqa: E402
 
-_cred_findings = []
-with _cred_tmp.TemporaryDirectory() as _d:
-    _loose = Path(_d) / "pw"
-    _loose.write_text("s3cr3t\n", encoding="utf-8")
-    _loose.chmod(0o644)
-    try:
-        _fwr.read_password_file(str(_loose))
-        _cred_findings.append("a group/other-readable file was accepted")
-    except SystemExit as _e:
-        if "readable by group or other" not in str(_e):
-            _cred_findings.append(f"wrong refusal for mode 644: {_e}")
+      _cred_findings = []
+      with _cred_tmp.TemporaryDirectory() as _d:
+            _loose = Path(_d) / "pw"
+            _loose.write_text("s3cr3t\n", encoding="utf-8")
+            _loose.chmod(0o644)
+            try:
+                  _fwr.read_password_file(str(_loose))
+                  _cred_findings.append("a group/other-readable file was accepted")
+            except SystemExit as _e:
+                  if "readable by group or other" not in str(_e):
+                        _cred_findings.append(f"wrong refusal for mode 644: {_e}")
 
-    _tight = Path(_d) / "pw2"
-    _tight.write_text("WD_PASSWORD=s3cr3t\n", encoding="utf-8")
-    _tight.chmod(0o600)
-    if _fwr.read_password_file(str(_tight)) != "s3cr3t":
-        _cred_findings.append("KEY=VALUE form did not parse")
-    _tight.write_text("s3cr3t\n", encoding="utf-8")
-    if _fwr.read_password_file(str(_tight)) != "s3cr3t":
-        _cred_findings.append("bare-password form did not parse")
-    if _fwr.read_password_file(None) != "":
-        _cred_findings.append("no path should mean no password, not an error")
+            _tight = Path(_d) / "pw2"
+            _tight.write_text("WD_PASSWORD=s3cr3t\n", encoding="utf-8")
+            _tight.chmod(0o600)
+            if _fwr.read_password_file(str(_tight)) != "s3cr3t":
+                  _cred_findings.append("KEY=VALUE form did not parse")
+            _tight.write_text("s3cr3t\n", encoding="utf-8")
+            if _fwr.read_password_file(str(_tight)) != "s3cr3t":
+                  _cred_findings.append("bare-password form did not parse")
+            if _fwr.read_password_file(None) != "":
+                  _cred_findings.append("no path should mean no password, not an error")
 
-# AND A FILE INSIDE THE REPO THAT GIT DOES NOT IGNORE. This is the one that matters: the
-# bundle uploads the repo, minus ignored paths, into a folder every workspace user can
-# manage. A tracked credential file is a credential published on the next deploy.
-_unignored = ROOT / "_credential_probe_delete_me"
-try:
-    _unignored.write_text("s3cr3t\n", encoding="utf-8")
-    _unignored.chmod(0o600)
-    try:
-        _fwr.read_password_file(str(_unignored))
-        _cred_findings.append("a repo file that git does not ignore was accepted")
-    except SystemExit as _e:
-        if "NOT git-ignored" not in str(_e):
-            _cred_findings.append(f"wrong refusal for an unignored repo file: {_e}")
-finally:
-    _unignored.unlink(missing_ok=True)
+      # AND A FILE INSIDE THE REPO THAT GIT DOES NOT IGNORE. This is the one that matters: the
+      # bundle uploads the repo, minus ignored paths, into a folder every workspace user can
+      # manage. A tracked credential file is a credential published on the next deploy.
+      _unignored = ROOT / "_credential_probe_delete_me"
+      try:
+            _unignored.write_text("s3cr3t\n", encoding="utf-8")
+            _unignored.chmod(0o600)
+            try:
+                  _fwr.read_password_file(str(_unignored))
+                  _cred_findings.append("a repo file that git does not ignore was accepted")
+            except SystemExit as _e:
+                  if "NOT git-ignored" not in str(_e):
+                        _cred_findings.append(f"wrong refusal for an unignored repo file: {_e}")
+      finally:
+            _unignored.unlink(missing_ok=True)
 
-check("the credential file reader refuses every unsafe file it is given",
-      not _cred_findings,
-      f"{_cred_findings} -- a stop-gap that accepts a world-readable or bundle-shipped "
-      f"credential is not a stop-gap, it is the exposure PLT-7 exists to close")
+      check("the credential file reader refuses every unsafe file it is given",
+              not _cred_findings,
+              f"{_cred_findings} -- a stop-gap that accepts a world-readable or bundle-shipped "
+              f"credential is not a stop-gap, it is the exposure PLT-7 exists to close")
 
 # --------------------------------------------------------------------------- #
 # THE WORKDAY Get_References CLIENT, TESTED AS FAR AS OFFLINE TESTING REACHES.
@@ -17120,7 +17124,9 @@ def _apc_run(answers, rules=None, not_in_sql=None, vectors=None):
         if vectors is not None:
             # A REAL FILE, not a patched loader, because the gate reads its own path.
             # Driving it through anything else would be measuring a different gate.
-            _apc_tmp = Path(tempfile.mkstemp(suffix=".json")[1])
+            _apc_fd, _apc_path = tempfile.mkstemp(suffix=".json")
+            os.close(_apc_fd)
+            _apc_tmp = Path(_apc_path)
             _apc_tmp.write_text(_json.dumps({"rules": vectors}), encoding="utf-8")
             _apc_mod.VECTORS = _apc_tmp
         with contextlib.redirect_stdout(buf):
