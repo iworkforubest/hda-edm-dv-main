@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+data_contracts/*.yaml text eol=lf
+metadata/key_derivation.json text eol=lf
+metadata/key_derivation_archive/*.json text eol=lf

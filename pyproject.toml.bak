@@ -1,0 +1,40 @@
+[project]
+name = "hfig-dv-accelerator"
+version = "0.2.0"
+description = "HFIG Data Vault Accelerator -- SDP-native, metadata-driven"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Only checks/conformance_check.py needs this, and it imports lazily inside a
+# function (conformance_check.py:42), so the offline suites never load it.
+workspace = [
+    "databricks-sdk>=0.30.0",
+]
+# checks/seed_ameren_prototype.py only, and it imports lazily inside read_sheet() for
+# the same reason conformance_check.py does -- the offline suites import the pure module
+# beside it (src/accelerator/ameren_prototype.py) to test the parsing and key rules, and
+# must not need a spreadsheet library to do it.
+prototype = [
+    "openpyxl>=3.1",
+]
+# tests/test_spark_derivation.py only, and it is NOT part of the offline suite --
+# tests/test_accelerator.py stubs pyspark on purpose so the structural checks run on any
+# machine with no JVM. This extra exists so factory.py's key derivation can be EXECUTED
+# somewhere other than a Databricks workspace, which until 4 September 2026 it never was.
+#
+# A JVM IS ALSO REQUIRED and pip cannot supply one. GitHub runners ship Temurin; locally,
+# see tests/test_spark_derivation.py's docstring.
+#
+# THE LOCAL VERSION IS AN APPROXIMATION, NOT THE AUTHORITY. The workspace decides what the
+# vault's digests really are, which is why checks/hash_parity_check.py runs there and is
+# gate zero. Pinned below 4 because that is the Spark line the current Databricks runtime
+# is on; a local pass on a different major would be weaker evidence than it looks.
+spark = [
+    "pyspark>=3.5,<4",
+]
+
+[tool.uv]
+package = false
